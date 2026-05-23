@@ -1,10 +1,16 @@
 import { CapiMascot } from "@/components/CapiMascot";
 import { useApp } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
+import {
+  cancelAllReminders,
+  requestNotificationPermission,
+  scheduleDailyReminder,
+} from "@/services/notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Platform,
@@ -17,6 +23,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { CapiVariant } from "@/contexts/AppContext";
 
+const NOTIF_ENABLED_KEY = "leio:notifications-enabled";
+
 const CAPI_VARIANTS: Array<{ id: CapiVariant; label: string; desc: string }> = [
   { id: "default", label: "Capi Padrão", desc: "A capivara fofa original" },
   { id: "vampire", label: "Capi Vampira", desc: "Para os amantes do terror" },
@@ -26,10 +34,98 @@ const CAPI_VARIANTS: Array<{ id: CapiVariant; label: string; desc: string }> = [
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { settings, updateSettings } = useApp();
+  const { settings, updateSettings, folego } = useApp();
+  const [notifEnabled, setNotifEnabled] = useState(false);
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = Platform.OS === "web" ? 34 : 0;
+
+  useEffect(() => {
+    AsyncStorage.getItem(NOTIF_ENABLED_KEY)
+      .then((val) => setNotifEnabled(val === "true"))
+      .catch(() => undefined);
+  }, []);
+
+  function parseNotifTime(): { hour: number; minute: number } {
+    const [h, m] = (settings.notificationTime ?? "19:00")
+      .split(":")
+      .map((v) => parseInt(v, 10));
+    return {
+      hour: Number.isFinite(h) ? h : 19,
+      minute: Number.isFinite(m) ? m : 0,
+    };
+  }
+
+  async function handleToggleNotifications() {
+    Haptics.selectionAsync();
+    if (Platform.OS === "web") {
+      Alert.alert(
+        "Indisponível",
+        "Notificações locais não funcionam no navegador. Abre o Leio no celular pra ativar."
+      );
+      return;
+    }
+    if (!notifEnabled) {
+      const granted = await requestNotificationPermission();
+      if (!granted) {
+        Alert.alert(
+          "Permissão negada",
+          "A Capi não pode te lembrar sem permissão. Libera nas configurações do sistema."
+        );
+        return;
+      }
+      const { hour, minute } = parseNotifTime();
+      await scheduleDailyReminder(hour, minute, folego);
+      await AsyncStorage.setItem(NOTIF_ENABLED_KEY, "true");
+      setNotifEnabled(true);
+    } else {
+      await cancelAllReminders();
+      await AsyncStorage.setItem(NOTIF_ENABLED_KEY, "false");
+      setNotifEnabled(false);
+    }
+  }
+
+  function handleChangeTime() {
+    Haptics.selectionAsync();
+    if (Platform.OS === "web") {
+      const input = window.prompt(
+        "Digite o horário do lembrete (HH:MM)",
+        settings.notificationTime ?? "19:00"
+      );
+      if (input) applyNewTime(input);
+      return;
+    }
+    Alert.prompt?.(
+      "Alterar horário",
+      "Digite o horário do lembrete no formato HH:MM",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Salvar",
+          onPress: (value?: string) => {
+            if (value) applyNewTime(value);
+          },
+        },
+      ],
+      "plain-text",
+      settings.notificationTime ?? "19:00"
+    );
+  }
+
+  async function applyNewTime(value: string) {
+    const match = value.trim().match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) {
+      Alert.alert("Horário inválido", "Use o formato HH:MM (ex: 19:00).");
+      return;
+    }
+    const hour = Math.min(23, Math.max(0, parseInt(match[1], 10)));
+    const minute = Math.min(59, Math.max(0, parseInt(match[2], 10)));
+    const formatted = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    updateSettings({ notificationTime: formatted });
+    if (notifEnabled && Platform.OS !== "web") {
+      await scheduleDailyReminder(hour, minute, folego);
+    }
+  }
 
   function handleDeleteAccount() {
     Alert.alert(
@@ -162,18 +258,65 @@ export default function SettingsScreen() {
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
           Notificações
         </Text>
-        <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Ionicons name="notifications-outline" size={20} color={colors.volt} />
-          <View style={styles.infoText}>
-            <Text style={[styles.infoTitle, { color: colors.foreground }]}>
-              Lembrete diário
+        <View
+          style={[
+            styles.toggleCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={[styles.toggleLabel, { color: colors.foreground }]}>
+              Lembretes diários
             </Text>
-            <Text style={[styles.infoSub, { color: colors.mutedForeground }]}>
-              Configurado para {settings.notificationTime} BRT
+            <Text style={[styles.toggleSub, { color: colors.mutedForeground }]}>
+              Capi te cutuca todo dia às {settings.notificationTime ?? "19:00"}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          <TouchableOpacity
+            style={[
+              styles.toggle,
+              {
+                backgroundColor: notifEnabled ? colors.volt : colors.secondary,
+              },
+            ]}
+            onPress={handleToggleNotifications}
+          >
+            <View
+              style={[
+                styles.toggleThumb,
+                {
+                  backgroundColor: notifEnabled
+                    ? colors.accentForeground
+                    : colors.mutedForeground,
+                  transform: [{ translateX: notifEnabled ? 20 : 2 }],
+                },
+              ]}
+            />
+          </TouchableOpacity>
         </View>
+        <TouchableOpacity
+          style={[
+            styles.actionRow,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              marginTop: 10,
+              opacity: notifEnabled ? 1 : 0.6,
+            },
+          ]}
+          onPress={handleChangeTime}
+          disabled={!notifEnabled}
+        >
+          <Ionicons name="time-outline" size={20} color={colors.foreground} />
+          <Text style={[styles.actionText, { color: colors.foreground }]}>
+            Alterar horário
+          </Text>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={colors.mutedForeground}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* LGPD */}

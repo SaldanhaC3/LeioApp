@@ -1,20 +1,24 @@
 import { CapiMascot } from "@/components/CapiMascot";
+import { ShareCard } from "@/components/ShareCard";
 import { useApp } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import * as Sharing from "expo-sharing";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Animated,
   Platform,
-  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { captureRef, type ViewShotRef } from "react-native-view-shot";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -34,6 +38,19 @@ const ABANDON_MESSAGES = [
   "Sem julgamento — acontece com todo mundo.",
   "Tá bom pra hoje. Amanhã mais!",
   "O importante é ter lido.",
+];
+
+const SHARE_PHRASES = [
+  "Mais um livro pra coleção do Capi.",
+  "Cabeça cheia, copo vazio (de cerveja).",
+  "Lendo igual gente grande.",
+  "O algoritmo chora, eu leio.",
+  "Menos scroll, mais página virada.",
+  "Capi aprovou essa sessão.",
+  "Tô construindo um cérebro melhor, devagarinho.",
+  "Hoje o foco venceu o feed.",
+  "Página por página, vou virando outra pessoa.",
+  "Leitura concluída. Ego inflado.",
 ];
 
 export default function ConclusaoScreen() {
@@ -69,6 +86,13 @@ export default function ConclusaoScreen() {
   const durationAnim = useRef(new Animated.Value(0)).current;
   const [displayPages, setDisplayPages] = useState(0);
   const [displayDuration, setDisplayDuration] = useState(0);
+  const [isSharing, setIsSharing] = useState(false);
+  const shareCardRef = useRef<ViewShotRef>(null);
+
+  const motivationalPhrase = useMemo(
+    () => SHARE_PHRASES[Math.floor(Math.random() * SHARE_PHRASES.length)],
+    []
+  );
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = insets.bottom + (Platform.OS === "web" ? 34 : 0);
@@ -101,12 +125,33 @@ export default function ConclusaoScreen() {
   }, []);
 
   async function handleShare() {
+    if (isSharing || !book) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsSharing(true);
     try {
-      await Share.share({
-        message: `Acabei de ler ${pages} páginas de "${book?.title}" em ${formatDuration(duration)}! 📖 Meu pace foi de ${pace} págs/min. #Leio`,
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      const uri = await captureRef(shareCardRef, {
+        format: "png",
+        quality: 1,
       });
-    } catch {}
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert(
+          "Compartilhamento indisponível",
+          "Seu dispositivo não suporta compartilhamento nativo."
+        );
+        return;
+      }
+      await Sharing.shareAsync(uri, {
+        mimeType: "image/png",
+        dialogTitle: "Compartilhar sessão de leitura",
+        UTI: "public.png",
+      });
+    } catch {
+      Alert.alert("Ops", "Não rolou compartilhar agora. Tenta de novo daqui a pouco.");
+    } finally {
+      setIsSharing(false);
+    }
   }
 
   const focusMessage =
@@ -246,13 +291,25 @@ export default function ConclusaoScreen() {
 
       {/* Actions */}
       <TouchableOpacity
-        style={[styles.shareBtn, { backgroundColor: colors.volt }]}
+        style={[
+          styles.shareBtn,
+          { backgroundColor: colors.volt, opacity: isSharing ? 0.7 : 1 },
+        ]}
         onPress={handleShare}
         activeOpacity={0.85}
+        disabled={isSharing}
       >
-        <Ionicons name="share-social-outline" size={20} color={colors.accentForeground} />
+        {isSharing ? (
+          <ActivityIndicator size="small" color={colors.accentForeground} />
+        ) : (
+          <Ionicons
+            name="share-social-outline"
+            size={20}
+            color={colors.accentForeground}
+          />
+        )}
         <Text style={[styles.shareBtnText, { color: colors.accentForeground }]}>
-          Compartilhar sessão
+          {isSharing ? "Gerando card..." : "Compartilhar sessão"}
         </Text>
       </TouchableOpacity>
 
@@ -268,6 +325,19 @@ export default function ConclusaoScreen() {
           Voltar para o início
         </Text>
       </TouchableOpacity>
+
+      {book && (
+        <View style={styles.hiddenShareCard} pointerEvents="none">
+          <ShareCard
+            ref={shareCardRef}
+            book={book}
+            pages={pages}
+            durationSeconds={duration}
+            pace={pace}
+            motivationalPhrase={motivationalPhrase}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -340,4 +410,12 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   homeBtnText: { fontSize: 15, fontWeight: "700" },
+  hiddenShareCard: {
+    position: "absolute",
+    top: -10000,
+    left: -10000,
+    width: 1080,
+    height: 1920,
+    opacity: 0,
+  },
 });

@@ -6,6 +6,12 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import {
+  hasNotificationPermission,
+  scheduleDailyReminder,
+} from "@/services/notifications";
+
+const NOTIF_ENABLED_KEY = "leio:notifications-enabled";
 
 export type BookStatus = "reading" | "read" | "want" | "abandoned";
 export type CapiVariant = "default" | "vampire" | "erudite";
@@ -643,6 +649,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const enabled = await AsyncStorage.getItem(NOTIF_ENABLED_KEY);
+        if (cancelled || enabled !== "true") return;
+        const granted = await hasNotificationPermission();
+        if (cancelled || !granted) return;
+        const [h, m] = (settings.notificationTime ?? "19:00")
+          .split(":")
+          .map((v) => parseInt(v, 10));
+        const hour = Number.isFinite(h) ? h : 19;
+        const minute = Number.isFinite(m) ? m : 0;
+        await scheduleDailyReminder(hour, minute, folego);
+      } catch {
+        // silent
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoaded, settings.notificationTime, folego]);
 
   async function loadData() {
     try {

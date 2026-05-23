@@ -80,7 +80,7 @@ export default function BibliotecaScreen() {
           style={[styles.addBtn, { backgroundColor: colors.volt }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push("/(tabs)/sessao");
+            router.push("/buscar-livro");
           }}
           hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
         >

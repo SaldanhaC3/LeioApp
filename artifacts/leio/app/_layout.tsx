@@ -60,6 +60,10 @@ function RootLayoutNav() {
         name="settings"
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="buscar-livro"
+        options={{ headerShown: false, presentation: "modal" }}
+      />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
