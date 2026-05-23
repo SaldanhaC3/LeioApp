@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system/legacy";
 import React, {
   createContext,
   useCallback,
@@ -109,6 +110,22 @@ export interface VocabularyEntry {
   definition: string;
   phonetic?: string;
   savedAt: string;
+}
+
+export type SharedCardTemplateId = "storiesPhoto" | "framed" | "classic";
+
+export interface SharedCard {
+  id: string;
+  bookId: string;
+  bookTitle: string;
+  bookAuthor: string;
+  bookCoverColor: string;
+  pages: number;
+  durationSeconds: number;
+  pace: number;
+  template: SharedCardTemplateId;
+  sharedAt: string;
+  thumbnailUri?: string;
 }
 
 export interface AppSettings {
@@ -657,6 +674,7 @@ interface AppContextType {
   missions: Mission[];
   vocabulary: VocabularyEntry[];
   highlights: Highlight[];
+  sharedCards: SharedCard[];
   settings: AppSettings;
   folego: number;
   folegoGuardado: number;
@@ -679,6 +697,10 @@ interface AppContextType {
     entry: Omit<VocabularyEntry, "id" | "savedAt">
   ) => void;
   progressShareMission: () => boolean;
+  addSharedCard: (
+    card: Omit<SharedCard, "id" | "sharedAt" | "thumbnailUri">,
+    imageUri: string
+  ) => Promise<void>;
   getBookById: (id: string) => Book | undefined;
   getAbandoned: () => Book[];
   getCurrentBook: () => Book | undefined;
@@ -718,6 +740,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [xp, setXp] = useState(340);
   const [cardsSharedCount, setCardsSharedCount] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [sharedCards, setSharedCards] = useState<SharedCard[]>([]);
   const [capiState, setCapiState] = useState<CapiState>("waving");
   const [spotifyConnected, setSpotifyConnected] = useState(false);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
@@ -804,6 +827,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setBadges(data.badges ?? ALL_BADGES);
         setVocabulary(data.vocabulary ?? []);
         setHighlights(data.highlights ?? []);
+        setSharedCards(data.sharedCards ?? []);
         setSettings(data.settings ?? settings);
         setFolego(data.folego ?? 4);
         setFolegoGuardado(data.folegoGuardado ?? 2);
@@ -865,6 +889,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       badges,
       vocabulary,
       highlights,
+      sharedCards,
       settings,
       folego,
       folegoGuardado,
@@ -1115,6 +1140,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [books, sessions, badges, vocabulary, settings, folego, folegoGuardado, xp, missions]
   );
 
+  const addSharedCard = useCallback(
+    async (
+      card: Omit<SharedCard, "id" | "sharedAt" | "thumbnailUri">,
+      imageUri: string
+    ) => {
+      let thumbnailUri: string | undefined;
+      try {
+        const dir = `${FileSystem.documentDirectory}leio_cards/`;
+        const dirInfo = await FileSystem.getInfoAsync(dir);
+        if (!dirInfo.exists) {
+          await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+        }
+        const filename = `card_${Date.now()}.png`;
+        const dest = `${dir}${filename}`;
+        await FileSystem.copyAsync({ from: imageUri, to: dest });
+        thumbnailUri = dest;
+      } catch {
+        // silent: card saved without image
+      }
+      const newCard: SharedCard = {
+        ...card,
+        id: `sc-${Date.now()}`,
+        sharedAt: new Date().toISOString(),
+        thumbnailUri,
+      };
+      const updated = [newCard, ...sharedCards];
+      setSharedCards(updated);
+      persistState({ sharedCards: updated });
+    },
+    [books, sessions, badges, vocabulary, highlights, sharedCards, settings, folego, folegoGuardado, xp, missions]
+  );
+
   const progressShareMission = useCallback((): boolean => {
     let bonus = 0;
     let badgeUnlocked = false;
@@ -1228,6 +1285,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         missions,
         vocabulary,
         highlights,
+        sharedCards,
         addHighlight,
         removeHighlight,
         getHighlightsForBook,
@@ -1248,6 +1306,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         earnXP,
         addVocabularyEntry,
         progressShareMission,
+        addSharedCard,
         getBookById,
         getAbandoned,
         getCurrentBook,

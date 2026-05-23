@@ -60,7 +60,7 @@ export default function CompartilharScreen() {
     durationSeconds: string;
     pace: string;
   }>();
-  const { getBookById, progressShareMission, folego } = useApp();
+  const { getBookById, progressShareMission, addSharedCard, folego } = useApp();
   const { selected: selectedStats, toggle: toggleStat } = useStatPreferences();
 
   const book = getBookById(params.bookId ?? "");
@@ -162,6 +162,27 @@ export default function CompartilharScreen() {
     setPhotoUri(undefined);
   }, []);
 
+  const saveCardToHistory = useCallback(async (uri: string) => {
+    if (!book) return;
+    try {
+      await addSharedCard(
+        {
+          bookId: book.id,
+          bookTitle: book.title,
+          bookAuthor: book.author,
+          bookCoverColor: book.coverColor,
+          pages,
+          durationSeconds: duration,
+          pace,
+          template,
+        },
+        uri
+      );
+    } catch {
+      // silent
+    }
+  }, [book, pages, duration, pace, template, addSharedCard]);
+
   const handleShareStories = useCallback(async () => {
     if (busyAction || !book) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -183,12 +204,13 @@ export default function CompartilharScreen() {
         const badgeUnlocked = progressShareMission();
         if (badgeUnlocked) setBadgeToastVisible(true);
       }
+      await saveCardToHistory(uri);
     } catch {
       Alert.alert("Ops", "Não rolou compartilhar agora.");
     } finally {
       setBusyAction(null);
     }
-  }, [busyAction, book, captureCard]);
+  }, [busyAction, book, captureCard, saveCardToHistory]);
 
   const handleCopy = useCallback(async () => {
     if (busyAction || !book) return;
@@ -209,12 +231,13 @@ export default function CompartilharScreen() {
         const badgeUnlocked = progressShareMission();
         if (badgeUnlocked) setBadgeToastVisible(true);
       }
+      await saveCardToHistory(uri);
     } catch {
       Alert.alert("Ops", "Não rolou copiar o card.");
     } finally {
       setBusyAction(null);
     }
-  }, [busyAction, book, captureCard]);
+  }, [busyAction, book, captureCard, saveCardToHistory]);
 
   const handleDownload = useCallback(async () => {
     if (busyAction || !book) return;
@@ -242,12 +265,13 @@ export default function CompartilharScreen() {
         const badgeUnlocked = progressShareMission();
         if (badgeUnlocked) setBadgeToastVisible(true);
       }
+      await saveCardToHistory(uri);
     } catch {
       Alert.alert("Ops", "Não rolou salvar o card.");
     } finally {
       setBusyAction(null);
     }
-  }, [busyAction, book, captureCard]);
+  }, [busyAction, book, captureCard, saveCardToHistory]);
 
   if (!book) {
     return (

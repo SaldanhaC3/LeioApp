@@ -783,6 +783,34 @@ export default function PerfilScreen() {
         </View>
       </View>
 
+      {/* Meus Cards */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+          Meus Cards
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.push("/meus-cards")}
+          activeOpacity={0.8}
+          style={[
+            styles.meusCardsBtn,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <View style={[styles.meusCardsIcon, { backgroundColor: `${colors.volt}22` }]}>
+            <Ionicons name="images-outline" size={22} color={colors.accentText} />
+          </View>
+          <View style={styles.meusCardsText}>
+            <Text style={[styles.meusCardsTitle, { color: colors.foreground }]}>
+              Histórico de cards
+            </Text>
+            <Text style={[styles.meusCardsDesc, { color: colors.mutedForeground }]}>
+              Cards gerados nas suas sessões
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+        </TouchableOpacity>
+      </View>
+
       {/* Featured Badges */}
       {featuredBadges.length > 0 && (
         <View style={styles.section}>
@@ -920,4 +948,22 @@ const styles = StyleSheet.create({
     gap: 10,
     justifyContent: "space-between",
   },
+  meusCardsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+  },
+  meusCardsIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  meusCardsText: { flex: 1, gap: 3 },
+  meusCardsTitle: { fontSize: 15, fontWeight: "800" },
+  meusCardsDesc: { fontSize: 12 },
 });
