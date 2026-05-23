@@ -78,7 +78,6 @@ export interface Session {
   date: string;
   isFocusMode?: boolean;
   focusExitSeconds?: number;
-  isModoVagao?: boolean;
 }
 
 export interface Badge {
@@ -250,15 +249,6 @@ const ALL_BADGES: Badge[] = [
     unlocked: false,
     category: "conquista",
     xpReward: 200,
-  },
-  {
-    id: "vagao",
-    name: "Leitor do 8h17",
-    description: "Sessão completa no transporte. Bertoleza ficou pra trás.",
-    icon: "train",
-    unlocked: false,
-    category: "modo",
-    xpReward: 60,
   },
   {
     id: "foco_total",
@@ -824,7 +814,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const data = JSON.parse(raw);
         setBooks(data.books ?? SEED_BOOKS);
         setSessions(data.sessions ?? SEED_SESSIONS);
-        setBadges(data.badges ?? ALL_BADGES);
+        // Migrate persisted badges: keep only IDs that still exist in ALL_BADGES,
+        // merge with current definitions so removed badges (e.g. "vagao") disappear.
+        const validIds = new Set(ALL_BADGES.map((b) => b.id));
+        const storedBadgeMap: Record<string, Badge> = {};
+        (data.badges ?? []).forEach((b: Badge) => {
+          if (validIds.has(b.id)) storedBadgeMap[b.id] = b;
+        });
+        const migratedBadges = ALL_BADGES.map((b) =>
+          storedBadgeMap[b.id]
+            ? { ...b, unlocked: storedBadgeMap[b.id].unlocked, unlockedAt: storedBadgeMap[b.id].unlockedAt }
+            : b
+        );
+        setBadges(migratedBadges);
         setVocabulary(data.vocabulary ?? []);
         setHighlights(data.highlights ?? []);
         setSharedCards(data.sharedCards ?? []);
@@ -1069,9 +1071,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             break;
           case "five_books":
             shouldUnlock = books.filter((b) => b.status === "read").length >= 5;
-            break;
-          case "vagao":
-            shouldUnlock = session !== undefined && !!session.isModoVagao;
             break;
           case "foco_total":
             shouldUnlock =

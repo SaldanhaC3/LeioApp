@@ -112,7 +112,6 @@ export default function LivroDetailScreen() {
         ambient: "cafe",
         focusMode: "0",
         focusDuration: "30",
-        modoVagao: "0",
       },
     });
   }

@@ -66,7 +66,6 @@ export default function SessaoAtivaScreen() {
     ambient: string;
     focusMode: string;
     focusDuration: string;
-    modoVagao: string;
   }>();
   const {
     getBookById,
@@ -82,7 +81,6 @@ export default function SessaoAtivaScreen() {
   const startPage = parseInt(params.startPage ?? "0", 10);
   const isFocusMode = params.focusMode === "1";
   const focusDuration = parseInt(params.focusDuration ?? "30", 10);
-  const isModoVagao = params.modoVagao === "1";
 
   const [elapsed, setElapsed] = useState(0);
   const [isRunning, setIsRunning] = useState(true);
@@ -117,11 +115,26 @@ export default function SessaoAtivaScreen() {
     setReadingSessionActive(true);
     startTimer();
     const ambientId = (params.ambient ?? "none") as AmbientId;
-    startAmbient(ambientId).catch(() => undefined);
+    let cancelled = false;
+
+    startAmbient(ambientId)
+      .then(() => {
+        // If the component unmounted before startAmbient finished, kill the zombie sound
+        if (cancelled) {
+          stopAmbient().catch((err) =>
+            console.error("[sessao-ativa] stopAmbient (late start) error:", err)
+          );
+        }
+      })
+      .catch((err) => console.error("[sessao-ativa] startAmbient error:", err));
+
     return () => {
+      cancelled = true;
       stopTimer();
       setReadingSessionActive(false);
-      stopAmbient().catch(() => undefined);
+      stopAmbient().catch((err) =>
+        console.error("[sessao-ativa] stopAmbient cleanup error:", err)
+      );
     };
   }, []);
 
@@ -202,16 +215,18 @@ export default function SessaoAtivaScreen() {
     setIsRunning(false);
   }
 
-  function togglePause() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
-      () => undefined
-    );
+  async function togglePause() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
     if (isRunning) {
       stopTimer();
-      pauseAmbient().catch(() => undefined);
+      await pauseAmbient().catch((err) =>
+        console.error("[sessao-ativa] pauseAmbient error:", err)
+      );
     } else {
       startTimer();
-      resumeAmbient().catch(() => undefined);
+      await resumeAmbient().catch((err) =>
+        console.error("[sessao-ativa] resumeAmbient error:", err)
+      );
     }
   }
 
@@ -221,13 +236,13 @@ export default function SessaoAtivaScreen() {
     startTimer();
   }
 
-  function openEndModal() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(
-      () => undefined
-    );
+  async function openEndModal() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
     wasRunningBeforeEndRef.current = isRunning;
     stopTimer();
-    pauseAmbient().catch(() => undefined);
+    await pauseAmbient().catch((err) =>
+      console.error("[sessao-ativa] pauseAmbient error:", err)
+    );
     setEndPageInput("");
     setEndError("");
     setShowEndModal(true);
@@ -264,7 +279,6 @@ export default function SessaoAtivaScreen() {
       date: new Date().toISOString(),
       isFocusMode,
       focusExitSeconds: focusExitRef.current,
-      isModoVagao,
     };
 
     addSession(session);
@@ -291,30 +305,36 @@ export default function SessaoAtivaScreen() {
     });
   }
 
-  function cancelEndModal() {
+  async function cancelEndModal() {
     setShowEndModal(false);
     if (wasRunningBeforeEndRef.current) {
       startTimer();
-      resumeAmbient().catch(() => undefined);
+      await resumeAmbient().catch((err) =>
+        console.error("[sessao-ativa] resumeAmbient error:", err)
+      );
     }
   }
 
-  function openVocabModal() {
+  async function openVocabModal() {
     Haptics.selectionAsync().catch(() => undefined);
     wasRunningBeforeVocabRef.current = isRunning;
     if (isRunning) {
       stopTimer();
-      pauseAmbient().catch(() => undefined);
+      await pauseAmbient().catch((err) =>
+        console.error("[sessao-ativa] pauseAmbient error:", err)
+      );
     }
     setShowVocabModal(true);
   }
 
-  function closeVocabModal() {
+  async function closeVocabModal() {
     setShowVocabModal(false);
     // Don't auto-resume if another blocking modal is up
     if (wasRunningBeforeVocabRef.current && !showFocusReturn && !showEndModal) {
       startTimer();
-      resumeAmbient().catch(() => undefined);
+      await resumeAmbient().catch((err) =>
+        console.error("[sessao-ativa] resumeAmbient error:", err)
+      );
     }
   }
 
@@ -344,7 +364,7 @@ export default function SessaoAtivaScreen() {
   const focusProgress = isFocusMode ? Math.min(1, elapsed / totalMinutes) : 0;
 
   const night = isNightTime();
-  const overlayColor = night ? "rgba(10,8,6,0.55)" : "rgba(10,8,6,0.30)";
+  const overlayColor = night ? "rgba(10,8,6,0.68)" : "rgba(10,8,6,0.52)";
 
   return (
     <View
@@ -578,19 +598,6 @@ export default function SessaoAtivaScreen() {
               <Ionicons name="eye" size={12} color={colors.accentText} />
               <Text style={[styles.focusBadgeText, { color: colors.accentText }]}>
                 Foco
-              </Text>
-            </View>
-          )}
-          {isModoVagao && (
-            <View
-              style={[
-                styles.focusBadge,
-                { backgroundColor: `${colors.coral}22` },
-              ]}
-            >
-              <Ionicons name="train" size={12} color={colors.coral} />
-              <Text style={[styles.focusBadgeText, { color: colors.coral }]}>
-                Vagão
               </Text>
             </View>
           )}

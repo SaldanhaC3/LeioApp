@@ -38,7 +38,6 @@ function getGreeting(): string {
     ],
     evening: [
       "Fim de tarde. Hora boa pra leitura.",
-      "Trânsito ruim? Vagão literário ativado.",
       "O dia caiu — abra um livro.",
     ],
     night: [

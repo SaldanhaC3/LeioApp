@@ -37,7 +37,6 @@ export default function SessaoScreen() {
   const [ambient, setAmbient] = useState(settings.ambientDefault);
   const [focusMode, setFocusMode] = useState(false);
   const [focusDuration, setFocusDuration] = useState(30);
-  const [modoVagao, setModoVagao] = useState(false);
   const [search, setSearch] = useState("");
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
@@ -77,7 +76,6 @@ export default function SessaoScreen() {
         ambient,
         focusMode: focusMode ? "1" : "0",
         focusDuration: focusDuration.toString(),
-        modoVagao: modoVagao ? "1" : "0",
       },
     });
   }
@@ -239,40 +237,6 @@ export default function SessaoScreen() {
               ))}
             </View>
           )}
-        </View>
-
-        {/* Modo Vagão */}
-        <View style={styles.configSection}>
-          <View style={styles.toggleRow}>
-            <View>
-              <Text style={[styles.configLabel, { color: colors.foreground }]}>
-                Modo Vagão
-              </Text>
-              <Text style={[styles.configSub, { color: colors.mutedForeground }]}>
-                Botões generosos pra ler no busão sem errar o dedo
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={[
-                styles.toggle,
-                { backgroundColor: modoVagao ? colors.volt : colors.secondary },
-              ]}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setModoVagao(!modoVagao);
-              }}
-            >
-              <View
-                style={[
-                  styles.toggleThumb,
-                  {
-                    backgroundColor: modoVagao ? colors.accentForeground : colors.mutedForeground,
-                    transform: [{ translateX: modoVagao ? 20 : 2 }],
-                  },
-                ]}
-              />
-            </TouchableOpacity>
-          </View>
         </View>
 
         {/* Start Button */}

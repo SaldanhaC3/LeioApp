@@ -42,7 +42,6 @@ const SHARE_PHRASES = [
   "Lendo igual gente grande (e sem precisar postar print).",
   "O algoritmo chora, Machado sorri.",
   "Menos scroll, mais Drummond.",
-  "Vagão lotado, página virada.",
   "Cérebro em construção — devagar e sempre.",
   "Capítulo fechado, ego saudavelmente inflado.",
   "Eça aprovaria essa sessão.",

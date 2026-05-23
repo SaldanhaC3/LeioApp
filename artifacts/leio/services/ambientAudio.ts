@@ -28,7 +28,10 @@ export async function startAmbient(ambientId: AmbientId): Promise<void> {
   try {
     await Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
+      playsInSilentModeIOS: true,
       staysActiveInBackground: true,
+      interruptionModeIOS: 1,
+      interruptionModeAndroid: 1,
       shouldDuckAndroid: true,
     });
 
@@ -39,7 +42,8 @@ export async function startAmbient(ambientId: AmbientId): Promise<void> {
     currentSound = sound;
     currentAmbientId = ambientId;
     await sound.playAsync();
-  } catch {
+  } catch (err) {
+    console.error("[ambientAudio] startAmbient error:", err);
     currentSound = null;
     currentAmbientId = null;
   }
@@ -48,37 +52,37 @@ export async function startAmbient(ambientId: AmbientId): Promise<void> {
 export async function pauseAmbient(): Promise<void> {
   try {
     if (currentSound) await currentSound.pauseAsync();
-  } catch {
-    // silent
+  } catch (err) {
+    console.error("[ambientAudio] pauseAmbient error:", err);
   }
 }
 
 export async function resumeAmbient(): Promise<void> {
   try {
     if (currentSound) await currentSound.playAsync();
-  } catch {
-    // silent
+  } catch (err) {
+    console.error("[ambientAudio] resumeAmbient error:", err);
   }
 }
 
 export async function stopAmbient(): Promise<void> {
+  const sound = currentSound;
+  currentSound = null;
+  currentAmbientId = null;
   try {
-    if (currentSound) {
-      await currentSound.stopAsync();
-      await currentSound.unloadAsync();
+    if (sound) {
+      await sound.stopAsync();
+      await sound.unloadAsync();
     }
-  } catch {
-    // silent
-  } finally {
-    currentSound = null;
-    currentAmbientId = null;
+  } catch (err) {
+    console.error("[ambientAudio] stopAmbient error:", err);
   }
 }
 
 export async function setAmbientVolume(volume: number): Promise<void> {
   try {
     if (currentSound) await currentSound.setVolumeAsync(Math.max(0, Math.min(1, volume)));
-  } catch {
-    // silent
+  } catch (err) {
+    console.error("[ambientAudio] setAmbientVolume error:", err);
   }
 }
