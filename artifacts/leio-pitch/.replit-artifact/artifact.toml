@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/leio-pitch/"
+title = "Leio — Pitch Deck"
+version = "1.0.0"
+id = "artifacts/leio-pitch"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/leio-pitch/" ]
+localPort = 25826
+
+[services.development]
+run = "pnpm --filter @workspace/leio-pitch run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/leio-pitch", "run", "build" ]
+publicDir = "artifacts/leio-pitch/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25826"
+BASE_PATH = "/leio-pitch/"
