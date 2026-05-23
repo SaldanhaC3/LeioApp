@@ -103,12 +103,56 @@ export default function HomeScreen() {
     [genreCounts]
   );
   const totalGenreCount = Object.values(genreCounts).reduce((a, b) => a + b, 0);
-  const femaleAuthors = readBooks.filter((b) => b.authorGender === "F").length;
-  const brAuthors = readBooks.filter((b) => b.authorNationality === "BR").length;
-  const femalePct =
-    readBooks.length > 0 ? Math.round((femaleAuthors / readBooks.length) * 100) : 0;
-  const brPct =
-    readBooks.length > 0 ? Math.round((brAuthors / readBooks.length) * 100) : 0;
+  const diversitySuggestions = useMemo(() => {
+    if (readBooks.length < 2) return [];
+    const total = readBooks.length;
+    const female = readBooks.filter((b) => b.authorGender === "F").length;
+    const nonBinary = readBooks.filter((b) => b.authorGender === "NB").length;
+    const br = readBooks.filter((b) => b.authorNationality === "BR").length;
+    const femaleRatio = female / total;
+    const nbRatio = nonBinary / total;
+    const brRatio = br / total;
+
+    const suggestions: Array<{
+      key: string;
+      icon: keyof typeof Ionicons.glyphMap;
+      title: string;
+      hint: string;
+    }> = [];
+
+    if (femaleRatio < 0.4) {
+      suggestions.push({
+        key: "f",
+        icon: "woman-outline",
+        title: "Que tal uma autora mulher?",
+        hint: "Sua estante anda meio masculina. Clarice, Conceição, Carola te esperam.",
+      });
+    }
+    if (brRatio < 0.3) {
+      suggestions.push({
+        key: "br",
+        icon: "flag-outline",
+        title: "Um pouco de Brasil na estante",
+        hint: "Pouca autoria nacional por aqui. Machado, Guimarães, Itamar Vieira Jr.?",
+      });
+    } else if (brRatio > 0.85) {
+      suggestions.push({
+        key: "intl",
+        icon: "earth-outline",
+        title: "Atravesse uma fronteira",
+        hint: "Estante bem brasileira. Tenta um russo, uma japonesa, um nigeriano.",
+      });
+    }
+    if (nbRatio === 0 && total >= 5) {
+      suggestions.push({
+        key: "nb",
+        icon: "people-outline",
+        title: "Vozes além do binário",
+        hint: "Que tal explorar autoras e autores não-binários? Akwaeke Emezi é um começo.",
+      });
+    }
+    return suggestions;
+  }, [readBooks]);
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = Platform.OS === "web" ? 34 : 0;
@@ -298,7 +342,7 @@ export default function HomeScreen() {
           {[
             { label: "Páginas lidas", value: totalPagesRead.toString(), icon: "document-text" },
             { label: "Livros lidos", value: booksRead.toString(), icon: "library" },
-            { label: "Pace médio", value: avgPace > 0 ? `${avgPace.toFixed(1)} p/min` : "—", icon: "speedometer" },
+            { label: "Pace médio", value: avgPace > 0 ? `${avgPace.toFixed(1)} pág./min` : "—", icon: "speedometer" },
             { label: "Sessões", value: sessions.length.toString(), icon: "timer" },
           ].map((stat, i) => (
             <View
@@ -352,54 +396,44 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Shelf Diversity */}
-      {readBooks.length > 0 && (
+      {/* Shelf Diversity Suggestions */}
+      {diversitySuggestions.length > 0 && (
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Diversidade da estante
+            Para variar a estante
           </Text>
-          <View style={styles.diversityRow}>
-            <View style={[styles.diversityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.diversityHeader}>
-                <Ionicons name="person-outline" size={14} color={colors.accentText} />
-                <Text style={[styles.diversityLabel, { color: colors.mutedForeground }]}>
-                  Autoras mulheres
-                </Text>
-              </View>
-              <Text style={[styles.diversityPct, { color: colors.foreground }]}>
-                {femalePct}%
-              </Text>
-              <View style={[styles.diversityBar, { backgroundColor: colors.secondary }]}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.suggestionRow}
+          >
+            {diversitySuggestions.map((s) => (
+              <View
+                key={s.key}
+                style={[
+                  styles.suggestionCard,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                ]}
+              >
                 <View
                   style={[
-                    styles.diversityFill,
-                    { backgroundColor: colors.volt, width: `${femalePct}%` },
+                    styles.suggestionIcon,
+                    { backgroundColor: colors.volt },
                   ]}
-                />
-              </View>
-            </View>
-            <View style={[styles.diversityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={styles.diversityHeader}>
-                <Ionicons name="flag-outline" size={14} color={colors.accentText} />
-                <Text style={[styles.diversityLabel, { color: colors.mutedForeground }]}>
-                  Autores BR
+                >
+                  <Ionicons name={s.icon} size={18} color={colors.accentForeground} />
+                </View>
+                <Text style={[styles.suggestionTitle, { color: colors.foreground }]}>
+                  {s.title}
+                </Text>
+                <Text style={[styles.suggestionHint, { color: colors.mutedForeground }]}>
+                  {s.hint}
                 </Text>
               </View>
-              <Text style={[styles.diversityPct, { color: colors.foreground }]}>
-                {brPct}%
-              </Text>
-              <View style={[styles.diversityBar, { backgroundColor: colors.secondary }]}>
-                <View
-                  style={[
-                    styles.diversityFill,
-                    { backgroundColor: colors.volt, width: `${brPct}%` },
-                  ]}
-                />
-              </View>
-            </View>
-          </View>
+            ))}
+          </ScrollView>
           <Text style={[styles.diversityNote, { color: colors.mutedForeground }]}>
-            Só uma observação — sem cobrança, sem catequese.
+            Só uma sugestão — sem cobrança, sem catequese.
           </Text>
         </View>
       )}
@@ -633,12 +667,22 @@ const styles = StyleSheet.create({
   genreBar: { flex: 1, height: 6, borderRadius: 3, overflow: "hidden" },
   genreFill: { height: "100%", borderRadius: 3 },
   genreCount: { fontSize: 12, width: 20, textAlign: "right", fontWeight: "700" },
-  diversityRow: { flexDirection: "row", gap: 10, marginBottom: 8 },
-  diversityCard: { flex: 1, borderRadius: 14, borderWidth: 1, padding: 14, gap: 6 },
-  diversityHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
-  diversityLabel: { fontSize: 11, fontWeight: "600" },
-  diversityPct: { fontSize: 24, fontWeight: "900", letterSpacing: -1 },
-  diversityBar: { height: 5, borderRadius: 3, overflow: "hidden" },
-  diversityFill: { height: "100%", borderRadius: 3 },
+  suggestionRow: { gap: 10, paddingRight: 4, marginBottom: 10 },
+  suggestionCard: {
+    width: 220,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    gap: 8,
+  },
+  suggestionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  suggestionTitle: { fontSize: 14, fontWeight: "800", letterSpacing: -0.2 },
+  suggestionHint: { fontSize: 12, lineHeight: 16 },
   diversityNote: { fontSize: 11, fontStyle: "italic", textAlign: "center" },
 });

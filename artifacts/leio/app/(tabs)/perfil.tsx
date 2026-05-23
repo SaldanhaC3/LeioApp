@@ -152,7 +152,7 @@ Seus recordes (e a Capi se orgulha)
           {[
             { icon: "book", label: "Livros fechados", value: booksRead.toString() },
             { icon: "document-text", label: "Páginas viradas", value: totalPages.toString() },
-            { icon: "speedometer", label: "Maior velocidade", value: bestPace > 0 ? `${bestPace.toFixed(1)} p/m` : "—" },
+            { icon: "speedometer", label: "Maior velocidade", value: bestPace > 0 ? `${bestPace.toFixed(1)} pág./min` : "—" },
             { icon: "trophy", label: "Maratona maior", value: bestSession > 0 ? `${bestSession} págs` : "—" },
             { icon: "flame", label: "Fôlego máximo", value: `${folego} dias` },
           ].map((item, i) => (
