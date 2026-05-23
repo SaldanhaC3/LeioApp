@@ -56,6 +56,7 @@ export interface Book {
   authorImage?: string;
   excerpt?: string;
   downloadSources?: { label: string; url: string }[];
+  purchasedAt?: string;
 }
 
 export interface Highlight {

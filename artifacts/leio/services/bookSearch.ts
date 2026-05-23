@@ -9,9 +9,30 @@ export interface BookSearchResult {
 const SEARCH_URL = "https://openlibrary.org/search.json";
 const BOOKS_URL = "https://openlibrary.org/api/books";
 
+export function normalizeIsbn(query: string): string {
+  return query.replace(/[-\s]/g, "").toUpperCase();
+}
+
+function isValidIsbn10(s: string): boolean {
+  if (!/^\d{9}[\dX]$/.test(s)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += (10 - i) * parseInt(s[i], 10);
+  sum += s[9] === "X" ? 10 : parseInt(s[9], 10);
+  return sum % 11 === 0;
+}
+
+function isValidIsbn13(s: string): boolean {
+  if (!/^\d{13}$/.test(s)) return false;
+  let sum = 0;
+  for (let i = 0; i < 13; i++) {
+    sum += parseInt(s[i], 10) * (i % 2 === 0 ? 1 : 3);
+  }
+  return sum % 10 === 0;
+}
+
 export function isIsbn(query: string): boolean {
-  const cleaned = query.replace(/[-\s]/g, "");
-  return /^\d+$/.test(cleaned) && (cleaned.length === 10 || cleaned.length === 13);
+  const cleaned = normalizeIsbn(query);
+  return isValidIsbn10(cleaned) || isValidIsbn13(cleaned);
 }
 
 interface OpenLibrarySearchDoc {
@@ -47,7 +68,7 @@ function buildCoverUrlFromIsbn(isbn?: string): string | undefined {
 }
 
 export async function searchBookByIsbn(rawIsbn: string): Promise<BookSearchResult[]> {
-  const isbn = rawIsbn.replace(/[-\s]/g, "");
+  const isbn = normalizeIsbn(rawIsbn);
   const url = `${BOOKS_URL}?bibkeys=ISBN:${encodeURIComponent(isbn)}&format=json&jscmd=data`;
   const response = await fetch(url);
   if (!response.ok) {

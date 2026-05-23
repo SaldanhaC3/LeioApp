@@ -64,6 +64,18 @@ function RootLayoutNav() {
         name="buscar-livro"
         options={{ headerShown: false, presentation: "modal" }}
       />
+      <Stack.Screen
+        name="adicionar-livro"
+        options={{ headerShown: false, presentation: "modal" }}
+      />
+      <Stack.Screen
+        name="escanear-livro"
+        options={{ headerShown: false, presentation: "modal" }}
+      />
+      <Stack.Screen
+        name="livro-manual"
+        options={{ headerShown: false, presentation: "modal" }}
+      />
       <Stack.Screen name="+not-found" />
     </Stack>
   );

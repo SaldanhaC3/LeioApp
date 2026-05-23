@@ -33,7 +33,20 @@
       "expo-font",
       "expo-web-browser",
       "expo-notifications",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir que o Leio use a câmera para escanear o código de barras dos livros."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir que o Leio acesse suas fotos para usar como capa do livro.",
+          "cameraPermission": "Permitir que o Leio use a câmera para fotografar a capa do livro."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

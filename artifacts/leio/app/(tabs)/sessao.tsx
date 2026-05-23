@@ -358,7 +358,7 @@ export default function SessaoScreen() {
                 ]}
                 onPress={() => {
                   Haptics.selectionAsync();
-                  router.push("/buscar-livro");
+                  router.push("/adicionar-livro");
                 }}
                 activeOpacity={0.8}
               >
