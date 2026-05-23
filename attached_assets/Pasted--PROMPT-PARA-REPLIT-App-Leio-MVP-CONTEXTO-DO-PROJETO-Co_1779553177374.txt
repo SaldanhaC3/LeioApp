@@ -1,0 +1,985 @@
+# PROMPT PARA REPLIT — App "Leio" (MVP)
+
+---
+
+## CONTEXTO DO PROJETO
+
+Construa um aplicativo web mobile-first (PWA) chamado **"Leio"** — um app de leitura gamificado inspirado no Strava. O conceito central: transformar sessões de leitura em conquistas visuais compartilháveis nas redes sociais. O público é brasileiro, tudo deve estar em português do Brasil.
+
+A proposta de valor é: "Se não registrou, não leu." O app deve tornar a leitura um ato social e visualmente orgulhoso, não uma atividade solitária e invisível.
+
+O diferencial competitivo em relação ao Bookly (concorrente direto) é: a imagem compartilhável é o produto, não uma feature secundária. O card de conclusão de sessão precisa ser tão bonito e reconhecível que funcione como marketing orgânico toda vez que alguém postar no Instagram/Stories.
+
+---
+
+## STACK TÉCNICA
+
+- **Frontend:** React + TypeScript + Tailwind CSS
+- **Estrutura:** PWA (Progressive Web App) com manifest.json e service worker
+- **Backend:** Node.js + Express (ou Fastify)
+- **Banco de dados:** SQLite (via better-sqlite3 ou Prisma com SQLite) para o MVP
+- **API de livros:** Google Books API (gratuita, busca por ISBN e título, retorna capa, autor, gênero, número de páginas)
+- **Geração de imagem:** html2canvas ou dom-to-image para gerar o card compartilhável como PNG
+- **Scan de código de barras:** biblioteca QuaggaJS ou html5-qrcode para leitura de ISBN via câmera
+- **Armazenamento de imagens:** Local/base64 no MVP
+- **Autenticação:** Simples com email + senha (bcrypt + JWT) — permitir uso sem login até o momento de compartilhar
+
+---
+
+## IDENTIDADE VISUAL — "Collins editorial meets Nike performance"
+
+A estética do Leio combina duas referências: a sofisticação editorial da Collins (tipografia forte, whitespace generoso, hierarquia limpa, layout de revista premium) com a energia esportiva da Nike (dados de performance em destaque, linguagem de treino, contraste preto/branco bold, sensação de conquista atlética). A leitura é tratada como esporte mental.
+
+### Direção de design
+- Layout tipo editorial de revista de alta qualidade (referência: wearecollins.com): muito espaço em branco, tipografia como elemento principal, composição assimétrica com intenção
+- Dados de performance tratados como a Nike Run Club trata: números grandes, bold, monospace, com destaque absoluto. O pace (pág/min) deve ter a mesma presença visual que o km/h tem no Nike Run Club
+- Preto, branco e um accent neon/volt como a Nike usa. Nada de paletas tímidas
+- Cards compartilháveis devem parecer posters esportivos de alta qualidade, não infográficos de planilha
+- Zero ornamento desnecessário. Cada elemento existe por um motivo
+- Sensação geral: "esse app me faz sentir que ler é uma coisa séria e bonita ao mesmo tempo"
+
+### Paleta de cores
+- **Background principal:** #FAFAF8 (off-white quente, como papel de livro de alta qualidade)
+- **Background escuro (dark surfaces/cards):** #0A0A0A (preto profundo, para contraste dramático)
+- **Texto primário:** #0A0A0A
+- **Texto secundário:** #6B6B6B
+- **Texto sobre fundo escuro:** #FAFAF8
+- **Accent principal:** #CDFF00 (volt/neon green, referência Nike, usado com parcimônia: CTAs, pace em destaque, badges ativos, progress bars)
+- **Accent secundário:** #FF5733 (coral quente, para alertas de streak perdido, notificações urgentes, fôlego em risco)
+- **Surface cards (light):** #FFFFFF com border 1px #E5E5E5
+- **Surface cards (dark):** #1A1A1A com border 1px #2A2A2A
+- **Progress bars/rings:** gradient de #CDFF00 para #00E676
+
+### Modo escuro
+O app deve ter toggle de tema claro/escuro. O dark mode inverte: background #0A0A0A, cards #1A1A1A, texto #FAFAF8. O accent volt (#CDFF00) funciona perfeitamente em ambos os modos. O dark mode é o modo "padrão" (como a Nike Run Club), pois a maioria dos leitores lê à noite. O onboarding pergunta a preferência.
+
+### Tipografia
+- **Display/headlines (números de performance, pace, stats grandes):** Space Grotesk (bold, geométrica, atlética, moderna). Alternativa: Clash Display ou Satoshi.
+  - Pace no timer: 64px, bold
+  - Stats grid: 32px, bold
+  - Headlines editoriais: 40-48px, medium
+- **Body/UI (labels, descrições, navegação):** Inter Tight ou DM Sans (clean, legível, amigável, UI-grade)
+  - Body: 15px, regular
+  - Labels/captions: 12px, medium, uppercase tracking +0.05em (como a Nike faz)
+- **Dados técnicos nos cards (pace, páginas, tempo):** JetBrains Mono (monospace, reforça a sensação de "dado medido com precisão")
+  - Dados nos cards: 18-24px, medium
+- **Quote nos cards:** Newsreader ou Lora (serif editorial, contrasta com o resto da tipografia atlética)
+  - Quotes: 16-18px, italic
+
+### Labels e linguagem visual (estilo Nike)
+- Labels de categorias e seções em UPPERCASE com tracking amplo: "SESSÃO ATIVA", "SEU PACE", "FÔLEGO", "BIBLIOTECA", "METAS"
+- Números de performance sempre em monospace bold com unidade em texto menor ao lado: "1.3 pág/min", "42 págs", "35 min"
+- Barras de progresso finas (2-3px) e neon (#CDFF00), nunca grossas ou arredondadas demais
+- Ícones minimalistas, outline, stroke 1.5px (estilo Phosphor Icons ou Lucide)
+- Zero uso de emojis na UI principal (emojis permitidos apenas nos badges e nas mensagens de tom de voz)
+
+### Tom de voz
+- Combina motivação esportiva com humor brasileiro casual
+- Referências ao esforço mental como esporte: "Treino encerrado", "Pace da sessão", "Fôlego" (streak), "Personal best"
+- Encorajador como um coach de corrida: "42 páginas em 35 min. Tá em forma!", "Não perde o fôlego agora!"
+- Humor brasileiro genuíno (sem exagero): "Cê vai ler hoje ou não vai?", "Ô, sumido. Vai deixar o fôlego acabar?", "Só 10 minutinhos já conta, viu?"
+- Mensagens de conclusão variam: "Treino mental concluído.", "Mente em forma.", "Sessão encerrada. Respeito."
+- Evitar: linguagem infantil, excesso de emojis, gírias forçadas, euforia artificial
+
+### Cards compartilháveis — direção visual
+Os cards são a peça de marketing mais importante. Devem parecer posters esportivos editoriais, não infográficos corporativos.
+
+Princípios:
+- Tipografia grande e bold como elemento principal (como um poster da Nike ou da Collins)
+- Dados de performance com presença visual dominante (pace em 72px, por exemplo)
+- Capa do livro como elemento secundário/de apoio, nunca o elemento principal do layout
+- Contraste forte: fundo escuro com texto claro, ou fundo de imagem com overlay escuro
+- Logo "Leio" pequeno e discreto, como uma marca de roupa esportiva no canto
+- O card deve ser reconhecível à distância: quando alguém vir nos Stories, deve saber que é do Leio antes de ler qualquer texto
+
+### Composição geral das telas
+- Whitespace agressivo (mais espaço do que conteúdo, como a Collins)
+- Elementos alinhados em grid de 4 colunas no mobile
+- Cards sem border-radius exagerado: 8px máximo (nada de bolhas ou pílulas)
+- Sombras: zero. Separação por espaço e linhas finas quando necessário
+- Animações: rápidas (200-300ms), ease-out, sem bounce. Transições de página tipo slide horizontal
+- Bottom tab bar: minimalista, ícones outline, label em uppercase 10px, accent no item ativo
+
+---
+
+## ARQUITETURA DE TELAS
+
+### 1. TELA DE ONBOARDING (primeira abertura)
+- 3 slides simples com ilustrações:
+  1. "Leia. Registre. Compartilhe." (mostra um card de exemplo)
+  2. "Descubra seu pace de leitura" (mostra o pace sendo calculado)
+  3. "Colecione badges e mostre pro mundo" (mostra badges)
+- Botão "Começar sem conta" (permite uso imediato)
+- Link "Já tenho conta" para login
+
+### 2. HOME / DASHBOARD
+Layout mobile-first (max-width 430px centrado).
+
+**Cabeçalho:**
+- Saudação personalizada: "E aí, [nome]! Bora ler?" ou saudação por horário (Bom dia/Boa tarde/Boa noite)
+- Avatar/iniciais do usuário
+- Ícone de streak (chama de fogo) com número de dias consecutivos lendo
+
+**Seção "Leitura atual":**
+- Card grande com a capa do livro atual, título, autor
+- Barra de progresso (páginas lidas / total de páginas)
+- Porcentagem de progresso
+- Botão principal CTA: "Iniciar sessão" (grande, verde-escuro, com ícone de play)
+
+**Seção "Suas conquistas recentes":**
+- Últimos 3 badges desbloqueados em formato horizontal scrollável
+- Cada badge com ícone, nome e data de conquista
+
+**Seção "Estatísticas rápidas":**
+- Grid 2x2 com metric cards:
+  - Pace médio (pág/min)
+  - Total de páginas este mês
+  - Livros concluídos
+  - Streak atual (dias)
+
+**Seção "Última sessão":**
+- Mini card com resumo da última sessão (livro, duração, páginas, pace)
+- Botão "Compartilhar" caso não tenha compartilhado ainda
+
+**Bottom navigation (tab bar fixa):**
+- 🏠 Home
+- 📚 Biblioteca
+- ▶️ Nova Sessão (botão central, destacado, maior)
+- 🏆 Badges
+- 👤 Perfil
+
+### 3. TELA DE NOVA SESSÃO — SELECIONAR LIVRO
+Se o usuário já tem um livro em leitura, pré-selecionar automaticamente.
+
+**Opções para adicionar livro:**
+- Campo de busca por título/autor (consulta Google Books API)
+- Botão "Escanear código de barras" (abre câmera, lê ISBN, busca na API)
+- Lista dos livros já na biblioteca do usuário
+
+**Card de resultado da busca:**
+- Capa do livro (thumbnail da API)
+- Título, autor, número de páginas, gênero/categoria
+- Botão "Selecionar este livro"
+
+**Ao selecionar:**
+- Perguntar "Em que página você está?" (campo numérico)
+- Livro adicionado à biblioteca automaticamente
+- Ir para a tela de sessão ativa
+
+### 4. TELA DE SESSÃO ATIVA (o coração do app)
+Design inspirado no timer do Strava durante atividade.
+
+**Layout:**
+- Capa do livro no topo (pequena, com título e autor)
+- Timer grande no centro (MM:SS), fonte monospace, animação de pulsação sutil a cada segundo
+- Pace em tempo real abaixo do timer: "0.0 pág/min" (atualiza conforme o usuário registra páginas)
+- Botão "Atualizar página atual" — abre um input numérico rápido para o usuário informar em que página está (cada atualização recalcula o pace em tempo real)
+- Página inicial da sessão (fixa, definida no início)
+- Página atual (editável durante a sessão)
+- Páginas lidas na sessão (calculado automaticamente: página atual - página inicial)
+
+**Controles:**
+- Botão "Pausar" (pausa o timer, permite retomar)
+- Botão "Encerrar sessão" (finaliza e vai para a tela de geração do card)
+- O timer deve funcionar mesmo com a tela bloqueada/em background (usar Web Workers ou service worker para manter contagem)
+
+**Informação secundária (colapsável):**
+- Progresso geral do livro (barra de progresso)
+- Estimativa de tempo para concluir o livro baseada no pace atual
+
+### 5. TELA DE CONCLUSÃO DA SESSÃO — GERAÇÃO DO CARD COMPARTILHÁVEL
+Esta é a tela mais importante do app. É o momento "troféu".
+
+**Resumo da sessão (topo):**
+- Animação de entrada dos dados (números contando de 0 até o valor final, tipo placar)
+- Páginas lidas: XX
+- Tempo de leitura: XX min
+- Pace: X.X pág/min
+- Progresso do livro: XX%
+
+**Se o usuário desbloqueou um badge nesta sessão:**
+- Animação especial de badge desbloqueado (confetti + badge girando)
+- Nome do badge e descrição
+
+**Geração do card compartilhável:**
+
+O card é uma imagem de 1080x1920px (formato Stories) ou 1080x1080px (formato feed).
+
+**Elementos do card:**
+- Imagem de fundo: o usuário pode escolher entre:
+  - Foto tirada na hora (câmera)
+  - Foto da galeria
+  - Template pré-definido (5 opções com cores/texturas diferentes: madeira, biblioteca, café, noturno, minimalista)
+- Overlay semi-transparente escuro para legibilidade
+- Logo "Leio" pequeno no canto superior (marca d'água sutil)
+- Capa do livro (com sombra, leve rotação 3D)
+- Título e autor do livro
+- Dados da sessão em layout limpo:
+  - ⏱️ Tempo: 45 min
+  - 📖 Páginas: 32
+  - ⚡ Pace: 0.7 pág/min
+  - 📊 Progresso: 67%
+- Badge conquistado (se houver)
+- Frase/quote opcional (campo de texto que o usuário pode preencher com um trecho do livro que o marcou)
+- Data da sessão
+
+**Personalização do card:**
+- Escolha de layout: "Clássico" (vertical, capa grande), "Minimalista" (dados em destaque, capa pequena), "Editorial" (parece página de revista)
+- Escolha de cor do overlay (escuro, claro, sépia)
+- Toggle para mostrar/esconder cada elemento (pace, progresso, quote, badge)
+
+**Botões de ação:**
+- "Salvar na galeria" (gera PNG e baixa)
+- "Compartilhar" (abre share nativo do dispositivo — Instagram, WhatsApp, Twitter, etc.)
+- "Pular" (salva a sessão sem compartilhar)
+
+### 6. TELA DA BIBLIOTECA
+**Filtros (tabs superiores):**
+- Lendo agora
+- Lidos
+- Quero ler
+
+**Card de cada livro:**
+- Capa
+- Título e autor
+- Barra de progresso (se em leitura)
+- Pace médio neste livro
+- Número de sessões
+- Data de início / Data de conclusão
+
+**Ação em cada livro:**
+- Tocar para ver detalhes
+- Botão rápido "Iniciar sessão"
+
+**Tela de detalhe do livro:**
+- Capa grande
+- Todas as estatísticas do livro (pace médio, total de tempo, sessões, páginas por sessão)
+- Gráfico de progresso ao longo do tempo (linha simples mostrando páginas acumuladas por data)
+- Histórico de sessões (lista com data, duração, páginas, pace)
+- Status: dropdown para mudar entre "Lendo", "Lido", "Quero ler", "Abandonado"
+- Avaliação: 1 a 5 estrelas (ao marcar como "Lido")
+- Campo de resenha curta (opcional)
+
+### 7. TELA DE BADGES
+**Layout:** grid de badges, como uma coleção de figurinhas/troféus.
+
+**Badges desbloqueados:** coloridos, com brilho sutil
+**Badges bloqueados:** silhueta cinza com "?" e descrição do critério para desbloquear
+
+**Sistema de badges (lista inicial):**
+
+*Por volume:*
+- "Primeira Página" — Completou a primeira sessão de leitura
+- "Devorador" — Leu 500 páginas no total
+- "Engolidor de Livros" — Leu 5 livros
+- "Monstro Literário" — Leu 20 livros
+- "Biblioteca Ambulante" — Leu 50 livros
+
+*Por gênero (desbloqueiam ao ler 3+ livros do gênero):*
+- "Amante de Ficção"
+- "Não Tem Medo do Terror"
+- "Romântico Incurável"
+- "Viajante no Tempo" (ficção histórica)
+- "Detetive de Sofá" (suspense/mistério)
+- "Nerd Assumido" (ficção científica)
+- "Filósofo de Boteco" (filosofia/ensaios)
+- "Planejador Nato" (negócios/autoajuda)
+
+*Por comportamento:*
+- "Coruja Noturna" — Leu depois das 23h
+- "Madrugador" — Leu antes das 6h
+- "Maratonista" — Sessão de mais de 2 horas
+- "Velocista" — Pace acima de 2.0 pág/min em uma sessão
+- "Consistente" — 7 dias seguidos lendo (streak)
+- "Inabalável" — 30 dias seguidos lendo
+- "Máquina" — 100 dias seguidos lendo
+- "Rato de Fim de Semana" — Leu todos os finais de semana do mês
+- "Insone por Escolha" — Leu mais de 1h depois da meia-noite
+
+*Por marco:*
+- "Mil Páginas" — 1.000 páginas totais
+- "Dez Mil" — 10.000 páginas totais
+- "Centenário" — 100 sessões registradas
+- "Um Ano Lendo" — Usa o app há 1 ano
+
+**Cada badge tem:**
+- Ícone/ilustração única
+- Nome engraçado
+- Descrição curta
+- Data de desbloqueio
+- Opção de compartilhar (gera mini card com o badge)
+
+### 8. TELA DE METAS
+**Metas ativas:**
+- Meta semanal de páginas (ex: 100 páginas/semana)
+- Meta semanal de tempo (ex: 3 horas/semana)
+- Meta mensal de livros (ex: 2 livros/mês)
+- Meta de streak (ex: ler 5 dias seguidos)
+
+**Cada meta mostra:**
+- Barra de progresso circular (ring)
+- Valor atual / valor alvo
+- Dias restantes no período
+- Projeção: "No seu ritmo atual, você vai bater a meta [dia X]" ou "Você precisa de mais [Y] páginas por dia"
+
+**Ao bater uma meta:**
+- Animação de celebração
+- Opção de compartilhar card de meta batida
+
+### 9. TELA DE PERFIL
+- Avatar, nome, bio curta ("Leitor desde [data de cadastro]")
+- Estatísticas gerais: livros lidos, páginas totais, tempo total, pace médio geral, streak máximo
+- Gráfico de leitura: heatmap estilo GitHub (calendário com intensidade de cor por dia conforme páginas lidas)
+- Gêneros mais lidos (gráfico de rosca/donut)
+- Badges em destaque (usuário escolhe 3 para exibir)
+- Link compartilhável do perfil (futuro)
+
+### 10. TELA DE WRAP MENSAL ("Meu Mês de Leitura")
+Ao final de cada mês (ou ao clicar em "Ver meu mês"), gerar um recap com:
+
+**Dados:**
+- Total de páginas no mês
+- Total de tempo de leitura
+- Livros lidos/em progresso
+- Pace médio do mês
+- Melhor sessão (mais páginas)
+- Dia mais produtivo
+- Horário preferido de leitura
+
+**Arquétipo do leitor (baseado no comportamento do mês):**
+- "Coruja" — lê mais à noite
+- "Madrugador" — lê de manhã cedo
+- "Velocista" — pace alto, sessões curtas
+- "Maratonista" — sessões longas
+- "Eclético" — leu vários gêneros
+- "Focado" — ficou num gênero só
+- "Constante" — leu todo dia
+- "Intenso" — poucos dias, muitas páginas
+
+**Card do Wrap:**
+- Imagem bonita de 1080x1920 com todos os dados formatados
+- Arquétipo em destaque com ícone
+- Compartilhável
+
+---
+
+## MODELO DE DADOS
+
+### Tabela: users
+```
+id (UUID, PK)
+name (string)
+email (string, unique)
+password_hash (string)
+avatar_url (string, nullable)
+bio (string, nullable)
+created_at (datetime)
+streak_current (integer, default 0)
+streak_max (integer, default 0)
+streak_last_date (date, nullable)
+```
+
+### Tabela: books
+```
+id (UUID, PK)
+user_id (UUID, FK -> users)
+google_books_id (string, nullable)
+title (string)
+author (string)
+cover_url (string, nullable)
+total_pages (integer)
+genre (string, nullable)
+isbn (string, nullable)
+status (enum: 'reading', 'read', 'want_to_read', 'abandoned')
+current_page (integer, default 0)
+rating (integer, nullable, 1-5)
+review (text, nullable)
+started_at (date, nullable)
+finished_at (date, nullable)
+created_at (datetime)
+```
+
+### Tabela: reading_sessions
+```
+id (UUID, PK)
+user_id (UUID, FK -> users)
+book_id (UUID, FK -> books)
+start_page (integer)
+end_page (integer)
+pages_read (integer, computed)
+duration_seconds (integer)
+pace (float, computed: pages_read / (duration_seconds / 60))
+started_at (datetime)
+ended_at (datetime)
+quote (text, nullable)
+card_template (string, nullable)
+card_background_url (string, nullable)
+shared (boolean, default false)
+```
+
+### Tabela: badges
+```
+id (UUID, PK)
+slug (string, unique)
+name (string)
+description (string)
+icon (string)
+category (enum: 'volume', 'genre', 'behavior', 'milestone')
+criteria_type (string)
+criteria_value (integer)
+```
+
+### Tabela: user_badges
+```
+id (UUID, PK)
+user_id (UUID, FK -> users)
+badge_id (UUID, FK -> badges)
+unlocked_at (datetime)
+session_id (UUID, FK -> reading_sessions, nullable)
+```
+
+### Tabela: goals
+```
+id (UUID, PK)
+user_id (UUID, FK -> users)
+type (enum: 'pages_weekly', 'time_weekly', 'books_monthly', 'streak')
+target_value (integer)
+current_value (integer, default 0)
+period_start (date)
+period_end (date)
+completed (boolean, default false)
+completed_at (datetime, nullable)
+```
+
+---
+
+## LÓGICA DE NEGÓCIO IMPORTANTE
+
+### Cálculo do Pace
+- Pace = páginas lidas ÷ (duração em minutos)
+- Exibir com 1 casa decimal: "1.3 pág/min"
+- Pace em tempo real durante a sessão: atualizar a cada vez que o usuário informar a página atual
+- Pace médio do livro: média ponderada por duração de todas as sessões do livro
+- Pace médio geral: média ponderada de todas as sessões do usuário
+
+### Cálculo do Streak
+- Após cada sessão, verificar se o usuário leu no dia anterior
+- Se sim, incrementar streak_current
+- Se não (pulou um dia), resetar streak_current para 1
+- Atualizar streak_max se streak_current > streak_max
+- Considerar o dia pela data local do usuário (timezone Brasil: UTC-3)
+
+### Verificação de Badges
+Após cada sessão salva, rodar a verificação completa de badges:
+1. Verificar todos os critérios de badges que o usuário ainda não desbloqueou
+2. Para cada badge desbloqueado, salvar em user_badges com o session_id que triggered
+3. Retornar lista de badges recém-desbloqueados para a tela de conclusão
+
+### Busca de livros (Google Books API)
+- Endpoint: `GET https://www.googleapis.com/books/v1/volumes?q={query}`
+- Para ISBN: `GET https://www.googleapis.com/books/v1/volumes?q=isbn:{isbn}`
+- Extrair: title, authors[0], pageCount, categories[0], imageLinks.thumbnail, industryIdentifiers
+- Se thumbnail vier como http, converter para https
+- Tratar casos onde pageCount é undefined (pedir ao usuário para informar manualmente)
+
+### Geração do card compartilhável
+- Renderizar um componente React invisível (off-screen) com o layout do card
+- Usar html2canvas para converter em PNG
+- Tamanho: 1080x1920 (Stories) e 1080x1080 (Feed)
+- O componente do card deve usar posicionamento absoluto e fontes inline (Google Fonts via @import)
+- Garantir que a capa do livro carregue com crossOrigin="anonymous" para evitar erro de CORS no canvas
+
+---
+
+## TEMPLATES DOS CARDS COMPARTILHÁVEIS
+
+### Template "Performance" (padrão, estilo Nike)
+- Fundo: preto sólido (#0A0A0A)
+- Pace como número gigante central (72px, Space Grotesk Bold, #CDFF00 neon)
+- "pág/min" em label uppercase tracking wide, 12px, branco
+- Dados da sessão em grid minimalista: tempo, páginas, progresso, todos em JetBrains Mono branco
+- Capa do livro pequena no canto inferior esquerdo com título/autor em 12px
+- Logo "Leio" em 10px no canto, #CDFF00
+- O card parece um dashboard esportivo de corrida
+
+### Template "Editorial" (estilo Collins)
+- Fundo: off-white (#FAFAF8)
+- Layout assimétrico tipo página de revista
+- Título do livro como headline enorme em Space Grotesk, preto
+- Autor em serif italic (Newsreader)
+- Dados em coluna lateral alinhada à esquerda, labels uppercase
+- Capa do livro com sombra sutil, posicionada em overlap parcial com o texto
+- Linhas finas decorativas separando blocos
+- Logo "Leio" preto, discreto
+
+### Template "Poster" (estilo Nike poster/campanha)
+- Fundo: imagem do usuário (câmera/galeria) com overlay gradiente preto (80% opacidade de baixo pra cima)
+- Texto todo em branco
+- Pace e páginas em números enormes, empilhados verticalmente
+- Título do livro em uppercase tracking wide
+- Quote (se houver) em serif italic, centralizado
+- Vibe de poster motivacional esportivo
+
+### Template "Noturno"
+- Fundo escuro gradiente (#0A0A0A para #1A1A2E)
+- Accent em azul frio (#4FC3F7) no lugar do neon
+- Dados em tipografia fina e clara
+- Ícone de lua se sessão foi após 20h
+- Vibe calma e sofisticada
+
+### Template "Minimalista extremo"
+- Fundo branco puro
+- Apenas 3 informações: pace (enorme), título do livro (médio), logo Leio (micro)
+- Zero decoração, zero imagem
+- Impacto vem do espaço vazio e da tipografia
+
+---
+
+## FUNCIONALIDADES TÉCNICAS ADICIONAIS
+
+### Scan de código de barras (ISBN)
+- Usar biblioteca html5-qrcode
+- Ao abrir, ativar câmera traseira
+- Detectar código de barras EAN-13 (formato ISBN)
+- Ao detectar, buscar na Google Books API automaticamente
+- Feedback visual: quadro verde ao detectar, vibração do dispositivo
+- Fallback: botão para digitar ISBN manualmente
+
+### PWA
+- manifest.json com:
+  - name: "Leio"
+  - short_name: "Leio"
+  - theme_color: "#0A0A0A"
+  - background_color: "#FAFAF8"
+  - display: "standalone"
+  - orientation: "portrait"
+  - icons: múltiplos tamanhos (192, 512)
+- Service worker para cache de assets estáticos
+- Prompt de "Adicionar à tela inicial"
+
+### Timer resiliente
+- Usar Web Worker para manter o timer preciso mesmo com a aba em background
+- Salvar timestamp de início no localStorage
+- Ao retornar à aba, calcular duração real por diferença de timestamps (não confiar no setInterval)
+- Exibir tempo em MM:SS para sessões < 1h, HH:MM:SS para sessões maiores
+
+### Offline-first (robusto)
+- Sessões de leitura devem funcionar sem internet
+- IndexedDB (via Dexie.js ou idb-keyval) como store local para livros, sessões e spots
+- Service worker intercepta chamadas API POST/PATCH: em caso de falha, enfileira no IndexedDB e retenta ao reconectar
+- Barcode scan salva ISBN localmente de imediato; sincroniza detalhes do livro quando conectar
+- Registro manual de livro funciona offline: título + autor + páginas salvos localmente
+- Indicador de status de sync na UI: "X itens aguardando sync" com ícone sutil
+- Busca de livros via Google Books requer internet (mostrar livros já salvos offline)
+
+### "Fôlego" — Sistema de streak renomeado
+O streak de dias consecutivos lendo se chama "Fôlego" (fôlego = breath/stamina).
+- Mensagens: "Você tá com X dias de fôlego", "Não perde o fôlego agora!"
+- Ao perder o streak: "Acabou o fôlego... mas bora de novo!"
+- O ícone de streak é um ícone de vento/fôlego, não fogo (diferenciação do Strava/Duolingo)
+- A palavra "Fôlego" substitui "streak" em toda a interface
+
+### Efeitos sonoros
+Sons curtos que reforçam micro-interações (todos opcionais, mutados por padrão, opt-in nas configurações):
+- Início de sessão: som suave de virar página
+- Milestone do timer (a cada 15 min): chime discreto
+- Badge desbloqueado: fanfarra curta e divertida
+- Fôlego aumentado: som de "whoosh" (sopro)
+- Fim de sessão: "thud" satisfatório de livro fechando
+- Compartilhar card: clique de câmera
+- Implementar via Web Audio API com fallback HTML Audio
+- Toggle global de mute no settings, estado salvo em localStorage
+
+### Push Notifications (Web Push API)
+Notificações para manter engajamento diário:
+- **Nudge de Fôlego:** Se o usuário não leu hoje até horário configurável (padrão 21h), enviar mensagem rotativa: "Ô, sumido. Vai deixar o fôlego acabar?", "Tá passando da hora, hein", "Só 10 minutinhos já conta, viu?"
+- **Deadline de meta:** 24h antes do fim do período de meta semanal/mensal se não atingida: "Faltam X páginas pra bater a meta. Dá tempo ainda!"
+- **Badge quase lá:** Quando perto de desbloquear: "Você tá a 3 sessões de virar Maratonista. Bora?"
+- VAPID keys no backend; service worker exibe notificações
+- Usuário configura horário do nudge nas configurações
+- Permissão pedida de forma contextual (após 3ª sessão, não no primeiro acesso)
+
+### Ícone adaptativo por horário (PWA)
+O ícone do app na tela inicial muda conforme o horário do dia (7 variantes SVG/PNG):
+- 06h-09h: nascer do sol + livro aberto
+- 09h-12h: xícara de café + livro
+- 12h-14h: banco de parque + livro (leitura na hora do almoço)
+- 14h-18h: sol da tarde + livro
+- 18h-21h: janela de ônibus/metrô + livro (hora do commute)
+- 21h-00h: lua + livro (coruja noturna)
+- 00h-06h: estrelas + livro (insone por escolha)
+- Implementado via JS atualizando <link rel="icon"> e manifest icons no page load e periodicamente
+
+### "Modo Vagão" — modo leitura para transporte público
+Modo especial para quem lê no ônibus/metrô (condições erráticas):
+- Botão "Modo Vagão 🚇" rápido na home e na tela de início de sessão
+- UI com botões oversized: "+" e "-" para atualizar página com um toque do polegar em ônibus trepidando, sem abrir teclado
+- Auto-pause por shake: DeviceMotion API detecta movimento brusco (freada, solavanco) e pausa o timer, retomando quando estabiliza
+- Botão "Cheguei" de um toque para encerrar rápido quando chegar no ponto, sem fluxo de confirmação normal
+- Lock de orientação portrait para conforto em veículos lotados
+- Mensagens de conclusão específicas: "Chegou e ainda leu X páginas. Isso é poder!", "Vai no ônibus e ainda dá conta. Respeito."
+
+### "Cantinhos de Leitura" — pontos de leitura no mapa
+Usuários podem compartilhar e descobrir bons lugares para ler:
+- Após concluir sessão, prompt opcional: "Esse foi um bom lugar pra ler? Marca no mapa!"
+- Aba "Cantinhos" no app mostrando lista/mapa com spots contribuídos por usuários
+- Cada spot: foto opcional, pin de localização, nome definido pelo usuário (ex: "Parque do Ibirapuera, banco do lago"), tags (silencioso, ar livre, com tomada, bom wifi, café perto), nota breve
+- Botão "Bom cantinho!" para upvote
+- Spots são públicos e navegáveis sem login
+- Submissions offline ficam em fila e sincronizam quando online
+- MVP: lista de cards com coordenadas + embed simples de mapa (mapa completo é futuro)
+
+---
+
+## SEEDS / DADOS INICIAIS
+
+### Badges iniciais
+Pré-popular a tabela de badges com todos os badges listados na seção de Badges acima.
+
+### Demo data (para desenvolvimento)
+Criar um usuário demo com:
+- 3 livros na biblioteca (1 lendo, 1 lido, 1 quero ler)
+- 5 sessões de leitura registradas
+- 3 badges desbloqueados
+- Streak de 4 dias
+
+---
+
+## FUNCIONALIDADES ADICIONAIS (OPORTUNIDADES DE DIFERENCIAÇÃO)
+
+### 11. DESAFIOS TEMÁTICOS SAZONAIS
+
+Desafios mensais ou por período, cada um com badge exclusivo temporário.
+
+**Exemplos de desafios:**
+- "Outubro do Terror" — Ler 3 livros de terror em outubro
+- "Junho dos Clássicos" — Ler 2 clássicos da literatura em junho
+- "Março das Mulheres" — Ler 3 livros de autoras femininas em março
+- "Maratona de Verão" — Ler 1.000 páginas em janeiro/fevereiro
+- "Desafio Relâmpago" — Ler 100 páginas em um único dia (disponível toda semana)
+
+**Estrutura de cada desafio:**
+- Título, descrição, ícone temático
+- Período de início e fim
+- Critério de conclusão (número de livros por gênero, páginas totais, etc.)
+- Badge exclusivo (só desbloqueia durante o período do desafio)
+- Barra de progresso
+- Card compartilhável ao completar ("Completei o Outubro do Terror! 🎃")
+
+**Tabela: challenges**
+```
+id (UUID, PK)
+slug (string, unique)
+name (string)
+description (string)
+icon (string)
+badge_id (UUID, FK -> badges)
+criteria_type (string — ex: 'books_by_genre', 'total_pages', 'sessions_count')
+criteria_genre (string, nullable)
+criteria_value (integer)
+starts_at (date)
+ends_at (date)
+active (boolean)
+```
+
+**Tabela: user_challenges**
+```
+id (UUID, PK)
+user_id (UUID, FK -> users)
+challenge_id (UUID, FK -> challenges)
+progress (integer, default 0)
+completed (boolean, default false)
+completed_at (datetime, nullable)
+joined_at (datetime)
+```
+
+### 12. MISSÕES DIÁRIAS (Loop de engajamento)
+
+Três micro-tarefas por dia que criam motivo para abrir o app diariamente.
+
+**Pool de missões possíveis (sorteadas diariamente, 3 por dia):**
+- "Leia 10 páginas hoje"
+- "Leia 20 páginas hoje"
+- "Registre uma sessão de pelo menos 15 minutos"
+- "Registre uma sessão de pelo menos 30 minutos"
+- "Compartilhe um card de leitura"
+- "Adicione um livro à sua biblioteca"
+- "Salve uma frase que te marcou (quote)"
+- "Leia por pelo menos 5 minutos antes do meio-dia"
+- "Leia após as 22h (sessão noturna)"
+- "Atinja um pace de 1.5 pág/min ou mais em uma sessão"
+
+**Recompensa por completar missões:**
+- Cada missão completa: +10 XP
+- 3 missões no dia: +30 XP bônus
+- XP acumulado define o nível do leitor:
+  - 0-99 XP: "Leitor Curioso" (Nível 1)
+  - 100-299 XP: "Leitor Dedicado" (Nível 2)
+  - 300-599 XP: "Leitor Voraz" (Nível 3)
+  - 600-999 XP: "Leitor Experiente" (Nível 4)
+  - 1000-1999 XP: "Mestre das Páginas" (Nível 5)
+  - 2000+ XP: "Lenda Literária" (Nível 6)
+- O nível aparece no perfil e pode ser incluído no card compartilhável
+
+**Tabela: daily_missions**
+```
+id (UUID, PK)
+user_id (UUID, FK -> users)
+date (date)
+mission_1_type (string)
+mission_1_target (integer)
+mission_1_completed (boolean, default false)
+mission_2_type (string)
+mission_2_target (integer)
+mission_2_completed (boolean, default false)
+mission_3_type (string)
+mission_3_target (integer)
+mission_3_completed (boolean, default false)
+bonus_claimed (boolean, default false)
+```
+
+**Tabela: user_xp**
+```
+id (UUID, PK)
+user_id (UUID, FK -> users)
+total_xp (integer, default 0)
+level (integer, default 1)
+```
+
+### 13. IMPORTAÇÃO DO GOODREADS
+
+Muitos leitores brasileiros já têm estante no Goodreads. Oferecer importação reduz a fricção de "começar do zero".
+
+**Fluxo:**
+- O Goodreads permite exportação via CSV (Settings > Import/Export > Export Library)
+- O usuário faz o download do CSV no Goodreads e faz upload no Leio
+- O parser do CSV extrai: título, autor, ISBN, número de páginas, rating, data de leitura, estante (read/currently-reading/to-read)
+- Para cada livro, buscar capa na Google Books API via ISBN
+- Mapear estantes do Goodreads para status do Leio:
+  - "read" → "Lido"
+  - "currently-reading" → "Lendo"
+  - "to-read" → "Quero ler"
+- Exibir resumo antes de confirmar: "Encontramos X livros. Importar?"
+- Após importação, verificar badges que podem ser desbloqueados retroativamente
+
+**Campos do CSV do Goodreads usados:**
+- Title, Author, ISBN13, Number of Pages, My Rating, Date Read, Exclusive Shelf, Date Added
+
+### 14. IMPORTAÇÃO DE HIGHLIGHTS DO KINDLE
+
+Permitir upload do arquivo My Clippings.txt do Kindle.
+
+**Fluxo:**
+- O usuário conecta o Kindle ao computador (ou acessa via app desktop/web)
+- Faz upload do arquivo "My Clippings.txt"
+- O parser identifica: título do livro, trecho destacado, data, localização
+- Para cada livro encontrado no arquivo, vincular com livro existente na biblioteca do Leio (match por título)
+- Os highlights ficam disponíveis como sugestões de quote ao criar cards compartilháveis
+- Na tela de detalhe do livro, seção "Meus destaques" com todos os highlights importados
+
+**Formato do My Clippings.txt (para o parser):**
+```
+Título do Livro (Autor)
+- Seu destaque na página XX | posição XXXX-XXXX | Adicionado: data
+
+"Texto do destaque aqui"
+==========
+```
+
+### 15. SISTEMA DE CONVITE COM CARD
+
+Cada compartilhamento é canal de aquisição. Otimizar isso.
+
+**Mecânica:**
+- Todo card compartilhável inclui um QR code pequeno (ou URL curta) no canto inferior
+- A URL leva para uma landing page do app com:
+  - O card da pessoa que compartilhou (preview)
+  - CTA: "Eu também quero registrar minhas leituras — Baixar o Leio"
+  - Preview do app (screenshots)
+- Quem instalar pelo link do amigo:
+  - O amigo ganha +50 XP por cada convite aceito
+  - Badge "Evangelista" ao trazer 5 amigos
+  - Badge "Influenciador" ao trazer 20 amigos
+
+**Tabela: referrals**
+```
+id (UUID, PK)
+referrer_id (UUID, FK -> users)
+referred_id (UUID, FK -> users, nullable — preenchido quando cria conta)
+referral_code (string, unique)
+created_at (datetime)
+converted_at (datetime, nullable)
+```
+
+### 16. TELA DE DESAFIOS (no app)
+
+Acessível via ícone na Home ou via tab adicional.
+
+**Layout:**
+- Desafio ativo do mês em destaque (card grande com imagem temática)
+- Barra de progresso do usuário no desafio
+- "Desafios relâmpago" da semana (menores, mais rápidos)
+- Seção "Desafios concluídos" com badges ganhos
+- Timer de contagem regressiva para o fim do desafio ativo
+
+### 17. INTEGRAÇÃO COM ACERVO GRATUITO DO MEC LIVROS E DOMÍNIO PÚBLICO
+
+O Governo Federal lançou em abril de 2026 o MEC Livros (meclivros.mec.gov.br), uma biblioteca digital gratuita com 25 mil títulos (clássicos brasileiros, internacionais e contemporâneos licenciados). Acesso via conta gov.br. O Portal Domínio Público (dominiopublico.gov.br) existe desde 2004 com quase 200 mil obras de domínio público com download direto em PDF.
+
+Nenhum deles oferece API pública. A estratégia é curadoria interna: manter uma tabela própria de livros gratuitos com links diretos para as plataformas.
+
+**Tabela: free_books (curadoria interna)**
+```
+id (UUID, PK)
+title (string)
+author (string)
+genre (string)
+total_pages (integer)
+cover_url (string, nullable — via Google Books API)
+source (enum: 'mec_livros', 'dominio_publico', 'gutenberg_pt')
+source_url (string — link direto para a obra na plataforma de origem)
+isbn (string, nullable)
+created_at (datetime)
+featured (boolean, default false)
+```
+
+**Como usar no app:**
+
+1. **Tag "Grátis" nos livros da biblioteca:**
+   - Ao adicionar um livro via busca, verificar se ele existe na tabela free_books (match por título+autor ou ISBN)
+   - Se existir, exibir badge "📗 Disponível grátis no MEC Livros" com link direto
+   - Isso funciona como discovery: o usuário descobre que pode ler de graça
+
+2. **Desafios temáticos com livros gratuitos:**
+   - Criar desafios exclusivos com curadoria de livros do MEC Livros/Domínio Público
+   - Exemplos:
+     - "Clássicos Brasileiros Grátis" — Ler 3 obras de Machado de Assis, Lima Barreto ou Aluísio de Azevedo (todas disponíveis no MEC Livros)
+     - "Domínio Público Challenge" — Ler 5 livros disponíveis gratuitamente
+     - "Redescubra os Clássicos" — Ler obras que caem no vestibular/ENEM, todas gratuitas
+     - "Filosofia sem Custo" — Ler 3 obras de filosofia do Domínio Público (Platão, Nietzsche, Sêneca)
+     - "Literatura Nordestina" — Ler 3 obras de autores nordestinos do acervo do MEC
+   - Cada desafio lista os livros elegíveis com link direto para leitura gratuita
+   - Badge exclusivo ao completar
+
+3. **Seção "Estante Gratuita" na tela de Biblioteca:**
+   - Aba adicional "Grátis" mostrando livros curados disponíveis gratuitamente
+   - Filtro por gênero
+   - Cada livro com botão "Ler no MEC Livros" (abre link externo) e botão "Adicionar à minha biblioteca" (para rastrear no Leio)
+
+4. **Destaque na Home:**
+   - Widget "Livro gratuito da semana" — curadoria editorial semanal de uma obra disponível de graça
+   - Card com capa, sinopse curta, gênero e CTA "Começar a ler — é grátis"
+
+5. **Card compartilhável com selo "Grátis":**
+   - Quando o livro da sessão é do acervo gratuito, o card pode incluir selo "📗 Li de graça no MEC Livros"
+   - Isso tem duplo efeito: promove o hábito e divulga a plataforma do governo
+   - Potencial de parceria institucional futura com o MEC
+
+**Seeds iniciais — lista curada de livros gratuitos (primeiros 30):**
+
+*Clássicos brasileiros (MEC Livros + Domínio Público):*
+- Machado de Assis — Dom Casmurro, Memórias Póstumas de Brás Cubas, O Alienista
+- Lima Barreto — Triste Fim de Policarpo Quaresma, O Homem que Sabia Javanês
+- Aluísio de Azevedo — O Cortiço
+- José de Alencar — Iracema, O Guarani, Senhora
+- Graciliano Ramos — Vidas Secas
+- Euclides da Cunha — Os Sertões
+- Castro Alves — Espumas Flutuantes
+- Álvares de Azevedo — Noite na Taverna
+
+*Clássicos internacionais (Domínio Público):*
+- Fiódor Dostoiévski — Crime e Castigo, Noites Brancas
+- Edgar Allan Poe — Contos de Terror
+- Oscar Wilde — O Retrato de Dorian Gray
+- Franz Kafka — A Metamorfose
+- Platão — A República, O Banquete
+- Sun Tzu — A Arte da Guerra
+- Nicolau Maquiavel — O Príncipe
+- Mary Shelley — Frankenstein
+
+*Contemporâneos licenciados (MEC Livros):*
+- Ariano Suassuna — Auto da Compadecida
+- Socorro Acioli — A Cabeça do Santo
+- Paulo Lins — Cidade de Deus
+
+**Manutenção:**
+- A lista curada é atualizada manualmente (ou semi-automaticamente via scraping periódico do catálogo público do MEC Livros)
+- Priorizar obras que aparecem em listas de vestibular/ENEM (apelo para estudantes)
+- Adicionar novas obras conforme o MEC amplia o acervo
+
+**Posicionamento estratégico:**
+- O Leio se torna o único app de leitura gamificado que conecta o usuário com acervo gratuito do governo brasileiro
+- Isso diferencia radicalmente de Bookly/Pagebound (que ignoram completamente esse ecossistema)
+- Potencial de parceria institucional com MEC, Biblioteca Nacional e secretarias de educação estaduais
+- Narrativa de impacto social: "O Leio ajuda brasileiros a ler mais, usando livros que o governo já oferece de graça"
+
+### 18. ESTIMATIVA INTELIGENTE DE TEMPO DE CONCLUSÃO
+
+Com os dados de pace do usuário, calcular e exibir:
+- "No seu ritmo, você termina este livro em ~3 dias"
+- "Faltam aproximadamente 2h15 de leitura para terminar"
+- Esses dados podem aparecer no card do livro na biblioteca e na tela de sessão
+
+---
+
+## MODELO DE DADOS ADICIONAL (à tabela users)
+
+Adicionar ao modelo de users:
+```
+total_xp (integer, default 0)
+level (integer, default 1)
+referral_code (string, unique)
+referred_by (UUID, FK -> users, nullable)
+```
+
+---
+
+## PRIORIDADE DE IMPLEMENTAÇÃO
+
+### Fase 1 — Core (essencial para funcionar)
+1. Buscar livro (Google Books API + busca por título/ISBN)
+2. Iniciar sessão → Timer com pace em tempo real → Encerrar sessão
+3. Gerar card compartilhável (5 templates) → Salvar PNG → Compartilhar via share nativo
+4. Biblioteca (CRUD de livros, filtros por status)
+
+### Fase 2 — Engajamento
+5. Sistema de badges (verificação automática após cada sessão)
+6. Dashboard/Home (stats, streak, leitura atual)
+7. Metas (páginas semanais, tempo semanal, livros mensais)
+8. Missões diárias + sistema de XP/nível
+
+### Fase 3 — Diferenciação
+9. Wrap mensal com arquétipos de leitor
+10. Desafios temáticos sazonais
+11. Integração com acervo gratuito MEC Livros/Domínio Público (curadoria + seção "Estante Gratuita" + desafios com livros grátis)
+12. Scan de ISBN via câmera (código de barras)
+13. Importação do Goodreads (CSV)
+14. Importação de highlights do Kindle (My Clippings.txt)
+15. Sistema de convite/referral com card
+
+### Fase 4 — Polimento
+15. PWA completa (service worker, manifest, offline-first)
+16. Estimativa inteligente de tempo de conclusão
+17. Heatmap de leitura no perfil (estilo GitHub)
+18. Animações e micro-interações (confetti nos badges, contagem animada de números)
+
+---
+
+## OBSERVAÇÕES FINAIS
+
+- Toda a interface deve estar em português do Brasil
+- Responsivo, mas priorizar experiência mobile (90% dos usuários vão usar no celular)
+- Animações suaves (Framer Motion ou CSS transitions) — o app precisa sentir-se premium
+- Cada interação importante deve ter micro-feedback (vibração, som sutil, animação)
+- Acessibilidade: cores com contraste suficiente, labels em todos os inputs, navegação por teclado
+- Performance: lazy loading de imagens, virtualização de listas longas
+- Todas as datas e horários devem considerar timezone de Brasília (UTC-3)
+- Mensagens de erro amigáveis e em português: "Ops, não encontramos esse livro" em vez de "Error 404"
+- O card compartilhável DEVE ter a marca "Leio" visível (mas sutil) — cada compartilhamento é marketing
+- Cada card compartilhado deve conter URL curta ou QR code do app — todo share é aquisição
+- O campo de quote no card é opcional, mas deve ser incentivado (ex: "Alguma frase te marcou nessa sessão?")
+- A integração com Kindle é via upload de arquivo (My Clippings.txt), não via API — Amazon não oferece API oficial
+- A importação do Goodreads é via CSV, não via API — Goodreads descontinuou a API pública
+- A integração com MEC Livros é via curadoria interna (tabela free_books) e links diretos, não via API — o MEC não oferece API pública
+- Desafios com livros gratuitos do MEC devem ser priorizados como diferencial competitivo e narrativa de impacto social
+- O selo "Li de graça no MEC Livros" no card compartilhável serve como divulgação orgânica do acervo público e posiciona o Leio como aliado da educação

@@ -1,0 +1,30 @@
+Esse documento que o Replit te entregou está sólido. Mas tem algumas oportunidades que ficaram de fora e que podem ser diferenciais reais. Vou ser direto sobre o que vejo:
+1. O grande gap: descoberta de livros
+O app tem biblioteca, mas não tem "como descobrir o próximo livro". Quando o usuário termina um livro, o próximo passo natural é: "e agora, o que leio?" — e o app não responde isso. Goodreads e StoryGraph ganham aqui. Você pode resolver de forma elegante com:
+
+Recomendações baseadas no que o usuário leu (genre matching com livros da biblioteca + free_books)
+"Quem leu X também leu Y" usando dados agregados conforme o app cresce
+Tela "Próxima leitura" que sugere 3 livros: um do gênero favorito, um do MEC Livros (grátis), um fora da zona de conforto
+Isso resolve o problema de retenção: usuário não abandona o app entre livros
+
+2. Modo "Leitura em conjunto"
+Você falou em clubes de leitura como out of scope para o MVP, mas tem uma versão minimalista que custa pouco e entrega muito: leitura compartilhada com 1 pessoa. Casal lendo o mesmo livro, dois amigos fazendo um desafio juntos. Métricas de pace lado a lado, quem está em qual capítulo, mensagem de incentivo entre os dois. Isso é viral porque uma pessoa puxa outra pra dentro do app.
+Mais leve que um clube, mais social que ser sozinho. E o seu público (pessoas que querem mostrar leitura como esporte) provavelmente quer um "amigo de treino", igual quem corre.
+3. Tempo estimado para acabar o livro (já está mas pode ser mais forte)
+O Replit colocou "termina em ~3 dias no seu ritmo". Mas isso pode virar uma feature emocional muito mais forte: "Quanto tempo até eu terminar?" como contador regressivo visível.
+Tipo: "Faltam 2h45min de leitura". Funciona como academia: "faltam 3 séries". Cria urgência saudável. Pode aparecer em todo lugar — na home, no card do livro, até nas notificações ("Faltam 30 minutos pra terminar Dom Casmurro. Bora?").
+4. Reading goals atrelados a livros específicos, não só números
+Hoje o app tem metas de páginas/livros/tempo. Faltou: "Quero terminar Crime e Castigo até dia 30 de novembro". Meta vinculada a um livro específico, com cronograma sugerido ("ler 22 páginas por dia pra bater"). Isso é muito mais motivador que "ler 100 páginas na semana".
+O Strava tem treinos pra eventos específicos (vou correr a meia-maratona X). Você pode ter "Vou terminar Os Sertões até o Natal".
+5. Função "Resgate de leitura"
+Toda pessoa tem livros que começou e nunca terminou. Uma feature simples mas com apelo psicológico forte:
+Tela "Voltar pra esse livro?" mostrando livros marcados como "Lendo" mas sem sessões há 14+ dias. Mensagem: "Você parou na página 87 de A Hora da Estrela há 23 dias. Bora terminar?" Permite continuar do ponto exato ou marcar como "Abandonado" sem culpa.
+Isso resolve uma dor real que ninguém endereça: a culpa do livro pela metade.
+6. Análise de gênero/diversidade da leitura
+O Wrap Mensal tem arquétipos. Mas faltou um insight mais provocativo: diversidade de leitura. Tipo:
+
+"Você leu 8 autores este ano. 7 são homens."
+"70% dos seus livros são ficção. Que tal experimentar um ensaio?"
+"Você só leu autores brasileiros e americanos. Conhece literatura africana?"
+
+Isso é provocativo, gera reflexão e é compartilhável. StoryGraph faz parcialmente isso e tem fans fanáticos por causa disso. Para o público brasileiro, dá pra adicionar "Quantos autores nordestinos? Quantas mulheres negras?" — sem ser militante, só como informação.
