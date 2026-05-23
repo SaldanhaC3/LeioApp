@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "id": "a1b2c3d4-0001-4000-8000-000000000001",
+    "position": 1,
+    "filepath": "src/pages/slides/Slide1Title.tsx",
+    "title": "Leio",
+    "description": "Slide de abertura com tagline e identidade da marca",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0002-4000-8000-000000000002",
+    "position": 2,
+    "filepath": "src/pages/slides/Slide2Problem.tsx",
+    "title": "Leitura é invisível",
+    "description": "O problema — mercado de R$4,2bi e falta de hábito digital",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0003-4000-8000-000000000003",
+    "position": 3,
+    "filepath": "src/pages/slides/Slide3Persona.tsx",
+    "title": "Para quem é o Leio",
+    "description": "Persona Ana, 28 anos, leitora ativa em São Paulo",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0004-4000-8000-000000000004",
+    "position": 4,
+    "filepath": "src/pages/slides/Slide4Product.tsx",
+    "title": "O que o Leio faz",
+    "description": "Três pilares: Sessões & Stats, Cards Sociais, Gamificação",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0005-4000-8000-000000000005",
+    "position": 5,
+    "filepath": "src/pages/slides/Slide5Market.tsx",
+    "title": "Um mercado sem Strava",
+    "description": "Oportunidade de mercado e dados CBL/SNEL 2024",
+    "speakerNotes": ""
+  },
+  {
+    "id": "a1b2c3d4-0006-4000-8000-000000000006",
+    "position": 6,
+    "filepath": "src/pages/slides/Slide6Closing.tsx",
+    "title": "Registre cada página.",
+    "description": "Slide de encerramento com call to action e demo",
+    "speakerNotes": ""
+  }
+]
