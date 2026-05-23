@@ -37,14 +37,23 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Permitir que o Leio use a câmera para escanear o código de barras dos livros."
+          "cameraPermission": "A Capi precisa da câmera pra escanear o código de barras dos seus livros ou tirar a foto que vai virar fundo do card de leitura.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "A Capi precisa acessar suas fotos pra usar uma de fundo no seu card de leitura.",
+          "savePhotosPermission": "Deixa a Capi salvar o card de leitura direto na sua galeria.",
+          "isAccessMediaLocationEnabled": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Permitir que o Leio acesse suas fotos para usar como capa do livro.",
-          "cameraPermission": "Permitir que o Leio use a câmera para fotografar a capa do livro."
+          "photosPermission": "A Capi precisa acessar suas fotos pra usar como capa do livro ou fundo do card de leitura.",
+          "cameraPermission": "A Capi precisa da câmera pra fotografar a capa do livro ou tirar a foto do card de leitura."
         }
       ]
     ],

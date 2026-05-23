@@ -53,6 +53,14 @@ function RootLayoutNav() {
         }}
       />
       <Stack.Screen
+        name="compartilhar"
+        options={{
+          headerShown: false,
+          presentation: "fullScreenModal",
+          gestureEnabled: true,
+        }}
+      />
+      <Stack.Screen
         name="livro"
         options={{ headerShown: false }}
       />

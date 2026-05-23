@@ -1,19 +1,13 @@
 import { CapiMascot } from "@/components/CapiMascot";
-import { ShareCard } from "@/components/ShareCard";
-import { ShareCardPhoto } from "@/components/ShareCardPhoto";
 import { useApp } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import * as Sharing from "expo-sharing";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
-  Image,
   Platform,
   StyleSheet,
   Text,
@@ -21,7 +15,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { captureRef, type ViewShotRef } from "react-native-view-shot";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -68,7 +61,7 @@ export default function ConclusaoScreen() {
     focusMode: string;
     focusExitSeconds: string;
   }>();
-  const { getBookById, badges, freeBooks, progressShareMission } = useApp();
+  const { getBookById, badges, freeBooks } = useApp();
 
   const book = getBookById(params.bookId ?? "");
   const endPage = parseInt(params.endPage ?? "0", 10);
@@ -90,14 +83,6 @@ export default function ConclusaoScreen() {
   const [displayPages, setDisplayPages] = useState(0);
   const [displayDuration, setDisplayDuration] = useState(0);
   const [isSharing, setIsSharing] = useState(false);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const shareCardRef = useRef<ViewShotRef>(null);
-  const photoCardRef = useRef<ViewShotRef>(null);
-
-  const motivationalPhrase = useMemo(
-    () => SHARE_PHRASES[Math.floor(Math.random() * SHARE_PHRASES.length)],
-    []
-  );
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = insets.bottom + (Platform.OS === "web" ? 34 : 0);
@@ -129,66 +114,20 @@ export default function ConclusaoScreen() {
     };
   }, []);
 
-  async function handlePickPhoto() {
-    Haptics.selectionAsync();
-    try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert(
-          "Faltou permissão",
-          "Pra escolher uma foto, libera o acesso à galeria nas configurações."
-        );
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [9, 16],
-        quality: 0.9,
-      });
-      if (!result.canceled && result.assets[0]?.uri) {
-        setPhotoUri(result.assets[0].uri);
-      }
-    } catch {
-      Alert.alert("Ops", "A galeria emperrou. Tenta de novo daqui a pouco.");
-    }
-  }
-
-  function handleRemovePhoto() {
-    Haptics.selectionAsync();
-    setPhotoUri(null);
-  }
-
-  async function handleShare() {
+  function handleShare() {
     if (isSharing || !book) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsSharing(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 80));
-      const targetRef = photoUri ? photoCardRef : shareCardRef;
-      const uri = await captureRef(targetRef, {
-        format: "png",
-        quality: 1,
-      });
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (!isAvailable) {
-        Alert.alert(
-          "Compartilhamento fora do ar",
-          "Seu dispositivo não topa o compartilhamento nativo."
-        );
-        return;
-      }
-      await Sharing.shareAsync(uri, {
-        mimeType: "image/png",
-        dialogTitle: "Compartilhar sessão de leitura",
-        UTI: "public.png",
-      });
-      progressShareMission();
-    } catch {
-      Alert.alert("Ops", "O card empacou no caminho. Tenta de novo?");
-    } finally {
-      setIsSharing(false);
-    }
+    router.push({
+      pathname: "/compartilhar",
+      params: {
+        bookId: book.id,
+        pages: String(pages),
+        durationSeconds: String(duration),
+        pace: String(pace),
+      },
+    });
+    setTimeout(() => setIsSharing(false), 600);
   }
 
   const focusMessage =
@@ -326,41 +265,6 @@ Próximo livro da fila?
         </View>
       )}
 
-      {/* Photo picker */}
-      {book && (
-        photoUri ? (
-          <View style={[styles.photoPreview, { backgroundColor: colors.card, borderColor: colors.accentBorder }]}>
-            <Image source={{ uri: photoUri }} style={styles.photoThumb} />
-            <View style={styles.photoPreviewText}>
-              <Text style={[styles.photoPreviewTitle, { color: colors.foreground }]}>
-Foto entrou na cena
-              </Text>
-              <Text style={[styles.photoPreviewSub, { color: colors.mutedForeground }]} numberOfLines={1}>
-Vira capa do card quando compartilhar
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={handleRemovePhoto}
-              style={[styles.photoRemoveBtn, { borderColor: colors.border }]}
-              hitSlop={8}
-            >
-              <Ionicons name="close" size={18} color={colors.foreground} />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={[styles.photoPickBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
-            onPress={handlePickPhoto}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="image-outline" size={18} color={colors.foreground} />
-            <Text style={[styles.photoPickText, { color: colors.foreground }]}>
-Botar uma foto da galeria
-            </Text>
-          </TouchableOpacity>
-        )
-      )}
-
       {/* Actions */}
       <TouchableOpacity
         style={[
@@ -398,30 +302,6 @@ Voltar pro início
         </Text>
       </TouchableOpacity>
 
-      {book && (
-        <View style={styles.hiddenShareCard} pointerEvents="none">
-          <ShareCard
-            ref={shareCardRef}
-            book={book}
-            pages={pages}
-            durationSeconds={duration}
-            pace={pace}
-            motivationalPhrase={motivationalPhrase}
-          />
-        </View>
-      )}
-
-      {book && photoUri && (
-        <View style={styles.hiddenShareCard} pointerEvents="none">
-          <ShareCardPhoto
-            ref={photoCardRef}
-            book={book}
-            photoUri={photoUri}
-            pages={pages}
-            pace={pace}
-          />
-        </View>
-      )}
     </View>
   );
 }
@@ -533,12 +413,4 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   homeBtnText: { fontSize: 15, fontWeight: "700" },
-  hiddenShareCard: {
-    position: "absolute",
-    top: -10000,
-    left: -10000,
-    width: 1080,
-    height: 1920,
-    opacity: 0,
-  },
 });
