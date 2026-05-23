@@ -16,65 +16,83 @@ export function BadgeItem({ badge, onPress }: BadgeItemProps) {
   function handlePress() {
     if (badge.unlocked) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } else {
+      Haptics.selectionAsync();
     }
     onPress?.();
   }
+
+  const unlocked = badge.unlocked;
 
   return (
     <TouchableOpacity
       style={[
         styles.container,
         {
-          backgroundColor: badge.unlocked ? colors.card : colors.secondary,
-          borderColor: badge.unlocked ? colors.accentBorder : "transparent",
-          borderWidth: badge.unlocked ? 1 : 0,
+          backgroundColor: unlocked ? colors.card : colors.secondary,
+          borderColor: unlocked ? colors.accentBorder : colors.border,
+          borderWidth: 1,
+          opacity: unlocked ? 1 : 0.85,
         },
       ]}
       onPress={handlePress}
-      activeOpacity={0.8}
+      activeOpacity={0.85}
     >
       <View
         style={[
           styles.iconWrap,
           {
-            backgroundColor: badge.unlocked
-              ? `${colors.volt}22`
-              : colors.muted,
+            backgroundColor: unlocked ? `${colors.volt}22` : colors.muted,
+            borderColor: unlocked ? colors.accentBorder : "transparent",
+            borderWidth: unlocked ? 1 : 0,
           },
         ]}
       >
         <Ionicons
-          name={(badge.icon ?? "star") as never}
-          size={28}
-          color={badge.unlocked ? colors.accentText : colors.mutedForeground}
+          name={(unlocked ? badge.icon ?? "star" : "lock-closed") as never}
+          size={26}
+          color={unlocked ? colors.accentText : colors.mutedForeground}
         />
       </View>
+
       <Text
         style={[
           styles.name,
-          {
-            color: badge.unlocked ? colors.foreground : colors.mutedForeground,
-          },
+          { color: unlocked ? colors.foreground : colors.mutedForeground },
         ]}
         numberOfLines={2}
       >
         {badge.name}
       </Text>
-      {badge.unlocked && (
-        <View style={[styles.xpPill, { backgroundColor: `${colors.volt}22` }]}>
-          <Text style={[styles.xpText, { color: colors.accentText }]}>
-            +{badge.xpReward}XP
-          </Text>
-        </View>
-      )}
-      {!badge.unlocked && (
-        <Text
-          style={[styles.lockedText, { color: colors.mutedForeground }]}
-          numberOfLines={2}
-        >
-          {badge.description}
-        </Text>
-      )}
+
+      <Text
+        style={[styles.description, { color: colors.mutedForeground }]}
+        numberOfLines={2}
+      >
+        {badge.description}
+      </Text>
+
+      <View style={styles.footer}>
+        {unlocked ? (
+          <View style={[styles.xpPill, { backgroundColor: `${colors.volt}22` }]}>
+            <Ionicons name="flash" size={10} color={colors.accentText} />
+            <Text style={[styles.xpText, { color: colors.accentText }]}>
+              +{badge.xpReward} XP
+            </Text>
+          </View>
+        ) : (
+          <View style={[styles.lockedPill, { backgroundColor: colors.muted }]}>
+            <Ionicons
+              name="lock-closed"
+              size={10}
+              color={colors.mutedForeground}
+            />
+            <Text style={[styles.lockedText, { color: colors.mutedForeground }]}>
+              Bloqueada
+            </Text>
+          </View>
+        )}
+      </View>
     </TouchableOpacity>
   );
 }
@@ -82,11 +100,12 @@ export function BadgeItem({ badge, onPress }: BadgeItemProps) {
 const styles = StyleSheet.create({
   container: {
     width: "47%",
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
     alignItems: "center",
     gap: 8,
     marginBottom: 10,
+    minHeight: 180,
   },
   iconWrap: {
     width: 56,
@@ -97,22 +116,41 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "800",
     textAlign: "center",
     letterSpacing: -0.2,
   },
+  description: {
+    fontSize: 11,
+    textAlign: "center",
+    lineHeight: 14,
+    flex: 1,
+  },
+  footer: {
+    marginTop: 4,
+  },
   xpPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   xpText: {
     fontSize: 10,
     fontWeight: "800",
   },
+  lockedPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
   lockedText: {
     fontSize: 10,
-    textAlign: "center",
-    lineHeight: 14,
+    fontWeight: "700",
   },
 });
