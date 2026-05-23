@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "i7xepTbuhTDacCqEYTVCL"
@@ -12,3 +11,9 @@ id = "CqF55YsEyBc9U5ggNGu3V"
 uri = "file://artifacts/leio/assets/images/capi-reading.png"
 type = "image"
 title = "capi reading book mascot"
+
+[[outputs]]
+id = "5orAXMCUouqxR4sntrPWe"
+uri = "file://.local/outputs/Preparado-Context.pdf"
+type = "pdf"
+title = "Preparado Context.pdf"
