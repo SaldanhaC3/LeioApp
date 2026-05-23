@@ -1,7 +1,7 @@
 import { useApp } from "@/contexts/AppContext";
 import type { CapiState, CapiVariant } from "@/contexts/AppContext";
 import React, { useEffect } from "react";
-import { Image, StyleSheet, View } from "react-native";
+import { Image, ImageSourcePropType, StyleSheet, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -11,10 +11,11 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-const CAPI_IMAGES: Record<CapiVariant, ReturnType<typeof require>> = {
-  default: require("@/assets/images/capi-default.png"),
-  vampire: require("@/assets/images/capi-vampire.png"),
-  erudite: require("@/assets/images/capi-erudite.png"),
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const CAPI_IMAGES: Record<CapiVariant, ImageSourcePropType> = {
+  default: require("@/assets/images/capi-default.png") as ImageSourcePropType,
+  vampire: require("@/assets/images/capi-vampire.png") as ImageSourcePropType,
+  erudite: require("@/assets/images/capi-erudite.png") as ImageSourcePropType,
 };
 
 interface CapiMascotProps {
