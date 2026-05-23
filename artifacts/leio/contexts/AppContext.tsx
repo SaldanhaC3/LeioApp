@@ -661,6 +661,7 @@ interface AppContextType {
   folego: number;
   folegoGuardado: number;
   xp: number;
+  cardsSharedCount: number;
   isLoaded: boolean;
   freeBooks: Book[];
   addHighlight: (h: Omit<Highlight, "id" | "createdAt">) => Highlight;
@@ -715,6 +716,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [folego, setFolego] = useState(4);
   const [folegoGuardado, setFolegoGuardado] = useState(2);
   const [xp, setXp] = useState(340);
+  const [cardsSharedCount, setCardsSharedCount] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const [capiState, setCapiState] = useState<CapiState>("waving");
   const [spotifyConnected, setSpotifyConnected] = useState(false);
@@ -806,6 +808,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setFolego(data.folego ?? 4);
         setFolegoGuardado(data.folegoGuardado ?? 2);
         setXp(data.xp ?? 340);
+        setCardsSharedCount(data.cardsSharedCount ?? 0);
 
         const today = new Date().toISOString().split("T")[0];
         const savedMissions = data.missions ?? [];
@@ -834,6 +837,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           folego: 4,
           folegoGuardado: 2,
           xp: 340,
+          cardsSharedCount: 0,
           missions: generateDailyMissions(new Date().toISOString()),
         });
       }
@@ -865,6 +869,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       folego,
       folegoGuardado,
       xp,
+      cardsSharedCount,
       missions,
       ...overrides,
     });
@@ -1111,20 +1116,44 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const progressShareMission = useCallback(() => {
-    let missionXpBonus = 0;
+    let bonus = 0;
+
     const updatedMissions = missions.map((m) => {
       if (m.completed || m.type !== "share") return m;
       const newProgress = m.progress + 1;
       const completed = newProgress >= m.target;
-      if (completed) missionXpBonus += m.xpReward;
+      if (completed) bonus += m.xpReward;
       return { ...m, progress: newProgress, completed };
     });
-    if (updatedMissions === missions) return;
     setMissions(updatedMissions);
-    const newXp = xp + missionXpBonus;
-    if (missionXpBonus > 0) setXp(newXp);
-    persistState({ missions: updatedMissions, xp: newXp });
-  }, [books, sessions, badges, vocabulary, settings, folego, folegoGuardado, xp, missions]);
+
+    const newCount = cardsSharedCount + 1;
+    setCardsSharedCount(newCount);
+
+    let updatedBadges = badges;
+    if (newCount >= 5) {
+      const badge = badges.find((b) => b.id === "card_sharer");
+      if (badge && !badge.unlocked) {
+        updatedBadges = badges.map((b) =>
+          b.id === "card_sharer"
+            ? { ...b, unlocked: true, unlockedAt: new Date().toISOString() }
+            : b
+        );
+        setBadges(updatedBadges);
+        bonus += badge.xpReward;
+      }
+    }
+
+    const newXp = xp + bonus;
+    if (bonus > 0) setXp(newXp);
+
+    persistState({
+      missions: updatedMissions,
+      xp: newXp,
+      cardsSharedCount: newCount,
+      badges: updatedBadges,
+    });
+  }, [books, sessions, badges, vocabulary, settings, folego, folegoGuardado, xp, missions, cardsSharedCount]);
 
   const getBookById = useCallback(
     (id: string) => books.find((b) => b.id === id) ?? FREE_BOOKS.find((b) => b.id === id),
@@ -1202,6 +1231,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         folego,
         folegoGuardado,
         xp,
+        cardsSharedCount,
         isLoaded,
         freeBooks: FREE_BOOKS,
         addBook,

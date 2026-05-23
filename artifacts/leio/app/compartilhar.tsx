@@ -80,6 +80,7 @@ export default function CompartilharScreen() {
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const shareCardRef = useRef<ViewShotRef>(null);
+  const hasSharedThisSession = useRef(false);
 
   const motivationalPhrase = useMemo(
     () => SHARE_PHRASES[Math.floor(Math.random() * SHARE_PHRASES.length)],
@@ -175,7 +176,10 @@ export default function CompartilharScreen() {
         dialogTitle: "Compartilhar sessão de leitura",
         UTI: "public.png",
       });
-      progressShareMission();
+      if (!hasSharedThisSession.current) {
+        hasSharedThisSession.current = true;
+        progressShareMission();
+      }
     } catch {
       Alert.alert("Ops", "Não rolou compartilhar agora.");
     } finally {
@@ -197,7 +201,10 @@ export default function CompartilharScreen() {
         );
       }
       Alert.alert("Copiado!", "Card copiado para a área de transferência.");
-      progressShareMission();
+      if (!hasSharedThisSession.current) {
+        hasSharedThisSession.current = true;
+        progressShareMission();
+      }
     } catch {
       Alert.alert("Ops", "Não rolou copiar o card.");
     } finally {
@@ -226,7 +233,10 @@ export default function CompartilharScreen() {
       await MediaLibrary.saveToLibraryAsync(uri);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert("Salvo!", "Card salvo na sua galeria.");
-      progressShareMission();
+      if (!hasSharedThisSession.current) {
+        hasSharedThisSession.current = true;
+        progressShareMission();
+      }
     } catch {
       Alert.alert("Ops", "Não rolou salvar o card.");
     } finally {
