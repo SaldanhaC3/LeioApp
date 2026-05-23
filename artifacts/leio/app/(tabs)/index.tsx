@@ -110,7 +110,7 @@ export default function HomeScreen() {
           <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
             {greeting}
           </Text>
-          <Text style={[styles.level, { color: colors.volt }]}>
+          <Text style={[styles.level, { color: colors.accentText }]}>
             {levelInfo.name}
           </Text>
         </View>
@@ -126,7 +126,7 @@ export default function HomeScreen() {
       <View style={[styles.folegoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <View style={styles.folegoLeft}>
           <View style={[styles.folegoIconWrap, { backgroundColor: `${colors.volt}22` }]}>
-            <Ionicons name="flame" size={22} color={colors.volt} />
+            <Ionicons name="flame" size={22} color={colors.accentText} />
           </View>
           <View>
             <Text style={[styles.folegoCount, { color: colors.foreground }]}>
@@ -226,7 +226,7 @@ export default function HomeScreen() {
             <Text style={[styles.addBookText, { color: colors.foreground }]}>
               Adicione um livro e comece a ler!
             </Text>
-            <Ionicons name="add-circle" size={24} color={colors.volt} />
+            <Ionicons name="add-circle" size={24} color={colors.accentText} />
           </TouchableOpacity>
         </View>
       )}
@@ -287,7 +287,7 @@ export default function HomeScreen() {
               key={i}
               style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
-              <Ionicons name={stat.icon as never} size={18} color={colors.volt} />
+              <Ionicons name={stat.icon as never} size={18} color={colors.accentText} />
               <Text style={[styles.statValue, { color: colors.foreground }]}>
                 {stat.value}
               </Text>
@@ -307,7 +307,7 @@ export default function HomeScreen() {
               Conquistas
             </Text>
             <TouchableOpacity onPress={() => router.push("/(tabs)/badges")}>
-              <Text style={[styles.seeAll, { color: colors.volt }]}>
+              <Text style={[styles.seeAll, { color: colors.accentText }]}>
                 Ver todas
               </Text>
             </TouchableOpacity>
@@ -316,9 +316,9 @@ export default function HomeScreen() {
             {unlockedBadges.slice(-5).map((badge) => (
               <View
                 key={badge.id}
-                style={[styles.badgePill, { backgroundColor: colors.card, borderColor: colors.volt }]}
+                style={[styles.badgePill, { backgroundColor: colors.card, borderColor: colors.accentBorder }]}
               >
-                <Ionicons name={badge.icon as never} size={16} color={colors.volt} />
+                <Ionicons name={badge.icon as never} size={16} color={colors.accentText} />
                 <Text style={[styles.badgePillText, { color: colors.foreground }]}>
                   {badge.name}
                 </Text>

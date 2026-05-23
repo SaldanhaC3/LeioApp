@@ -130,7 +130,7 @@ export default function EscanearLivroScreen() {
           <Ionicons
             name={state.kind === "manual" ? "scan-outline" : "keypad-outline"}
             size={22}
-            color={colors.volt}
+            color={colors.accentText}
           />
         </Pressable>
       </View>
@@ -163,7 +163,7 @@ export default function EscanearLivroScreen() {
         </View>
       ) : !permission ? (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.volt} />
+          <ActivityIndicator color={colors.accentText} />
         </View>
       ) : !permission.granted ? (
         <View style={styles.center}>
@@ -201,7 +201,7 @@ export default function EscanearLivroScreen() {
         <View style={[styles.resultSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 16 }]}>
           {state.kind === "looking-up" && (
             <View style={styles.lookingRow}>
-              <ActivityIndicator color={colors.volt} />
+              <ActivityIndicator color={colors.accentText} />
               <Text style={[styles.helper, { color: colors.muted }]}>
                 Buscando ISBN {state.isbn}...
               </Text>

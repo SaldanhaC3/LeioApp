@@ -271,7 +271,7 @@ export default function LivroManualScreen() {
                   style={[
                     styles.statusChip,
                     {
-                      borderColor: active ? colors.volt : colors.border,
+                      borderColor: active ? colors.accentBorder : colors.border,
                       backgroundColor: active ? colors.volt + "22" : "transparent",
                     },
                   ]}
@@ -279,7 +279,7 @@ export default function LivroManualScreen() {
                   <Ionicons
                     name={opt.icon}
                     size={16}
-                    color={active ? colors.volt : colors.muted}
+                    color={active ? colors.accentText : colors.muted}
                   />
                   <Text
                     style={[

@@ -173,9 +173,9 @@ export default function LeitorScreen() {
             <Ionicons name="arrow-back" size={24} color={colors.foreground} />
           </TouchableOpacity>
           <View style={{ flex: 1 }} />
-          <View style={[styles.tipPill, { backgroundColor: `${colors.volt}22`, borderColor: colors.volt }]}>
-            <Ionicons name="hand-left-outline" size={12} color={colors.volt} />
-            <Text style={[styles.tipText, { color: colors.volt }]}>Toque p/ destacar</Text>
+          <View style={[styles.tipPill, { backgroundColor: `${colors.volt}22`, borderColor: colors.accentBorder }]}>
+            <Ionicons name="hand-left-outline" size={12} color={colors.accentText} />
+            <Text style={[styles.tipText, { color: colors.accentText }]}>Toque p/ destacar</Text>
           </View>
         </View>
 
@@ -199,9 +199,9 @@ export default function LeitorScreen() {
                       ? `${colors.volt}10`
                       : "transparent",
                     borderLeftColor: isSelected
-                      ? colors.volt
+                      ? colors.accentBorder
                       : isHighlighted
-                      ? `${colors.volt}88`
+                      ? `${colors.accentBorder}88`
                       : "transparent",
                     opacity: pressed ? 0.7 : 1,
                   },
@@ -348,7 +348,7 @@ export default function LeitorScreen() {
                     styles.variantSwatch,
                     {
                       backgroundColor: v.preview,
-                      borderColor: shareVariant === v.id ? colors.volt : "transparent",
+                      borderColor: shareVariant === v.id ? colors.accentBorder : "transparent",
                     },
                   ]}
                 >

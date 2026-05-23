@@ -100,7 +100,7 @@ export default function PerfilScreen() {
       <View style={styles.profileHeader}>
         <CapiMascot state="waving" size={72} />
         <View style={styles.profileInfo}>
-          <Text style={[styles.levelName, { color: colors.volt }]}>
+          <Text style={[styles.levelName, { color: colors.accentText }]}>
             {levelInfo.name}
           </Text>
           <View style={[styles.xpBar, { backgroundColor: colors.border }]}>
@@ -140,7 +140,7 @@ export default function PerfilScreen() {
               key={i}
               style={[styles.bestCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
-              <Ionicons name={item.icon as never} size={20} color={colors.volt} />
+              <Ionicons name={item.icon as never} size={20} color={colors.accentText} />
               <Text style={[styles.bestValue, { color: colors.foreground }]}>
                 {item.value}
               </Text>
@@ -227,7 +227,7 @@ export default function PerfilScreen() {
           <View style={[styles.diversityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {readBooks.length > 0 && (
               <View style={styles.diversityRow}>
-                <Ionicons name="person-outline" size={16} color={colors.volt} />
+                <Ionicons name="person-outline" size={16} color={colors.accentText} />
                 <Text style={[styles.diversityText, { color: colors.foreground }]}>
                   {femaleAuthors > 0
                     ? `${Math.round((femaleAuthors / readBooks.length) * 100)}% de autoras mulheres`
@@ -236,7 +236,7 @@ export default function PerfilScreen() {
               </View>
             )}
             <View style={styles.diversityRow}>
-              <Ionicons name="flag-outline" size={16} color={colors.volt} />
+              <Ionicons name="flag-outline" size={16} color={colors.accentText} />
               <Text style={[styles.diversityText, { color: colors.foreground }]}>
                 {brAuthors > 0
                   ? `${Math.round((brAuthors / readBooks.length) * 100)}% de autores brasileiros`

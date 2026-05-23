@@ -288,7 +288,7 @@ export default function SettingsScreen() {
                 style={[
                   styles.themeCard,
                   {
-                    borderColor: active ? colors.volt : colors.border,
+                    borderColor: active ? colors.accentBorder : colors.border,
                     backgroundColor: colors.card,
                   },
                 ]}
@@ -337,7 +337,7 @@ export default function SettingsScreen() {
                     : colors.card,
                 borderColor:
                   settings.capiVariant === variant.id
-                    ? colors.volt
+                    ? colors.accentBorder
                     : colors.border,
               },
             ]}
@@ -360,7 +360,7 @@ export default function SettingsScreen() {
               </Text>
             </View>
             {settings.capiVariant === variant.id && (
-              <Ionicons name="checkmark-circle" size={22} color={colors.volt} />
+              <Ionicons name="checkmark-circle" size={22} color={colors.accentText} />
             )}
           </TouchableOpacity>
         ))}

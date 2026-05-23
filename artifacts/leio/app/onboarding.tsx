@@ -122,7 +122,7 @@ export default function OnboardingScreen() {
                 styles.dot,
                 {
                   backgroundColor:
-                    i === currentIndex ? colors.volt : colors.border,
+                    i === currentIndex ? colors.accentBorder : colors.border,
                   width: i === currentIndex ? 20 : 6,
                 },
               ]}

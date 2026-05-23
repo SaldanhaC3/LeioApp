@@ -26,7 +26,7 @@ export function MissionCard({ mission }: MissionCardProps) {
         styles.card,
         {
           backgroundColor: colors.card,
-          borderColor: mission.completed ? colors.volt : colors.border,
+          borderColor: mission.completed ? colors.accentBorder : colors.border,
           opacity: mission.completed ? 0.7 : 1,
         },
       ]}
@@ -77,7 +77,7 @@ export function MissionCard({ mission }: MissionCardProps) {
             {mission.progress}/{mission.target}
           </Text>
           <View style={styles.xpBadge}>
-            <Text style={[styles.xpText, { color: colors.volt }]}>
+            <Text style={[styles.xpText, { color: colors.accentText }]}>
               +{mission.xpReward} XP
             </Text>
           </View>

@@ -143,7 +143,7 @@ export default function SessaoScreen() {
                   styles.ambientOption,
                   {
                     backgroundColor: ambient === opt.id ? `${colors.volt}22` : colors.card,
-                    borderColor: ambient === opt.id ? colors.volt : colors.border,
+                    borderColor: ambient === opt.id ? colors.accentBorder : colors.border,
                   },
                 ]}
                 onPress={() => {
@@ -154,13 +154,13 @@ export default function SessaoScreen() {
                 <Ionicons
                   name={opt.icon as never}
                   size={20}
-                  color={ambient === opt.id ? colors.volt : colors.mutedForeground}
+                  color={ambient === opt.id ? colors.accentText : colors.mutedForeground}
                 />
                 <Text
                   style={[
                     styles.ambientLabel,
                     {
-                      color: ambient === opt.id ? colors.volt : colors.mutedForeground,
+                      color: ambient === opt.id ? colors.accentText : colors.mutedForeground,
                     },
                   ]}
                 >
@@ -354,7 +354,7 @@ export default function SessaoScreen() {
               <TouchableOpacity
                 style={[
                   styles.addNewBtn,
-                  { backgroundColor: `${colors.volt}11`, borderColor: colors.volt },
+                  { backgroundColor: `${colors.volt}11`, borderColor: colors.accentBorder },
                 ]}
                 onPress={() => {
                   Haptics.selectionAsync();
@@ -373,7 +373,7 @@ export default function SessaoScreen() {
                     Busque por título, autor ou ISBN
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.volt} />
+                <Ionicons name="chevron-forward" size={18} color={colors.accentText} />
               </TouchableOpacity>
             );
           }

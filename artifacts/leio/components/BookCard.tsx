@@ -90,7 +90,7 @@ export function BookCard({ book, onPress, compact }: BookCardProps) {
                 {book.currentPage}/{book.totalPages} págs
               </Text>
               {eta !== "" && !isAbandoned && (
-                <Text style={[styles.eta, { color: colors.volt }]}>
+                <Text style={[styles.eta, { color: colors.accentText }]}>
                   {eta} restantes
                 </Text>
               )}
@@ -105,8 +105,8 @@ export function BookCard({ book, onPress, compact }: BookCardProps) {
 
         {book.status === "read" && (
           <View style={styles.doneRow}>
-            <Ionicons name="checkmark-circle" size={14} color={colors.volt} />
-            <Text style={[styles.doneText, { color: colors.volt }]}>
+            <Ionicons name="checkmark-circle" size={14} color={colors.accentText} />
+            <Text style={[styles.doneText, { color: colors.accentText }]}>
               Concluído
             </Text>
           </View>

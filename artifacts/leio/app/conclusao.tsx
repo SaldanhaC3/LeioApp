@@ -232,7 +232,7 @@ export default function ConclusaoScreen() {
       {/* Stats */}
       <View style={styles.statsGrid}>
         <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.statVal, { color: colors.volt }]}>
+          <Text style={[styles.statVal, { color: colors.accentText }]}>
             {displayPages}
           </Text>
           <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
@@ -240,7 +240,7 @@ export default function ConclusaoScreen() {
           </Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.statVal, { color: colors.volt }]}>
+          <Text style={[styles.statVal, { color: colors.accentText }]}>
             {formatDuration(displayDuration)}
           </Text>
           <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
@@ -248,7 +248,7 @@ export default function ConclusaoScreen() {
           </Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.statVal, { color: colors.volt }]}>
+          <Text style={[styles.statVal, { color: colors.accentText }]}>
             {pace > 0 ? pace.toFixed(1) : "—"}
           </Text>
           <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
@@ -273,12 +273,12 @@ export default function ConclusaoScreen() {
           <Ionicons
             name={isFocusClean ? "shield-checkmark" : "eye-off-outline"}
             size={16}
-            color={isFocusClean ? colors.volt : colors.coral}
+            color={isFocusClean ? colors.accentText : colors.coral}
           />
           <Text
             style={[
               styles.focusSummaryText,
-              { color: isFocusClean ? colors.volt : colors.coral },
+              { color: isFocusClean ? colors.accentText : colors.coral },
             ]}
           >
             {isFocusClean
@@ -291,16 +291,16 @@ export default function ConclusaoScreen() {
       {/* New Badges */}
       {newlyUnlocked.length > 0 && (
         <View style={[styles.badgeSection, { backgroundColor: `${colors.volt}15`, borderColor: colors.volt }]}>
-          <Text style={[styles.badgeHeader, { color: colors.volt }]}>
+          <Text style={[styles.badgeHeader, { color: colors.accentText }]}>
             Conquistas desbloqueadas!
           </Text>
           {newlyUnlocked.map((badge) => (
             <View key={badge.id} style={styles.badgeRow}>
-              <Ionicons name={badge.icon as never} size={18} color={colors.volt} />
+              <Ionicons name={badge.icon as never} size={18} color={colors.accentText} />
               <Text style={[styles.badgeName, { color: colors.foreground }]}>
                 {badge.name}
               </Text>
-              <Text style={[styles.badgeXP, { color: colors.volt }]}>
+              <Text style={[styles.badgeXP, { color: colors.accentText }]}>
                 +{badge.xpReward}XP
               </Text>
             </View>
@@ -329,7 +329,7 @@ export default function ConclusaoScreen() {
       {/* Photo picker */}
       {book && (
         photoUri ? (
-          <View style={[styles.photoPreview, { backgroundColor: colors.card, borderColor: colors.volt }]}>
+          <View style={[styles.photoPreview, { backgroundColor: colors.card, borderColor: colors.accentBorder }]}>
             <Image source={{ uri: photoUri }} style={styles.photoThumb} />
             <View style={styles.photoPreviewText}>
               <Text style={[styles.photoPreviewTitle, { color: colors.foreground }]}>

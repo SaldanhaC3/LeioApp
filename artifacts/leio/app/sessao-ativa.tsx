@@ -292,7 +292,7 @@ export default function SessaoAtivaScreen() {
           Livro não encontrado
         </Text>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.backLink, { color: colors.volt }]}>Voltar</Text>
+          <Text style={[styles.backLink, { color: colors.accentText }]}>Voltar</Text>
         </TouchableOpacity>
       </View>
     );
@@ -516,8 +516,8 @@ export default function SessaoAtivaScreen() {
                 { backgroundColor: `${colors.volt}22` },
               ]}
             >
-              <Ionicons name="eye" size={12} color={colors.volt} />
-              <Text style={[styles.focusBadgeText, { color: colors.volt }]}>
+              <Ionicons name="eye" size={12} color={colors.accentText} />
+              <Text style={[styles.focusBadgeText, { color: colors.accentText }]}>
                 Foco
               </Text>
             </View>

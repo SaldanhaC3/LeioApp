@@ -162,7 +162,7 @@ export default function LivroDetailScreen() {
       {book.isFree && (book.excerpt || (book.downloadSources && book.downloadSources.length > 0)) && (
         <View style={[styles.freeSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.freeSectionHeader}>
-            <Ionicons name="gift-outline" size={18} color={colors.volt} />
+            <Ionicons name="gift-outline" size={18} color={colors.accentText} />
             <Text style={[styles.freeSectionTitle, { color: colors.foreground }]}>
               Livro em domínio público
             </Text>
@@ -199,7 +199,7 @@ export default function LivroDetailScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="cloud-download-outline" size={16} color={colors.volt} />
+                  <Ionicons name="cloud-download-outline" size={16} color={colors.accentText} />
                   <Text style={[styles.downloadLabel, { color: colors.foreground }]} numberOfLines={1}>
                     {src.label}
                   </Text>
@@ -218,7 +218,7 @@ export default function LivroDetailScreen() {
             <Text style={[styles.progressPages, { color: colors.foreground }]}>
               Pág. {book.currentPage} de {book.totalPages}
             </Text>
-            <Text style={[styles.progressPct, { color: colors.volt }]}>
+            <Text style={[styles.progressPct, { color: colors.accentText }]}>
               {Math.round(progress * 100)}%
             </Text>
           </View>
@@ -245,7 +245,7 @@ export default function LivroDetailScreen() {
             key={i}
             style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           >
-            <Ionicons name={stat.icon as never} size={16} color={colors.volt} />
+            <Ionicons name={stat.icon as never} size={16} color={colors.accentText} />
             <Text style={[styles.statValue, { color: colors.foreground }]}>
               {stat.value}
             </Text>
@@ -337,7 +337,7 @@ export default function LivroDetailScreen() {
                     Págs {session.startPage}–{session.endPage} · {formatDuration(session.durationSeconds)}
                   </Text>
                 </View>
-                <Text style={[styles.sessionPace, { color: colors.volt }]}>
+                <Text style={[styles.sessionPace, { color: colors.accentText }]}>
                   {session.pace.toFixed(1)} p/m
                 </Text>
               </View>

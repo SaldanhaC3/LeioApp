@@ -26,7 +26,7 @@ export function BadgeItem({ badge, onPress }: BadgeItemProps) {
         styles.container,
         {
           backgroundColor: badge.unlocked ? colors.card : colors.secondary,
-          borderColor: badge.unlocked ? colors.volt : "transparent",
+          borderColor: badge.unlocked ? colors.accentBorder : "transparent",
           borderWidth: badge.unlocked ? 1 : 0,
         },
       ]}
@@ -46,7 +46,7 @@ export function BadgeItem({ badge, onPress }: BadgeItemProps) {
         <Ionicons
           name={(badge.icon ?? "star") as never}
           size={28}
-          color={badge.unlocked ? colors.volt : colors.mutedForeground}
+          color={badge.unlocked ? colors.accentText : colors.mutedForeground}
         />
       </View>
       <Text
@@ -62,7 +62,7 @@ export function BadgeItem({ badge, onPress }: BadgeItemProps) {
       </Text>
       {badge.unlocked && (
         <View style={[styles.xpPill, { backgroundColor: `${colors.volt}22` }]}>
-          <Text style={[styles.xpText, { color: colors.volt }]}>
+          <Text style={[styles.xpText, { color: colors.accentText }]}>
             +{badge.xpReward}XP
           </Text>
         </View>

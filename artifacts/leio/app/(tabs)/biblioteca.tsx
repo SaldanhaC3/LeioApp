@@ -130,7 +130,7 @@ export default function BibliotecaScreen() {
                 styles.tab,
                 {
                   borderBottomWidth: activeTab === tab.id ? 2 : 0,
-                  borderBottomColor: colors.volt,
+                  borderBottomColor: colors.accentBorder,
                 },
               ]}
               onPress={() => {

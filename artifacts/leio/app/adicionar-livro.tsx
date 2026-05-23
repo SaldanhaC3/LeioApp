@@ -75,7 +75,7 @@ export default function AdicionarLivroScreen() {
             ]}
           >
             <View style={[styles.iconWrap, { backgroundColor: colors.volt + "22" }]}>
-              <Ionicons name={opt.icon} size={26} color={colors.volt} />
+              <Ionicons name={opt.icon} size={26} color={colors.foreground} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cardTitle, { color: colors.foreground }]}>{opt.title}</Text>

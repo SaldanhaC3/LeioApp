@@ -20,6 +20,8 @@ const colors = {
     input: "#FBF6E9",
     volt: "#CDFF00",
     coral: "#C75B3E",
+    accentText: "#2A6E1F",
+    accentBorder: "#2A6E1F",
   },
   dark: {
     text: "#F2EBDA",
@@ -42,6 +44,8 @@ const colors = {
     input: "#1F1A14",
     volt: "#CDFF00",
     coral: "#FF7A5C",
+    accentText: "#B8E635",
+    accentBorder: "#B8E635",
   },
   radius: 12,
 };

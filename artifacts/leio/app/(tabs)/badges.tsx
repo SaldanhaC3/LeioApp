@@ -84,7 +84,7 @@ export default function BadgesScreen() {
           <Text style={[styles.levelName, { color: colors.foreground }]}>
             {levelInfo.name}
           </Text>
-          <Text style={[styles.xpVal, { color: colors.volt }]}>{xp} XP</Text>
+          <Text style={[styles.xpVal, { color: colors.accentText }]}>{xp} XP</Text>
         </View>
         <View style={[styles.xpBar, { backgroundColor: colors.border }]}>
           <View

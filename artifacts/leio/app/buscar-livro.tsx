@@ -171,7 +171,7 @@ export default function BuscarLivroScreen() {
 
       {state.kind === "loading" && (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.volt} />
+          <ActivityIndicator size="large" color={colors.accentText} />
           <Text style={[styles.muted, { color: colors.mutedForeground }]}>
             Vasculhando as prateleiras...
           </Text>
@@ -289,7 +289,7 @@ export default function BuscarLivroScreen() {
                   )}
                 </View>
               </View>
-              <Ionicons name="add-circle" size={24} color={colors.volt} />
+              <Ionicons name="add-circle" size={24} color={colors.accentText} />
             </TouchableOpacity>
           )}
         />
@@ -342,7 +342,7 @@ export default function BuscarLivroScreen() {
                 onPress={() => handleAdd(opt.value)}
                 activeOpacity={0.8}
               >
-                <Ionicons name={opt.icon} size={20} color={colors.volt} />
+                <Ionicons name={opt.icon} size={20} color={colors.accentText} />
                 <Text
                   style={[styles.statusLabel, { color: colors.foreground }]}
                 >
