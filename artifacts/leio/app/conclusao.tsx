@@ -1,9 +1,11 @@
 import { CapiMascot } from "@/components/CapiMascot";
 import { ShareCard } from "@/components/ShareCard";
+import { ShareCardPhoto } from "@/components/ShareCardPhoto";
 import { useApp } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import * as Sharing from "expo-sharing";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -11,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Image,
   Platform,
   StyleSheet,
   Text,
@@ -87,7 +90,9 @@ export default function ConclusaoScreen() {
   const [displayPages, setDisplayPages] = useState(0);
   const [displayDuration, setDisplayDuration] = useState(0);
   const [isSharing, setIsSharing] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const shareCardRef = useRef<ViewShotRef>(null);
+  const photoCardRef = useRef<ViewShotRef>(null);
 
   const motivationalPhrase = useMemo(
     () => SHARE_PHRASES[Math.floor(Math.random() * SHARE_PHRASES.length)],
@@ -124,13 +129,44 @@ export default function ConclusaoScreen() {
     };
   }, []);
 
+  async function handlePickPhoto() {
+    Haptics.selectionAsync();
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(
+          "Sem permissão",
+          "Pra escolher uma foto, libera o acesso à galeria nas configurações."
+        );
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [9, 16],
+        quality: 0.9,
+      });
+      if (!result.canceled && result.assets[0]?.uri) {
+        setPhotoUri(result.assets[0].uri);
+      }
+    } catch {
+      Alert.alert("Ops", "Não consegui abrir a galeria agora.");
+    }
+  }
+
+  function handleRemovePhoto() {
+    Haptics.selectionAsync();
+    setPhotoUri(null);
+  }
+
   async function handleShare() {
     if (isSharing || !book) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsSharing(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 80));
-      const uri = await captureRef(shareCardRef, {
+      const targetRef = photoUri ? photoCardRef : shareCardRef;
+      const uri = await captureRef(targetRef, {
         format: "png",
         quality: 1,
       });
@@ -290,6 +326,41 @@ export default function ConclusaoScreen() {
         </View>
       )}
 
+      {/* Photo picker */}
+      {book && (
+        photoUri ? (
+          <View style={[styles.photoPreview, { backgroundColor: colors.card, borderColor: colors.volt }]}>
+            <Image source={{ uri: photoUri }} style={styles.photoThumb} />
+            <View style={styles.photoPreviewText}>
+              <Text style={[styles.photoPreviewTitle, { color: colors.foreground }]}>
+                Foto adicionada
+              </Text>
+              <Text style={[styles.photoPreviewSub, { color: colors.mutedForeground }]} numberOfLines={1}>
+                Vira capa do card ao compartilhar
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={handleRemovePhoto}
+              style={[styles.photoRemoveBtn, { borderColor: colors.border }]}
+              hitSlop={8}
+            >
+              <Ionicons name="close" size={18} color={colors.foreground} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.photoPickBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
+            onPress={handlePickPhoto}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="image-outline" size={18} color={colors.foreground} />
+            <Text style={[styles.photoPickText, { color: colors.foreground }]}>
+              Adicionar foto da galeria
+            </Text>
+          </TouchableOpacity>
+        )
+      )}
+
       {/* Actions */}
       <TouchableOpacity
         style={[
@@ -336,6 +407,18 @@ export default function ConclusaoScreen() {
             durationSeconds={duration}
             pace={pace}
             motivationalPhrase={motivationalPhrase}
+          />
+        </View>
+      )}
+
+      {book && photoUri && (
+        <View style={styles.hiddenShareCard} pointerEvents="none">
+          <ShareCardPhoto
+            ref={photoCardRef}
+            book={book}
+            photoUri={photoUri}
+            pages={pages}
+            pace={pace}
           />
         </View>
       )}
@@ -394,6 +477,45 @@ const styles = StyleSheet.create({
   nextBookLabel: { fontSize: 11, letterSpacing: 0.5 },
   nextBookTitle: { fontSize: 15, fontWeight: "700" },
   nextBookAuthor: { fontSize: 12 },
+  photoPickBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  photoPickText: { fontSize: 14, fontWeight: "700" },
+  photoPreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 10,
+    marginBottom: 10,
+  },
+  photoThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: "#000",
+  },
+  photoPreviewText: { flex: 1, gap: 2 },
+  photoPreviewTitle: { fontSize: 13, fontWeight: "800" },
+  photoPreviewSub: { fontSize: 11 },
+  photoRemoveBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   shareBtn: {
     flexDirection: "row",
     alignItems: "center",
