@@ -8,6 +8,8 @@ import {
 } from "@/components/ShareCard";
 import { useApp } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { useStatPreferences } from "@/hooks/useStatPreferences";
+import { ALL_STATS } from "@/utils/statPreferences";
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Clipboard from "expo-clipboard";
@@ -25,6 +27,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -56,18 +59,24 @@ export default function CompartilharScreen() {
     durationSeconds: string;
     pace: string;
   }>();
-  const { getBookById, progressShareMission } = useApp();
+  const { getBookById, progressShareMission, folego } = useApp();
+  const { selected: selectedStats, toggle: toggleStat } = useStatPreferences();
 
   const book = getBookById(params.bookId ?? "");
   const pages = parseInt(params.pages ?? "0", 10);
   const duration = parseInt(params.durationSeconds ?? "0", 10);
   const pace = parseFloat(params.pace ?? "0");
+  const percentComplete =
+    book && book.totalPages > 0
+      ? (book.currentPage / book.totalPages) * 100
+      : 0;
 
   const [template, setTemplate] = useState<ShareTemplateId>("storiesPhoto");
   const [photoUri, setPhotoUri] = useState<string | undefined>(undefined);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraFacing, setCameraFacing] = useState<"front" | "back">("back");
+  const [statsSheetOpen, setStatsSheetOpen] = useState(false);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const shareCardRef = useRef<ViewShotRef>(null);
@@ -235,6 +244,18 @@ export default function CompartilharScreen() {
 
   const previewScale = 0.32;
 
+  const sharedCardProps = {
+    book,
+    pages,
+    durationSeconds: duration,
+    pace,
+    motivationalPhrase,
+    backgroundPhoto: photoUri,
+    selectedStats,
+    streak: folego,
+    percentComplete,
+  };
+
   return (
     <View
       style={[
@@ -318,12 +339,7 @@ export default function CompartilharScreen() {
               <ShareCard
                 ref={shareCardRef}
                 template={template}
-                book={book}
-                pages={pages}
-                durationSeconds={duration}
-                pace={pace}
-                motivationalPhrase={motivationalPhrase}
-                backgroundPhoto={photoUri}
+                {...sharedCardProps}
               />
             </View>
           </View>
@@ -364,6 +380,31 @@ export default function CompartilharScreen() {
             );
           })}
         </ScrollView>
+
+        {/* Edit stats button */}
+        <Pressable
+          onPress={() => {
+            Haptics.selectionAsync();
+            setStatsSheetOpen(true);
+          }}
+          style={[
+            styles.editStatsBtn,
+            { borderColor: colors.border, backgroundColor: colors.card },
+          ]}
+        >
+          <Ionicons name="options-outline" size={15} color={colors.mutedForeground} />
+          <Text style={[styles.editStatsBtnText, { color: colors.mutedForeground }]}>
+            Editar stats
+          </Text>
+          <View style={styles.editStatsBadges}>
+            {selectedStats.map((k) => (
+              <View
+                key={k}
+                style={[styles.editStatsDot, { backgroundColor: colors.volt }]}
+              />
+            ))}
+          </View>
+        </Pressable>
       </ScrollView>
 
       {/* Actions bar */}
@@ -403,6 +444,105 @@ export default function CompartilharScreen() {
           colors={colors}
         />
       </View>
+
+      {/* Stats picker sheet */}
+      <Modal
+        visible={statsSheetOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setStatsSheetOpen(false)}
+      >
+        <Pressable
+          style={styles.sheetBackdrop}
+          onPress={() => setStatsSheetOpen(false)}
+        />
+        <View
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              paddingBottom: insets.bottom + 16,
+            },
+          ]}
+        >
+          <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
+          <Text style={[styles.sheetTitle, { color: colors.foreground }]}>
+            Editar estatísticas
+          </Text>
+          <Text style={[styles.sheetSubtitle, { color: colors.mutedForeground }]}>
+            Escolha o que aparece no card
+          </Text>
+
+          {ALL_STATS.map((stat) => {
+            const isOn = selectedStats.includes(stat.key);
+            const isLast = !isOn && selectedStats.length === 1;
+            return (
+              <Pressable
+                key={stat.key}
+                onPress={() => {
+                  if (isLast) return;
+                  Haptics.selectionAsync();
+                  toggleStat(stat.key);
+                }}
+                style={[
+                  styles.statToggleRow,
+                  { borderBottomColor: colors.border, opacity: isLast ? 0.4 : 1 },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.statToggleIconWrap,
+                    {
+                      backgroundColor: isOn
+                        ? `${colors.volt}22`
+                        : colors.secondary,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={stat.icon as React.ComponentProps<typeof Ionicons>["name"]}
+                    size={18}
+                    color={isOn ? colors.volt : colors.mutedForeground}
+                  />
+                </View>
+                <View style={styles.statToggleTexts}>
+                  <Text style={[styles.statToggleLabel, { color: colors.foreground }]}>
+                    {stat.label}
+                  </Text>
+                  <Text style={[styles.statToggleDesc, { color: colors.mutedForeground }]}>
+                    {stat.description}
+                  </Text>
+                </View>
+                <Switch
+                  value={isOn}
+                  onValueChange={() => {
+                    if (isLast) return;
+                    Haptics.selectionAsync();
+                    toggleStat(stat.key);
+                  }}
+                  trackColor={{ false: colors.secondary, true: colors.volt }}
+                  thumbColor={isOn ? colors.accentForeground : colors.mutedForeground}
+                  ios_backgroundColor={colors.secondary}
+                />
+              </Pressable>
+            );
+          })}
+
+          <TouchableOpacity
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setStatsSheetOpen(false);
+            }}
+            activeOpacity={0.85}
+            style={[styles.sheetDoneBtn, { backgroundColor: colors.volt }]}
+          >
+            <Text style={[styles.sheetDoneBtnText, { color: colors.accentForeground }]}>
+              Pronto
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
       {/* Camera modal */}
       <Modal visible={cameraOpen} animationType="slide" onRequestClose={() => setCameraOpen(false)}>
@@ -450,12 +590,7 @@ export default function CompartilharScreen() {
         <ShareCard
           ref={shareCardRef}
           template={template}
-          book={book}
-          pages={pages}
-          durationSeconds={duration}
-          pace={pace}
-          motivationalPhrase={motivationalPhrase}
-          backgroundPhoto={photoUri}
+          {...sharedCardProps}
         />
       </View>
     </View>
@@ -622,6 +757,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   templateChipText: { fontSize: 13, fontWeight: "800" },
+  editStatsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  editStatsBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  editStatsBadges: {
+    flexDirection: "row",
+    gap: 3,
+    marginLeft: 2,
+  },
+  editStatsDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
   actionsBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -648,6 +807,74 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
     opacity: 0,
   },
+  // Stats sheet
+  sheetBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  sheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  sheetSubtitle: {
+    fontSize: 13,
+    fontWeight: "500",
+    marginBottom: 16,
+  },
+  statToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  statToggleIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statToggleTexts: {
+    flex: 1,
+    gap: 2,
+  },
+  statToggleLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  statToggleDesc: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  sheetDoneBtn: {
+    marginTop: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+  sheetDoneBtnText: {
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  // Camera modal
   cameraTop: {
     position: "absolute",
     top: 0,
@@ -689,5 +916,4 @@ const styles = StyleSheet.create({
   },
 });
 
-// Suppress unused CapiMascot warning - reserved for future use in preview header
 void CapiMascot;

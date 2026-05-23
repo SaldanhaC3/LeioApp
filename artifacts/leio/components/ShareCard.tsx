@@ -1,5 +1,6 @@
 import { CapiMascot } from "@/components/CapiMascot";
 import type { Book } from "@/contexts/AppContext";
+import { DEFAULT_STAT_KEYS, type StatKey } from "@/utils/statPreferences";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { forwardRef } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
@@ -32,6 +33,14 @@ export interface ShareCardData {
   pace: number;
   motivationalPhrase: string;
   backgroundPhoto?: string;
+  selectedStats?: StatKey[];
+  streak?: number;
+  percentComplete?: number;
+}
+
+interface StatSlot {
+  value: string;
+  label: string;
 }
 
 interface ShareCardProps extends ShareCardData {
@@ -44,6 +53,35 @@ function formatDuration(seconds: number): string {
   if (m === 0) return `${s}s`;
   if (s === 0) return `${m}min`;
   return `${m}min ${s}s`;
+}
+
+function formatPaceValue(pace: number): string {
+  if (pace <= 0) return "—";
+  return pace >= 100
+    ? String(Math.min(999, Math.round(pace)))
+    : pace.toFixed(1);
+}
+
+function buildSlots(data: ShareCardData, keys: StatKey[]): StatSlot[] {
+  return keys.map((key) => {
+    switch (key) {
+      case "pages":
+        return { value: String(data.pages), label: "páginas" };
+      case "duration":
+        return { value: formatDuration(data.durationSeconds), label: "tempo" };
+      case "pace":
+        return { value: formatPaceValue(data.pace), label: "págs/min" };
+      case "streak":
+        return { value: String(data.streak ?? 0), label: "dias seguidos" };
+      case "percent": {
+        const pct = data.percentComplete ?? 0;
+        return {
+          value: pct > 0 ? `${Math.round(pct)}%` : "—",
+          label: "do livro",
+        };
+      }
+    }
+  });
 }
 
 function StatWithArrow({
@@ -87,13 +125,9 @@ function StatWithArrow({
   );
 }
 
-function StoriesPhotoTemplate({
-  book,
-  pages,
-  durationSeconds,
-  pace,
-  backgroundPhoto,
-}: ShareCardData) {
+function StoriesPhotoTemplate(data: ShareCardData) {
+  const { book, backgroundPhoto, selectedStats } = data;
+  const slots = buildSlots(data, selectedStats ?? DEFAULT_STAT_KEYS);
   return (
     <View style={styles.card}>
       {backgroundPhoto ? (
@@ -125,23 +159,16 @@ function StoriesPhotoTemplate({
         <View style={{ flex: 1 }} />
 
         <View style={styles.storiesStats}>
-          <StatWithArrow
-            value={String(pages)}
-            label="PÁGINAS"
-            arrowSide="left"
-          />
-          <View style={{ height: 50 }} />
-          <StatWithArrow
-            value={formatDuration(durationSeconds)}
-            label="TEMPO"
-            arrowSide="right"
-          />
-          <View style={{ height: 50 }} />
-          <StatWithArrow
-            value={pace > 0 ? pace.toFixed(1) : "—"}
-            label="PÁGS/MIN"
-            arrowSide="left"
-          />
+          {slots.map((slot, i) => (
+            <React.Fragment key={slot.label}>
+              {i > 0 && <View style={{ height: 50 }} />}
+              <StatWithArrow
+                value={slot.value}
+                label={slot.label.toUpperCase()}
+                arrowSide={i % 2 === 0 ? "left" : "right"}
+              />
+            </React.Fragment>
+          ))}
         </View>
 
         <View style={styles.storiesBookInfo}>
@@ -157,13 +184,9 @@ function StoriesPhotoTemplate({
   );
 }
 
-function FramedTemplate({
-  book,
-  pages,
-  durationSeconds,
-  pace,
-  backgroundPhoto,
-}: ShareCardData) {
+function FramedTemplate(data: ShareCardData) {
+  const { book, backgroundPhoto, selectedStats } = data;
+  const slots = buildSlots(data, selectedStats ?? DEFAULT_STAT_KEYS);
   return (
     <View style={[styles.card, { backgroundColor: BLACK }]}>
       <View style={styles.framedCheckerTop}>
@@ -221,22 +244,12 @@ function FramedTemplate({
         </Text>
 
         <View style={styles.framedStatsRow}>
-          <View style={styles.framedStatBox}>
-            <Text style={styles.framedStatValue}>{pages}</Text>
-            <Text style={styles.framedStatLabel}>páginas</Text>
-          </View>
-          <View style={styles.framedStatBox}>
-            <Text style={styles.framedStatValue}>
-              {formatDuration(durationSeconds)}
-            </Text>
-            <Text style={styles.framedStatLabel}>tempo</Text>
-          </View>
-          <View style={styles.framedStatBox}>
-            <Text style={styles.framedStatValue}>
-              {pace > 0 ? pace.toFixed(1) : "—"}
-            </Text>
-            <Text style={styles.framedStatLabel}>págs/min</Text>
-          </View>
+          {slots.map((slot) => (
+            <View key={slot.label} style={styles.framedStatBox}>
+              <Text style={styles.framedStatValue}>{slot.value}</Text>
+              <Text style={styles.framedStatLabel}>{slot.label}</Text>
+            </View>
+          ))}
         </View>
 
         <View style={styles.framedFooter}>
@@ -248,13 +261,9 @@ function FramedTemplate({
   );
 }
 
-function ClassicTemplate({
-  book,
-  pages,
-  durationSeconds,
-  pace,
-  motivationalPhrase,
-}: ShareCardData) {
+function ClassicTemplate(data: ShareCardData) {
+  const { book, motivationalPhrase, selectedStats } = data;
+  const slots = buildSlots(data, selectedStats ?? DEFAULT_STAT_KEYS);
   return (
     <View style={[styles.card, { backgroundColor: BLACK, padding: 80, paddingTop: 120, paddingBottom: 100 }]}>
       <View style={styles.classicHeader}>
@@ -283,20 +292,15 @@ function ClassicTemplate({
       </View>
 
       <View style={styles.classicStatsRow}>
-        <View style={styles.classicStatBox}>
-          <Text style={styles.classicStatValue}>{pages}</Text>
-          <Text style={styles.classicStatLabel}>páginas</Text>
-        </View>
-        <View style={styles.classicDivider} />
-        <View style={styles.classicStatBox}>
-          <Text style={styles.classicStatValue}>{formatDuration(durationSeconds)}</Text>
-          <Text style={styles.classicStatLabel}>tempo</Text>
-        </View>
-        <View style={styles.classicDivider} />
-        <View style={styles.classicStatBox}>
-          <Text style={styles.classicStatValue}>{pace > 0 ? pace.toFixed(1) : "—"}</Text>
-          <Text style={styles.classicStatLabel}>págs/min</Text>
-        </View>
+        {slots.map((slot, i) => (
+          <React.Fragment key={slot.label}>
+            {i > 0 && <View style={styles.classicDivider} />}
+            <View style={styles.classicStatBox}>
+              <Text style={styles.classicStatValue}>{slot.value}</Text>
+              <Text style={styles.classicStatLabel}>{slot.label}</Text>
+            </View>
+          </React.Fragment>
+        ))}
       </View>
 
       <View style={styles.classicPhraseWrap}>
