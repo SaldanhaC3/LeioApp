@@ -11,6 +11,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   AppState,
+  ImageBackground,
   Modal,
   Platform,
   StyleSheet,
@@ -27,6 +28,14 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const AnimatedGradient = Animated.createAnimatedComponent(LinearGradient);
+
+const BG_DIA = require("@/assets/images/bg-sessao-dia.png");
+const BG_NOITE = require("@/assets/images/bg-sessao-noite.png");
+
+function isNightTime(date = new Date()): boolean {
+  const h = date.getHours();
+  return h < 6 || h >= 18;
+}
 
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -292,6 +301,9 @@ export default function SessaoAtivaScreen() {
   const totalMinutes = focusDuration * 60;
   const focusProgress = isFocusMode ? Math.min(1, elapsed / totalMinutes) : 0;
 
+  const night = isNightTime();
+  const overlayColor = night ? "rgba(10,8,6,0.55)" : "rgba(10,8,6,0.30)";
+
   return (
     <View
       style={[
@@ -301,10 +313,19 @@ export default function SessaoAtivaScreen() {
         },
       ]}
     >
-      {/* Reactive Spotify gradient background */}
+      {/* Ambient artwork — Capi reading (day/night based on time) */}
+      <ImageBackground
+        source={night ? BG_NOITE : BG_DIA}
+        style={StyleSheet.absoluteFillObject}
+        resizeMode="cover"
+      >
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: overlayColor }]} />
+      </ImageBackground>
+
+      {/* Reactive Spotify gradient tint (lower opacity so artwork shows) */}
       <AnimatedGradient
         colors={gradient}
-        style={[StyleSheet.absoluteFillObject, gradientAnimStyle]}
+        style={[StyleSheet.absoluteFillObject, gradientAnimStyle, { opacity: 0.25 }]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       />
