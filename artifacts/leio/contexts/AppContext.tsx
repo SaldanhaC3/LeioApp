@@ -678,7 +678,7 @@ interface AppContextType {
   addVocabularyEntry: (
     entry: Omit<VocabularyEntry, "id" | "savedAt">
   ) => void;
-  progressShareMission: () => void;
+  progressShareMission: () => boolean;
   getBookById: (id: string) => Book | undefined;
   getAbandoned: () => Book[];
   getCurrentBook: () => Book | undefined;
@@ -1115,8 +1115,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [books, sessions, badges, vocabulary, settings, folego, folegoGuardado, xp, missions]
   );
 
-  const progressShareMission = useCallback(() => {
+  const progressShareMission = useCallback((): boolean => {
     let bonus = 0;
+    let badgeUnlocked = false;
 
     const updatedMissions = missions.map((m) => {
       if (m.completed || m.type !== "share") return m;
@@ -1141,6 +1142,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         );
         setBadges(updatedBadges);
         bonus += badge.xpReward;
+        badgeUnlocked = true;
       }
     }
 
@@ -1153,6 +1155,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       cardsSharedCount: newCount,
       badges: updatedBadges,
     });
+
+    return badgeUnlocked;
   }, [books, sessions, badges, vocabulary, settings, folego, folegoGuardado, xp, missions, cardsSharedCount]);
 
   const getBookById = useCallback(

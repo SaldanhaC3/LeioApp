@@ -1,3 +1,4 @@
+import { BadgeToast } from "@/components/BadgeToast";
 import { CapiMascot } from "@/components/CapiMascot";
 import {
   CARD_HEIGHT,
@@ -77,6 +78,7 @@ export default function CompartilharScreen() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraFacing, setCameraFacing] = useState<"front" | "back">("back");
   const [statsSheetOpen, setStatsSheetOpen] = useState(false);
+  const [badgeToastVisible, setBadgeToastVisible] = useState(false);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const shareCardRef = useRef<ViewShotRef>(null);
@@ -178,7 +180,8 @@ export default function CompartilharScreen() {
       });
       if (!hasSharedThisSession.current) {
         hasSharedThisSession.current = true;
-        progressShareMission();
+        const badgeUnlocked = progressShareMission();
+        if (badgeUnlocked) setBadgeToastVisible(true);
       }
     } catch {
       Alert.alert("Ops", "Não rolou compartilhar agora.");
@@ -203,7 +206,8 @@ export default function CompartilharScreen() {
       Alert.alert("Copiado!", "Card copiado para a área de transferência.");
       if (!hasSharedThisSession.current) {
         hasSharedThisSession.current = true;
-        progressShareMission();
+        const badgeUnlocked = progressShareMission();
+        if (badgeUnlocked) setBadgeToastVisible(true);
       }
     } catch {
       Alert.alert("Ops", "Não rolou copiar o card.");
@@ -235,7 +239,8 @@ export default function CompartilharScreen() {
       Alert.alert("Salvo!", "Card salvo na sua galeria.");
       if (!hasSharedThisSession.current) {
         hasSharedThisSession.current = true;
-        progressShareMission();
+        const badgeUnlocked = progressShareMission();
+        if (badgeUnlocked) setBadgeToastVisible(true);
       }
     } catch {
       Alert.alert("Ops", "Não rolou salvar o card.");
@@ -603,6 +608,15 @@ export default function CompartilharScreen() {
           {...sharedCardProps}
         />
       </View>
+
+      {/* Badge unlock toast — shown once when card_sharer badge is earned */}
+      <BadgeToast
+        visible={badgeToastVisible}
+        badgeName="Trecho no Feed"
+        badgeIcon="share-social"
+        xpReward={75}
+        onHide={() => setBadgeToastVisible(false)}
+      />
     </View>
   );
 }
