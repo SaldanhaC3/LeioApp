@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "i7xepTbuhTDacCqEYTVCL"
+uri = "file://attached_assets/leio-icon.png"
+type = "image"
+title = "leio-capi-app-icon"
