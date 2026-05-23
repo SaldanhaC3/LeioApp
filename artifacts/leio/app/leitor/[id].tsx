@@ -87,7 +87,7 @@ export default function LeitorScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.foreground} />
         </TouchableOpacity>
         <Text style={[styles.empty, { color: colors.mutedForeground }]}>
-          Este livro ainda não tem trecho disponível.
+Esse livro ainda não trouxe trecho — espera o próximo capítulo.
         </Text>
       </View>
     );
@@ -118,7 +118,7 @@ export default function LeitorScreen() {
   }
 
   function handleRemoveHighlight(h: Highlight) {
-    Alert.alert("Remover destaque", "Tem certeza que quer remover esse destaque?", [
+    Alert.alert("Apagar destaque", "Vai mesmo apagar esse trecho marcado?", [
       { text: "Cancelar", style: "cancel" },
       {
         text: "Remover",
@@ -152,7 +152,7 @@ export default function LeitorScreen() {
       }
       progressShareMission();
     } catch (e) {
-      Alert.alert("Ops", "Não foi possível exportar o card.");
+      Alert.alert("Ops", "O card não saiu do papel. Tenta de novo?");
     } finally {
       setExporting(false);
     }
@@ -175,7 +175,7 @@ export default function LeitorScreen() {
           <View style={{ flex: 1 }} />
           <View style={[styles.tipPill, { backgroundColor: `${colors.volt}22`, borderColor: colors.accentBorder }]}>
             <Ionicons name="hand-left-outline" size={12} color={colors.accentText} />
-            <Text style={[styles.tipText, { color: colors.accentText }]}>Toque p/ destacar</Text>
+            <Text style={[styles.tipText, { color: colors.accentText }]}>Toque pra grifar</Text>
           </View>
         </View>
 
@@ -216,7 +216,7 @@ export default function LeitorScreen() {
         {bookHighlights.length > 0 && (
           <View style={styles.savedSection}>
             <Text style={[styles.savedTitle, { color: colors.foreground }]}>
-              Seus destaques ({bookHighlights.length})
+Trechos grifados ({bookHighlights.length})
             </Text>
             {bookHighlights
               .slice()
@@ -268,7 +268,7 @@ export default function LeitorScreen() {
           ]}
         >
           <Text style={[styles.actionLabel, { color: colors.mutedForeground }]}>
-            Estilo do card
+Cara do card
           </Text>
           <View style={styles.variantRow}>
             {BG_VARIANTS.map((v) => (
@@ -297,7 +297,7 @@ export default function LeitorScreen() {
           >
             <Ionicons name="bookmark" size={18} color={colors.accentForeground} />
             <Text style={[styles.saveBtnText, { color: colors.accentForeground }]}>
-              Salvar e compartilhar
+Guardar e mostrar pro mundo
             </Text>
           </TouchableOpacity>
         </View>
@@ -314,7 +314,7 @@ export default function LeitorScreen() {
           <View style={[styles.modalSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.foreground }]}>
-                Compartilhar destaque
+Compartilhar trecho
               </Text>
               <TouchableOpacity onPress={() => setShareHighlight(null)} hitSlop={8}>
                 <Ionicons name="close" size={24} color={colors.foreground} />

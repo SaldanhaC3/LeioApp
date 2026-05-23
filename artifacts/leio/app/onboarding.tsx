@@ -21,23 +21,23 @@ const { width } = Dimensions.get("window");
 const SLIDES = [
   {
     id: "1",
-    title: "Cê vai ler hoje\nou não vai?",
+    title: "Hoje você lê,\nou inventa desculpa?",
     subtitle:
-      "O Leio transforma cada sessão de leitura em um registro de conquista. Se não registrou, não leu.",
+      "O Leio anota cada sessão como o Bentinho anotava ciúme: tudo, com data. Se não registrou, não leu.",
     capiState: "waving" as const,
   },
   {
     id: "2",
-    title: "Fôlego não\nacode perdido.",
+    title: "Fôlego de leitor\nse cultiva.",
     subtitle:
-      "Mantenha sua sequência diária de leitura. Não perde o fôlego! E se um dia furar, você tem Fôlego Guardado.",
+      "Mantenha a sequência diária. Furou um dia? Calma — você tem Fôlego Guardado pra cobrir o tropeço. Graciliano não veria isso com bons olhos, mas a gente é mais flexível.",
     capiState: "motivating" as const,
   },
   {
     id: "3",
     title: "Cada sessão\nvira um card.",
     subtitle:
-      "Compartilhe cards lindos das suas leituras no Instagram e Stories. Marketing orgânico que você vai querer fazer.",
+      "Trechos, números, conquistas. Vira card bonito pro Stories. O feed agradece. Capitu também.",
     capiState: "celebrating" as const,
   },
 ];

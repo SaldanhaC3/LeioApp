@@ -99,7 +99,7 @@ export default function SessaoScreen() {
         </TouchableOpacity>
 
         <Text style={[styles.configTitle, { color: colors.foreground }]}>
-          Configurar sessão
+          Ajustar a sessão
         </Text>
 
         {/* Selected Book */}
@@ -179,7 +179,7 @@ export default function SessaoScreen() {
                 Modo Foco
               </Text>
               <Text style={[styles.configSub, { color: colors.mutedForeground }]}>
-                Capi avisa se você sair do app
+                Capi cutuca se você der uma escapada
               </Text>
             </View>
             <TouchableOpacity
@@ -249,7 +249,7 @@ export default function SessaoScreen() {
                 Modo Vagão
               </Text>
               <Text style={[styles.configSub, { color: colors.mutedForeground }]}>
-                Botões grandes para ler no transporte
+                Botões generosos pra ler no busão sem errar o dedo
               </Text>
             </View>
             <TouchableOpacity
@@ -283,7 +283,7 @@ export default function SessaoScreen() {
         >
           <Ionicons name="play-circle" size={24} color={colors.accentForeground} />
           <Text style={[styles.startBtnText, { color: colors.accentForeground }]}>
-            Começar a ler
+            Abrir o livro
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -311,7 +311,7 @@ export default function SessaoScreen() {
           <Ionicons name="search-outline" size={16} color={colors.mutedForeground} />
           <TextInput
             style={[styles.searchInput, { color: colors.foreground }]}
-            placeholder="Buscar livro..."
+            placeholder="Procurar na estante..."
             placeholderTextColor={colors.mutedForeground}
             value={search}
             onChangeText={setSearch}
@@ -344,7 +344,7 @@ export default function SessaoScreen() {
           <View style={styles.empty}>
             <Ionicons name="book-outline" size={48} color={colors.mutedForeground} />
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              Nenhum livro encontrado.{"\n"}Adicione um na Biblioteca.
+Estante meio órfã.{"\n"}Adiciona um livro na Biblioteca.
             </Text>
           </View>
         }
@@ -367,10 +367,10 @@ export default function SessaoScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.addNewTitle, { color: colors.foreground }]}>
-                    Adicionar livro novo
+                    Plantar livro novo na estante
                   </Text>
                   <Text style={[styles.addNewSub, { color: colors.mutedForeground }]}>
-                    Busque por título, autor ou ISBN
+                    Por título, autor ou ISBN — vale até Kafka
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.accentText} />

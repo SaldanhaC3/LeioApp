@@ -32,28 +32,28 @@ function formatDuration(seconds: number): string {
 }
 
 const FOCUS_MESSAGES = [
-  "Sessão 100% focada! Você arrasou.",
-  "Capi está orgulhosa de você.",
-  "Isso é disciplina de verdade.",
+  "Foco total. Nem o Big Brother do Orwell te vigiou tanto.",
+  "Capi orgulhosa. Riobaldo também.",
+  "Disciplina drummondiana: no meio do caminho, leitura.",
 ];
 
 const ABANDON_MESSAGES = [
-  "Sem julgamento — acontece com todo mundo.",
-  "Tá bom pra hoje. Amanhã mais!",
-  "O importante é ter lido.",
+  "Sem drama. Até o Bentinho parava pra respirar.",
+  "Tá bom por hoje. A travessia continua amanhã.",
+  "Página fechada não é página perdida.",
 ];
 
 const SHARE_PHRASES = [
-  "Mais um livro pra coleção do Capi.",
-  "Cabeça cheia, copo vazio (de cerveja).",
-  "Lendo igual gente grande.",
-  "O algoritmo chora, eu leio.",
-  "Menos scroll, mais página virada.",
-  "Capi aprovou essa sessão.",
-  "Tô construindo um cérebro melhor, devagarinho.",
+  "Mais um livro na estante imaginária.",
   "Hoje o foco venceu o feed.",
-  "Página por página, vou virando outra pessoa.",
-  "Leitura concluída. Ego inflado.",
+  "Lendo igual gente grande (e sem precisar postar print).",
+  "O algoritmo chora, Machado sorri.",
+  "Menos scroll, mais Drummond.",
+  "Vagão lotado, página virada.",
+  "Cérebro em construção — devagar e sempre.",
+  "Capítulo fechado, ego saudavelmente inflado.",
+  "Eça aprovaria essa sessão.",
+  "Sessão concluída. Capitu não desconfiou de nada.",
 ];
 
 export default function ConclusaoScreen() {
@@ -135,7 +135,7 @@ export default function ConclusaoScreen() {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
         Alert.alert(
-          "Sem permissão",
+          "Faltou permissão",
           "Pra escolher uma foto, libera o acesso à galeria nas configurações."
         );
         return;
@@ -150,7 +150,7 @@ export default function ConclusaoScreen() {
         setPhotoUri(result.assets[0].uri);
       }
     } catch {
-      Alert.alert("Ops", "Não consegui abrir a galeria agora.");
+      Alert.alert("Ops", "A galeria emperrou. Tenta de novo daqui a pouco.");
     }
   }
 
@@ -173,8 +173,8 @@ export default function ConclusaoScreen() {
       const isAvailable = await Sharing.isAvailableAsync();
       if (!isAvailable) {
         Alert.alert(
-          "Compartilhamento indisponível",
-          "Seu dispositivo não suporta compartilhamento nativo."
+          "Compartilhamento fora do ar",
+          "Seu dispositivo não topa o compartilhamento nativo."
         );
         return;
       }
@@ -185,7 +185,7 @@ export default function ConclusaoScreen() {
       });
       progressShareMission();
     } catch {
-      Alert.alert("Ops", "Não rolou compartilhar agora. Tenta de novo daqui a pouco.");
+      Alert.alert("Ops", "O card empacou no caminho. Tenta de novo?");
     } finally {
       setIsSharing(false);
     }
@@ -220,12 +220,12 @@ export default function ConclusaoScreen() {
         />
         <Text style={[styles.mainMessage, { color: colors.foreground }]}>
           {isBookFinished
-            ? "Livro concluído!"
+            ? "Capa fechada. Livro vencido."
             : pages === 0
             ? abandonMessage
             : isFocusClean
             ? focusMessage
-            : "Sessão registrada!"}
+            : "Sessão na conta. Próximo capítulo te espera."}
         </Text>
       </View>
 
@@ -282,7 +282,7 @@ export default function ConclusaoScreen() {
             ]}
           >
             {isFocusClean
-              ? "Sessão 100% focada!"
+              ? "Foco impecável. Nem Bentinho ficou tão atento."
               : `${Math.floor(focusExitSeconds / 60)}min ${focusExitSeconds % 60}s fora do app`}
           </Text>
         </View>
@@ -292,7 +292,7 @@ export default function ConclusaoScreen() {
       {newlyUnlocked.length > 0 && (
         <View style={[styles.badgeSection, { backgroundColor: `${colors.volt}15`, borderColor: colors.volt }]}>
           <Text style={[styles.badgeHeader, { color: colors.accentText }]}>
-            Conquistas desbloqueadas!
+  Medalhinhas novas na estante!
           </Text>
           {newlyUnlocked.map((badge) => (
             <View key={badge.id} style={styles.badgeRow}>
@@ -315,7 +315,7 @@ export default function ConclusaoScreen() {
       {suggestedBook && (
         <View style={[styles.nextBookCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.nextBookLabel, { color: colors.mutedForeground }]}>
-            Próxima leitura?
+Próximo livro da fila?
           </Text>
           <Text style={[styles.nextBookTitle, { color: colors.foreground }]} numberOfLines={1}>
             {suggestedBook.title}
@@ -333,10 +333,10 @@ export default function ConclusaoScreen() {
             <Image source={{ uri: photoUri }} style={styles.photoThumb} />
             <View style={styles.photoPreviewText}>
               <Text style={[styles.photoPreviewTitle, { color: colors.foreground }]}>
-                Foto adicionada
+Foto entrou na cena
               </Text>
               <Text style={[styles.photoPreviewSub, { color: colors.mutedForeground }]} numberOfLines={1}>
-                Vira capa do card ao compartilhar
+Vira capa do card quando compartilhar
               </Text>
             </View>
             <TouchableOpacity
@@ -355,7 +355,7 @@ export default function ConclusaoScreen() {
           >
             <Ionicons name="image-outline" size={18} color={colors.foreground} />
             <Text style={[styles.photoPickText, { color: colors.foreground }]}>
-              Adicionar foto da galeria
+Botar uma foto da galeria
             </Text>
           </TouchableOpacity>
         )
@@ -381,7 +381,7 @@ export default function ConclusaoScreen() {
           />
         )}
         <Text style={[styles.shareBtnText, { color: colors.accentForeground }]}>
-          {isSharing ? "Gerando card..." : "Compartilhar sessão"}
+{isSharing ? "Diagramando o card..." : "Mostrar essa sessão pro mundo"}
         </Text>
       </TouchableOpacity>
 
@@ -394,7 +394,7 @@ export default function ConclusaoScreen() {
         activeOpacity={0.8}
       >
         <Text style={[styles.homeBtnText, { color: colors.foreground }]}>
-          Voltar para o início
+Voltar pro início
         </Text>
       </TouchableOpacity>
 

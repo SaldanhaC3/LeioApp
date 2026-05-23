@@ -155,8 +155,8 @@ const COVER_COLORS = [
 const ALL_BADGES: Badge[] = [
   {
     id: "first_session",
-    name: "Primeiro Passo",
-    description: "Registrou sua primeira sessão de leitura",
+    name: "Capítulo Um",
+    description: "Primeira sessão no caderno. Bem-vindo ao clube.",
     icon: "footsteps",
     unlocked: false,
     category: "inicio",
@@ -164,8 +164,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "speed_reader",
-    name: "Velocista",
-    description: "Atingiu 2 págs/min em uma sessão",
+    name: "Capitu Veloz",
+    description: "Passou de 2 págs/min. Olhos de ressaca em alta rotação.",
     icon: "flash",
     unlocked: false,
     category: "ritmo",
@@ -173,8 +173,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "night_owl",
-    name: "Coruja Noturna",
-    description: "Leu depois da meia-noite",
+    name: "Insônia de Bentinho",
+    description: "Leu depois da meia-noite. O ciúme dorme, você não.",
     icon: "moon",
     unlocked: false,
     category: "habito",
@@ -182,8 +182,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "early_bird",
-    name: "Madrugador",
-    description: "Leu antes das 7h da manhã",
+    name: "Antes do Galo",
+    description: "Abriu o livro antes das 7h. Graciliano aprovaria.",
     icon: "sunny",
     unlocked: false,
     category: "habito",
@@ -191,8 +191,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "marathon",
-    name: "Maratonista",
-    description: "Leu 100 páginas em um dia",
+    name: "Maratona Saramago",
+    description: "100 páginas num dia, sem ponto final.",
     icon: "fitness",
     unlocked: false,
     category: "volume",
@@ -200,8 +200,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "folego_7",
-    name: "Fôlego de Ferro",
-    description: "7 dias seguidos de leitura",
+    name: "Sete Dias de Riobaldo",
+    description: "Uma semana inteira sem largar. Travessia.",
     icon: "flame",
     unlocked: false,
     category: "sequencia",
@@ -209,8 +209,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "folego_30",
-    name: "Atleta das Páginas",
-    description: "30 dias seguidos de leitura",
+    name: "Travessia de Riobaldo",
+    description: "30 dias seguidos. Travessia inteira sem largar o livro.",
     icon: "trophy",
     unlocked: false,
     category: "sequencia",
@@ -218,8 +218,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "first_book",
-    name: "Um Livro a Menos",
-    description: "Terminou seu primeiro livro no app",
+    name: "Última Página",
+    description: "Fechou seu primeiro livro no app. Sem trapaça.",
     icon: "checkmark-circle",
     unlocked: false,
     category: "conquista",
@@ -227,8 +227,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "five_books",
-    name: "Colecionador",
-    description: "Terminou 5 livros no app",
+    name: "Estante Própria",
+    description: "Cinco livros lidos. Já dá pra fingir erudição na mesa do bar.",
     icon: "library",
     unlocked: false,
     category: "conquista",
@@ -236,8 +236,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "vagao",
-    name: "Passageiro Nerd",
-    description: "Completou uma sessão no Modo Vagão",
+    name: "Leitor do 8h17",
+    description: "Sessão completa no transporte. Bertoleza ficou pra trás.",
     icon: "train",
     unlocked: false,
     category: "modo",
@@ -245,8 +245,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "foco_total",
-    name: "Foco Total",
-    description: "Sessão no Modo Foco sem nenhuma saída",
+    name: "Sem Olhar pro Lado",
+    description: "Sessão no Modo Foco sem fugir. Big Brother orgulhoso.",
     icon: "eye",
     unlocked: false,
     category: "modo",
@@ -254,8 +254,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "concentrado",
-    name: "Concentrado",
-    description: "5 sessões no Modo Foco completadas",
+    name: "Disciplina Drummondiana",
+    description: "Cinco sessões com foco total. No meio do caminho, leitura.",
     icon: "shield-checkmark",
     unlocked: false,
     category: "modo",
@@ -263,8 +263,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "rescue",
-    name: "Resgate de Emergência",
-    description: "Retomou e terminou um livro abandonado há 30+ dias",
+    name: "Volta do Padre Amaro",
+    description: "Resgatou um livro esquecido há 30+ dias. Eça agradece.",
     icon: "heart",
     unlocked: false,
     category: "conquista",
@@ -272,8 +272,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "polyglot",
-    name: "Poliglota",
-    description: "Salvou 50 palavras no vocabulário",
+    name: "Caderno de Bentinho",
+    description: "50 palavras no vocabulário. Coleciona como ele colecionava ciúme.",
     icon: "language",
     unlocked: false,
     category: "vocabulario",
@@ -281,8 +281,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "duo",
-    name: "Duo Literário",
-    description: "Terminou um livro em Leitura em Conjunto",
+    name: "Capitu & Bentinho",
+    description: "Terminou um livro em Leitura em Conjunto. Sem dissimulação.",
     icon: "people",
     unlocked: false,
     category: "social",
@@ -290,8 +290,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "card_sharer",
-    name: "Influenciador Literário",
-    description: "Compartilhou 5 cards de leitura",
+    name: "Trecho no Feed",
+    description: "Cinco cards compartilhados. Marketing orgânico de Machado.",
     icon: "share-social",
     unlocked: false,
     category: "social",
@@ -299,8 +299,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "goal_crusher",
-    name: "Cumpridor de Metas",
-    description: "Terminou um livro antes do prazo",
+    name: "Antes do Prazo",
+    description: "Fechou um livro antes do combinado. Kafka invejaria.",
     icon: "calendar-check",
     unlocked: false,
     category: "metas",
@@ -308,8 +308,8 @@ const ALL_BADGES: Badge[] = [
   },
   {
     id: "diversidade",
-    name: "Leitor Plural",
-    description: "Leu autores de 5 países diferentes",
+    name: "Passaporte de Estante",
+    description: "Autores de cinco países diferentes. Sem visto, só vista.",
     icon: "globe",
     unlocked: false,
     category: "diversidade",
@@ -562,7 +562,7 @@ function generateDailyMissions(date: string): Mission[] {
     [
       {
         id: `m1-${date}`,
-        text: "Leia 20 páginas hoje",
+        text: "Vire 20 páginas hoje (Machado virava mais)",
         target: 20,
         progress: 0,
         xpReward: 10,
@@ -572,7 +572,7 @@ function generateDailyMissions(date: string): Mission[] {
       },
       {
         id: `m2-${date}`,
-        text: "Registre uma sessão de 15 minutos",
+        text: "Uma sessão de 15min — menos que um rolê no feed",
         target: 1,
         progress: 0,
         xpReward: 10,
@@ -582,7 +582,7 @@ function generateDailyMissions(date: string): Mission[] {
       },
       {
         id: `m3-${date}`,
-        text: "Compartilhe um card de leitura",
+        text: "Compartilhe um card. Vire influencer de página",
         target: 1,
         progress: 0,
         xpReward: 10,
@@ -594,7 +594,7 @@ function generateDailyMissions(date: string): Mission[] {
     [
       {
         id: `m1-${date}`,
-        text: "Leia 30 páginas hoje",
+        text: "30 páginas hoje. Saramago não usava parágrafo, você não tem desculpa",
         target: 30,
         progress: 0,
         xpReward: 10,
@@ -604,7 +604,7 @@ function generateDailyMissions(date: string): Mission[] {
       },
       {
         id: `m2-${date}`,
-        text: "Salve uma palavra no vocabulário",
+        text: "Salve uma palavra nova. Capitu agradece o repertório",
         target: 1,
         progress: 0,
         xpReward: 10,
@@ -614,7 +614,7 @@ function generateDailyMissions(date: string): Mission[] {
       },
       {
         id: `m3-${date}`,
-        text: "Adicione um livro à biblioteca",
+        text: "Adicione um livro à estante. O Eça espera há séculos",
         target: 1,
         progress: 0,
         xpReward: 10,
@@ -629,12 +629,12 @@ function generateDailyMissions(date: string): Mission[] {
 }
 
 const LEVELS = [
-  { name: "Leitor Curioso", minXP: 0 },
-  { name: "Leitor Dedicado", minXP: 100 },
-  { name: "Leitor Voraz", minXP: 300 },
-  { name: "Leitor Experiente", minXP: 600 },
-  { name: "Mestre das Páginas", minXP: 1000 },
-  { name: "Lenda Literária", minXP: 2000 },
+  { name: "Marcador de Página", minXP: 0 },
+  { name: "Leitor de Metrô", minXP: 100 },
+  { name: "Devorador de Orelhas", minXP: 300 },
+  { name: "Crítico de Mesa de Bar", minXP: 600 },
+  { name: "Bibliófilo Indomável", minXP: 1000 },
+  { name: "Lenda da Estante", minXP: 2000 },
 ];
 
 export function getLevel(xp: number) {

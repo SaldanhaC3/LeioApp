@@ -17,22 +17,22 @@ type Option = {
 const OPTIONS: Option[] = [
   {
     key: "search",
-    title: "Buscar pelo título",
-    description: "Procurar na base do Open Library e adicionar com 1 toque.",
+    title: "Buscar pelo nome",
+    description: "Pesquisa no acervo da Open Library e adiciona com um toque.",
     icon: "search",
     href: "/buscar-livro",
   },
   {
     key: "scan",
-    title: "Escanear código de barras",
-    description: "Aponte a câmera para o ISBN da contracapa.",
+    title: "Mirar o código de barras",
+    description: "Aponta a câmera pro ISBN da contracapa e pronto.",
     icon: "barcode-outline",
     href: "/escanear-livro",
   },
   {
     key: "manual",
-    title: "Adicionar manualmente",
-    description: "Tire uma foto da capa e preencha as informações.",
+    title: "Cadastrar na mão",
+    description: "Tira uma foto da capa e preenche os campos. Trabalho de bibliotecário.",
     icon: "create-outline",
     href: "/livro-manual",
   },
@@ -57,11 +57,11 @@ export default function AdicionarLivroScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground }]}>Adicionar livro</Text>
+        <Text style={[styles.title, { color: colors.foreground }]}>Novo livro na estante</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <Text style={[styles.subtitle, { color: colors.muted }]}>Como você quer cadastrar?</Text>
+      <Text style={[styles.subtitle, { color: colors.muted }]}>Por qual caminho vamos?</Text>
 
       <View style={styles.list}>
         {OPTIONS.map((opt) => (
@@ -88,7 +88,7 @@ export default function AdicionarLivroScreen() {
 
       {Platform.OS === "web" && (
         <Text style={[styles.webNote, { color: colors.muted }]}>
-          O escâner de código de barras e a foto de capa funcionam melhor no app instalado no celular.
+O escâner e a câmera funcionam direito mesmo é no app instalado no celular.
         </Text>
       )}
     </View>

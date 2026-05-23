@@ -134,7 +134,7 @@ export default function BuscarLivroScreen() {
           <Ionicons name="close" size={24} color={colors.foreground} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.foreground }]}>
-          Buscar livro
+Procurar livro
         </Text>
         <View style={styles.closeBtn} />
       </View>
@@ -166,14 +166,14 @@ export default function BuscarLivroScreen() {
       </View>
 
       <Text style={[styles.hint, { color: colors.mutedForeground }]}>
-        Pode digitar o nome do livro, do autor ou colar o ISBN. A gente acha.
+Digite título, autor ou cole o ISBN. A gente vasculha o acervo.
       </Text>
 
       {state.kind === "loading" && (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.accentText} />
           <Text style={[styles.muted, { color: colors.mutedForeground }]}>
-            Vasculhando as prateleiras...
+Folheando o catálogo...
           </Text>
         </View>
       )}
@@ -182,10 +182,10 @@ export default function BuscarLivroScreen() {
         <View style={styles.center}>
           <CapiMascot state="sad" size={96} />
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-            Deu ruim na conexão
+A conexão fugiu
           </Text>
           <Text style={[styles.muted, { color: colors.mutedForeground }]}>
-            Sem internet? Vou ficar aqui esperando.
+            Sem internet por aqui. A Capi fica esperando.
           </Text>
           <TouchableOpacity
             style={[styles.retryBtn, { backgroundColor: colors.volt }]}
@@ -202,10 +202,10 @@ export default function BuscarLivroScreen() {
         <View style={styles.center}>
           <CapiMascot state="reading" size={96} />
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-            Bora achar seu próximo livro
+Bora achar o próximo livro
           </Text>
           <Text style={[styles.muted, { color: colors.mutedForeground }]}>
-            Digita aí em cima que eu procuro.
+            Digita aí em cima — Machado, Clarice, Kafka, o que vier.
           </Text>
         </View>
       )}
@@ -214,10 +214,10 @@ export default function BuscarLivroScreen() {
         <View style={styles.center}>
           <CapiMascot state="surprised" size={96} />
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-            Nada por aqui
+Estante vazia nesse termo
           </Text>
           <Text style={[styles.muted, { color: colors.mutedForeground }]}>
-            Hmm, nada encontrado. Tenta outro nome?
+            Nada encontrado. Tenta outro título ou outro autor.
           </Text>
         </View>
       )}
@@ -330,7 +330,7 @@ export default function BuscarLivroScreen() {
               {selected?.author}
             </Text>
             <Text style={[styles.modalQuestion, { color: colors.foreground }]}>
-              Vai entrar como o quê?
+Vai entrar em qual prateleira?
             </Text>
             {STATUS_OPTIONS.map((opt) => (
               <TouchableOpacity

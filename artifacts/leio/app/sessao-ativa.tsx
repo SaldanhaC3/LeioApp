@@ -218,7 +218,7 @@ export default function SessaoAtivaScreen() {
     if (!useStartPage) {
       const parsed = parseInt(endPageInput, 10);
       if (isNaN(parsed)) {
-        setEndError("Coloca um número aí.");
+        setEndError("Bota um número aí — sem fingir que leu.");
         return;
       }
       if (parsed < startPage) {
@@ -355,7 +355,7 @@ export default function SessaoAtivaScreen() {
               <Text
                 style={[styles.focusModalTitle, { color: colors.foreground }]}
               >
-                Capi ficou te esperando...
+                Capi ficou esperando feito Bentinho na janela...
               </Text>
               <Text
                 style={[
@@ -376,7 +376,7 @@ export default function SessaoAtivaScreen() {
                     { color: colors.accentForeground },
                   ]}
                 >
-                  Voltar pra leitura
+                  Voltar pro livro
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -411,7 +411,7 @@ export default function SessaoAtivaScreen() {
               <Text
                 style={[styles.endModalTitle, { color: colors.foreground }]}
               >
-                Em que página você parou?
+                Em que página o capítulo te soltou?
               </Text>
               <Text
                 style={[

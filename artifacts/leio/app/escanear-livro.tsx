@@ -101,7 +101,7 @@ export default function EscanearLivroScreen() {
   function submitManualIsbn() {
     const cleaned = normalizeIsbn(manualIsbn);
     if (!isIsbn(cleaned)) {
-      Alert.alert("ISBN inválido", "Verifique se digitou os 10 ou 13 dígitos corretamente.");
+      Alert.alert("ISBN esquisito", "Confere se digitou direitinho os 10 ou 13 dígitos.");
       return;
     }
     lookup(cleaned);
@@ -139,8 +139,8 @@ export default function EscanearLivroScreen() {
         <View style={styles.manualPane}>
           <Text style={[styles.helper, { color: colors.muted }]}>
             {cameraUnavailable
-              ? "A câmera não está disponível na web. Digite o ISBN abaixo."
-              : "Digite o ISBN impresso na contracapa."}
+              ? "A câmera não funciona aqui no navegador. Digita o ISBN abaixo."
+              : "Digita o ISBN que tá na contracapa."}
           </Text>
           <TextInput
             value={manualIsbn}
@@ -169,7 +169,7 @@ export default function EscanearLivroScreen() {
         <View style={styles.center}>
           <Ionicons name="camera-outline" size={48} color={colors.muted} />
           <Text style={[styles.helper, { color: colors.muted, marginTop: 12 }]}>
-            Precisamos da câmera para escanear o ISBN.
+Sem câmera, sem leitura. Libera o acesso aí.
           </Text>
           <TouchableOpacity
             onPress={requestPermission}
@@ -191,7 +191,7 @@ export default function EscanearLivroScreen() {
           <View style={styles.overlay} pointerEvents="none">
             <View style={[styles.reticle, { borderColor: colors.volt }]} />
             <Text style={[styles.reticleHint, { color: "#fff" }]}>
-              Aponte para o código de barras
+Mira no código de barras
             </Text>
           </View>
         </View>
@@ -203,30 +203,30 @@ export default function EscanearLivroScreen() {
             <View style={styles.lookingRow}>
               <ActivityIndicator color={colors.accentText} />
               <Text style={[styles.helper, { color: colors.muted }]}>
-                Buscando ISBN {state.isbn}...
+Caçando o ISBN {state.isbn}...
               </Text>
             </View>
           )}
           {state.kind === "not-found" && (
             <>
               <Text style={[styles.cardTitle, { color: colors.foreground }]}>
-                Não encontramos esse ISBN
+Esse ISBN sumiu do catálogo
               </Text>
               <Text style={[styles.helper, { color: colors.muted, marginTop: 4 }]}>
-                ISBN {state.isbn}. Tente de novo ou cadastre manualmente.
+                ISBN {state.isbn}. Tenta de novo ou cadastra na mão.
               </Text>
               <View style={styles.actionsRow}>
                 <TouchableOpacity
                   onPress={rescan}
                   style={[styles.secondaryBtn, { borderColor: colors.border }]}
                 >
-                  <Text style={[styles.secondaryBtnText, { color: colors.foreground }]}>Escanear de novo</Text>
+                  <Text style={[styles.secondaryBtnText, { color: colors.foreground }]}>Escanear outro</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => router.replace("/livro-manual")}
                   style={[styles.primaryBtn, { backgroundColor: colors.volt }]}
                 >
-                  <Text style={[styles.primaryBtnText, { color: colors.accentForeground }]}>Adicionar manual</Text>
+                  <Text style={[styles.primaryBtnText, { color: colors.accentForeground }]}>Cadastrar na mão</Text>
                 </TouchableOpacity>
               </View>
             </>
@@ -264,7 +264,7 @@ export default function EscanearLivroScreen() {
                   onPress={() => addAndClose("reading")}
                   style={[styles.primaryBtn, { backgroundColor: colors.volt, flex: 1 }]}
                 >
-                  <Text style={[styles.primaryBtnText, { color: colors.accentForeground }]}>Lendo agora</Text>
+                  <Text style={[styles.primaryBtnText, { color: colors.accentForeground }]}>Tô lendo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => addAndClose("want")}
@@ -274,7 +274,7 @@ export default function EscanearLivroScreen() {
                 </TouchableOpacity>
               </View>
               <TouchableOpacity onPress={rescan} style={styles.linkBtn}>
-                <Text style={[styles.linkText, { color: colors.muted }]}>Escanear outro</Text>
+                <Text style={[styles.linkText, { color: colors.muted }]}>Próximo da pilha</Text>
               </TouchableOpacity>
             </>
           )}

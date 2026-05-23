@@ -99,7 +99,7 @@ export default function BibliotecaScreen() {
           <Ionicons name="search-outline" size={16} color={colors.mutedForeground} />
           <TextInput
             style={[styles.searchInput, { color: colors.foreground }]}
-            placeholder="Buscar livro ou autor..."
+            placeholder="Procurar livro ou autor..."
             placeholderTextColor={colors.mutedForeground}
             value={search}
             onChangeText={setSearch}
@@ -197,17 +197,17 @@ export default function BibliotecaScreen() {
             <CapiMascot state="waving" size={80} />
             <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
               {activeTab === "reading"
-                ? "Nada em andamento"
+                ? "Nenhum livro em curso"
                 : activeTab === "read"
-                ? "Ainda sem livros concluídos"
+                ? "Nenhum livro fechado ainda"
                 : activeTab === "want"
-                ? "Sua lista de desejos vazia"
-                : "Carregando livros gratuitos..."}
+                ? "Lista de desejo silenciosa feito noite de Drummond"
+                : "Carregando os clássicos do domínio público..."}
             </Text>
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
               {activeTab === "free"
-                ? "Clássicos da literatura disponíveis grátis"
-                : "Toque em + para adicionar um livro"}
+                ? "Machado, Lima, Eça e companhia — grátis e sem ressalva."
+                : "Toque em + e plante o próximo livro aqui"}
             </Text>
           </View>
         }

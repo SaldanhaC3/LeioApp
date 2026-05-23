@@ -135,7 +135,7 @@ export default function PerfilScreen() {
             />
           </View>
           <Text style={[styles.xpText, { color: colors.mutedForeground }]}>
-            {xp} XP · {nextLevelInfo.minXP - xp} para próximo nível
+{xp} XP · faltam {nextLevelInfo.minXP - xp} pro próximo nível
           </Text>
         </View>
         <TouchableOpacity onPress={() => router.push("/settings")}>
@@ -146,15 +146,15 @@ export default function PerfilScreen() {
       {/* Personal Bests */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          Records pessoais
+Seus recordes (e a Capi se orgulha)
         </Text>
         <View style={styles.bests}>
           {[
-            { icon: "book", label: "Livros lidos", value: booksRead.toString() },
-            { icon: "document-text", label: "Páginas totais", value: totalPages.toString() },
-            { icon: "speedometer", label: "Melhor pace", value: bestPace > 0 ? `${bestPace.toFixed(1)} p/m` : "—" },
-            { icon: "trophy", label: "Maior sessão", value: bestSession > 0 ? `${bestSession} págs` : "—" },
-            { icon: "flame", label: "Melhor fôlego", value: `${folego} dias` },
+            { icon: "book", label: "Livros fechados", value: booksRead.toString() },
+            { icon: "document-text", label: "Páginas viradas", value: totalPages.toString() },
+            { icon: "speedometer", label: "Maior velocidade", value: bestPace > 0 ? `${bestPace.toFixed(1)} p/m` : "—" },
+            { icon: "trophy", label: "Maratona maior", value: bestSession > 0 ? `${bestSession} págs` : "—" },
+            { icon: "flame", label: "Fôlego máximo", value: `${folego} dias` },
           ].map((item, i) => (
             <View
               key={i}
@@ -176,7 +176,7 @@ export default function PerfilScreen() {
       <View style={styles.section}>
         <View style={styles.activityHeader}>
           <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>
-            Atividade da semana
+Como foi sua semana
           </Text>
           {lastWeekPages > 0 && (
             <View
@@ -271,7 +271,7 @@ export default function PerfilScreen() {
           </View>
 
           <Text style={[styles.activityFootnote, { color: colors.mutedForeground }]}>
-            Semana passada: {lastWeekPages} páginas
+Semana passada: {lastWeekPages} páginas viradas
           </Text>
         </View>
       </View>
@@ -280,7 +280,7 @@ export default function PerfilScreen() {
       {featuredBadges.length > 0 && (
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Conquistas em destaque
+Medalhas em destaque
           </Text>
           <View style={styles.featuredBadges}>
             {featuredBadges.map((badge) => (

@@ -22,29 +22,29 @@ function getGreeting(): string {
   const hour = new Date().getHours();
   const greetings = {
     early: [
-      "Madrugador, hein?",
-      "Dormiu não é? Bora ler então.",
-      "As estrelas aprovam a dedicação.",
+      "Madrugada literária, hein?",
+      "Insônia de Bentinho. Aproveita pra ler.",
+      "Lua acordada, página também.",
     ],
     morning: [
-      "Bom dia, leitor!",
-      "Café e livro: dupla perfeita.",
-      "Começou bem o dia.",
+      "Bom dia. Café preto e Machado?",
+      "Bom dia, leitor. Capitu te observa.",
+      "Manhã boa pra abrir um livro novo.",
     ],
     afternoon: [
-      "Boa tarde!",
-      "Hora da siesta literária.",
-      "Um capítulo antes do lanche?",
+      "Boa tarde. Hora do capítulo curto.",
+      "Tarde de Clarice — luz que atravessa.",
+      "Um capítulo antes do próximo café?",
     ],
     evening: [
-      "Hora do Modo Vagão!",
-      "No busão? Já sabe o que fazer.",
-      "Boa tarde pra quem sabe aproveitar.",
+      "Fim de tarde. Hora boa pra leitura.",
+      "Trânsito ruim? Vagão literário ativado.",
+      "O dia caiu — abra um livro.",
     ],
     night: [
-      "Sessão noturna, boa leitura!",
-      "Modo noturno ativado.",
-      "Leitores noturnos são especiais.",
+      "Boa noite. Sessão calma agora?",
+      "Lua de Drummond no horário.",
+      "Noite alta, página aberta.",
     ],
   };
   let pool: string[];
@@ -242,7 +242,7 @@ export default function HomeScreen() {
           >
             <CapiMascot state="waving" size={64} />
             <Text style={[styles.addBookText, { color: colors.foreground }]}>
-              Adicione um livro e comece a ler!
+              Estante vazia incomoda. Bora adicionar um livro?
             </Text>
             <Ionicons name="add-circle" size={24} color={colors.accentText} />
           </TouchableOpacity>
@@ -260,11 +260,11 @@ export default function HomeScreen() {
             <View style={styles.rescueText}>
               <Text style={[styles.rescueTitle, { color: colors.foreground }]}>
                 {abandoned.length > 1
-                  ? `${abandoned.length} livros esperando por você`
-                  : `"${abandoned[0].title}" parou há dias`}
+                  ? `${abandoned.length} livros esquecidos na prateleira`
+                  : `"${abandoned[0].title}" pegou poeira`}
               </Text>
               <Text style={[styles.rescueSub, { color: colors.mutedForeground }]}>
-                Sem julgamento — bora resgatar?
+                Sem julgamento, só um cutucão de saudade.
               </Text>
             </View>
             <TouchableOpacity onPress={() => router.push("/(tabs)/biblioteca")}>
@@ -278,7 +278,7 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Missões de hoje
+            Tarefas do dia
           </Text>
           <Text style={[styles.sectionSub, { color: colors.mutedForeground }]}>
             {missions.filter((m) => m.completed).length}/{missions.length}
@@ -292,7 +292,7 @@ export default function HomeScreen() {
       {/* Stats Grid */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          Suas stats
+          Seus números
         </Text>
         <View style={styles.statsGrid}>
           {[
@@ -399,7 +399,7 @@ export default function HomeScreen() {
             </View>
           </View>
           <Text style={[styles.diversityNote, { color: colors.mutedForeground }]}>
-            Só uma observação — sem julgamento.
+            Só uma observação — sem cobrança, sem catequese.
           </Text>
         </View>
       )}
@@ -436,7 +436,7 @@ export default function HomeScreen() {
       {/* Free Book of the Week */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          Livro gratuito da semana
+          O grátis da semana
         </Text>
         <TouchableOpacity
           style={[styles.freeCard, { backgroundColor: colors.card, borderColor: colors.border }]}

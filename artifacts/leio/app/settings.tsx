@@ -45,10 +45,10 @@ function SpotifySection() {
       >
         <View style={{ flex: 1 }}>
           <Text style={[styles.toggleLabel, { color: colors.foreground }]}>
-            Spotify desativado
+            Spotify desligado
           </Text>
           <Text style={[styles.toggleSub, { color: colors.mutedForeground }]}>
-            Configure EXPO_PUBLIC_SPOTIFY_CLIENT_ID pra liberar o ambiente reativo.
+            Configure EXPO_PUBLIC_SPOTIFY_CLIENT_ID pra deixar a Capi dançar conforme a música.
           </Text>
         </View>
       </View>
@@ -63,8 +63,8 @@ function SpotifySection() {
     setBusy(false);
     if (!ok) {
       Alert.alert(
-        "Não rolou",
-        "Não consegui conectar com o Spotify. Tenta de novo daqui a pouco."
+        "Deu ruim",
+        "O Spotify não atendeu. Tenta de novo daqui a pouco."
       );
     }
   }
@@ -72,8 +72,8 @@ function SpotifySection() {
   async function handleDisconnect() {
     if (busy) return;
     Alert.alert(
-      "Desconectar Spotify",
-      "A Capi não vai mais reagir à sua trilha. Continuar?",
+      "Desligar Spotify",
+      "A Capi vai parar de reagir à sua trilha. Topa?",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -102,8 +102,8 @@ function SpotifySection() {
         </Text>
         <Text style={[styles.toggleSub, { color: colors.mutedForeground }]}>
           {spotifyConnected
-            ? "A Capi reage à sua música durante a leitura."
-            : "Deixa o ambiente da sessão reagir à sua trilha sonora."}
+            ? "A Capi dança conforme a música durante a leitura."
+            : "Deixa o clima da sessão acompanhar sua trilha."}
         </Text>
       </View>
       <TouchableOpacity
@@ -135,9 +135,9 @@ function SpotifySection() {
 }
 
 const CAPI_VARIANTS: Array<{ id: CapiVariant; label: string; desc: string }> = [
-  { id: "default", label: "Capi Padrão", desc: "A capivara fofa original" },
-  { id: "vampire", label: "Capi Vampira", desc: "Para os amantes do terror" },
-  { id: "erudite", label: "Capi Erudita", desc: "Para os leitores de clássicos" },
+  { id: "default", label: "Capi Padrão", desc: "A capivara original — sem firula" },
+  { id: "vampire", label: "Capi Vampira", desc: "Para noites longas com Stoker e Anne Rice" },
+  { id: "erudite", label: "Capi Erudita", desc: "Pra quem só lê com Machado debaixo do braço" },
 ];
 
 export default function SettingsScreen() {
@@ -169,8 +169,8 @@ export default function SettingsScreen() {
     Haptics.selectionAsync();
     if (Platform.OS === "web") {
       Alert.alert(
-        "Indisponível",
-        "Notificações locais não funcionam no navegador. Abre o Leio no celular pra ativar."
+        "Só no celular",
+        "Notificações locais não rolam no navegador. Abre o Leio no celular pra ligar."
       );
       return;
     }
@@ -179,7 +179,7 @@ export default function SettingsScreen() {
       if (!granted) {
         Alert.alert(
           "Permissão negada",
-          "A Capi não pode te lembrar sem permissão. Libera nas configurações do sistema."
+          "Sem permissão, a Capi fica muda. Libera nas configurações do sistema."
         );
         return;
       }
@@ -198,15 +198,15 @@ export default function SettingsScreen() {
     Haptics.selectionAsync();
     if (Platform.OS === "web") {
       const input = window.prompt(
-        "Digite o horário do lembrete (HH:MM)",
+        "Que horas a Capi te cutuca? (HH:MM)",
         settings.notificationTime ?? "19:00"
       );
       if (input) applyNewTime(input);
       return;
     }
     Alert.prompt?.(
-      "Alterar horário",
-      "Digite o horário do lembrete no formato HH:MM",
+      "Mudar horário",
+      "Que horas a Capi te lembra? Use HH:MM",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -224,7 +224,7 @@ export default function SettingsScreen() {
   async function applyNewTime(value: string) {
     const match = value.trim().match(/^(\d{1,2}):(\d{2})$/);
     if (!match) {
-      Alert.alert("Horário inválido", "Use o formato HH:MM (ex: 19:00).");
+      Alert.alert("Horário esquisito", "Vai no formato HH:MM (ex: 19:00).");
       return;
     }
     const hour = Math.min(23, Math.max(0, parseInt(match[1], 10)));
@@ -238,8 +238,8 @@ export default function SettingsScreen() {
 
   function handleDeleteAccount() {
     Alert.alert(
-      "Excluir conta",
-      "Isso vai apagar todos os seus dados permanentemente. Sem julgamento, mas tem certeza?",
+      "Apagar conta",
+      "Vai sumir com tudo — dados, livros, conquistas. Sem volta, tipo Bentinho na lápide. Certeza?",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -247,7 +247,7 @@ export default function SettingsScreen() {
           style: "destructive",
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            Alert.alert("Dados removidos", "Sua conta foi excluída. Que pena ter te perdido!");
+            Alert.alert("Dados embora", "Conta apagada. Vai fazer falta — volta quando quiser.");
           },
         },
       ]
@@ -278,8 +278,8 @@ export default function SettingsScreen() {
         </Text>
         <View style={styles.themeRow}>
           {([
-            { id: "light", label: "Papel", desc: "Claro e quentinho", bg: "#F6EFE0", fg: "#2A2118", border: "#DCCFB1" },
-            { id: "dark", label: "Couro", desc: "Escuro e aconchegante", bg: "#14110D", fg: "#F2EBDA", border: "#3A2F22" },
+            { id: "light", label: "Papel", desc: "Claro feito manhã de Drummond", bg: "#F6EFE0", fg: "#2A2118", border: "#DCCFB1" },
+            { id: "dark", label: "Couro", desc: "Escuro como capa de clássico", bg: "#14110D", fg: "#F2EBDA", border: "#3A2F22" },
           ] as const).map((opt) => {
             const active = settings.theme === opt.id;
             return (
@@ -377,7 +377,7 @@ export default function SettingsScreen() {
               Efeitos sonoros
             </Text>
             <Text style={[styles.toggleSub, { color: colors.mutedForeground }]}>
-              Sons de virada de página, badges, etc.
+Página virando, conquista batendo, esse tipo de coisa.
             </Text>
           </View>
           <TouchableOpacity
@@ -427,7 +427,7 @@ export default function SettingsScreen() {
               Lembretes diários
             </Text>
             <Text style={[styles.toggleSub, { color: colors.mutedForeground }]}>
-              Capi te cutuca todo dia às {settings.notificationTime ?? "19:00"}
+Capi te cutuca todo dia às {settings.notificationTime ?? "19:00"} — sem charme
             </Text>
           </View>
           <TouchableOpacity
@@ -492,7 +492,7 @@ export default function SettingsScreen() {
         </Text>
         <TouchableOpacity
           style={[styles.actionRow, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => Alert.alert("Em breve", "A exportação de dados estará disponível em breve!")}
+          onPress={() => Alert.alert("Em breve", "A exportação de dados tá no forno. Espera o próximo capítulo.")}
         >
           <Ionicons name="download-outline" size={20} color={colors.foreground} />
           <Text style={[styles.actionText, { color: colors.foreground }]}>
@@ -515,7 +515,7 @@ export default function SettingsScreen() {
       {/* About */}
       <View style={styles.about}>
         <Text style={[styles.aboutText, { color: colors.mutedForeground }]}>
-          Leio v1.0.0 · Feito com carinho (e muito café)
+Leio v1.0.0 · Feito com café preto e marcador de página
         </Text>
       </View>
     </ScrollView>

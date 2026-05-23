@@ -82,7 +82,7 @@ export default function LivroManualScreen() {
   async function pickFromCamera() {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Permissão necessária", "Libere o acesso à câmera nos ajustes.");
+      Alert.alert("Faltou permissão", "Libera o acesso à câmera nos ajustes do celular.");
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -99,7 +99,7 @@ export default function LivroManualScreen() {
   async function pickFromLibrary() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Permissão necessária", "Libere o acesso às fotos nos ajustes.");
+      Alert.alert("Faltou permissão", "Libera o acesso à galeria nos ajustes do celular.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -127,7 +127,7 @@ export default function LivroManualScreen() {
         }
       );
     } else {
-      Alert.alert("Capa do livro", "Como você quer adicionar?", [
+      Alert.alert("Capa do livro", "Vem da câmera ou da galeria?", [
         { text: "Tirar foto", onPress: pickFromCamera },
         { text: "Escolher da galeria", onPress: pickFromLibrary },
         { text: "Cancelar", style: "cancel" },
@@ -151,7 +151,7 @@ export default function LivroManualScreen() {
     const totalPages = parseInt(pages, 10);
     const purchasedIso = purchasedAt.trim().length > 0 ? parseDateBR(purchasedAt) : undefined;
     if (purchasedAt.trim().length > 0 && !purchasedIso) {
-      Alert.alert("Data inválida", "Use o formato DD/MM/AAAA.");
+      Alert.alert("Data esquisita", "Vai no formato DD/MM/AAAA.");
       return;
     }
     setSaving(true);
@@ -181,7 +181,7 @@ export default function LivroManualScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={colors.foreground} />
         </Pressable>
-        <Text style={[styles.title, { color: colors.foreground }]}>Adicionar manualmente</Text>
+        <Text style={[styles.title, { color: colors.foreground }]}>Cadastrar na mão</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -203,7 +203,7 @@ export default function LivroManualScreen() {
             <View style={styles.coverPlaceholder}>
               <Ionicons name="camera-outline" size={36} color={colors.muted} />
               <Text style={[styles.coverHint, { color: colors.muted }]}>
-                Tirar foto da capa
+Bater foto da capa
               </Text>
             </View>
           )}
@@ -240,7 +240,7 @@ export default function LivroManualScreen() {
           />
         </Field>
 
-        <Field label="Quando você comprou" colors={colors}>
+        <Field label="Quando ele entrou na sua vida" colors={colors}>
           <TextInput
             value={purchasedAt}
             onChangeText={handlePurchasedDateChange}
@@ -252,7 +252,7 @@ export default function LivroManualScreen() {
           />
           {purchasedAt.length === 10 && parseDateBR(purchasedAt) && (
             <Text style={[styles.helper, { color: colors.muted }]}>
-              Comprado em {formatDateBR(parseDateBR(purchasedAt)!)}
+Entrou na estante em {formatDateBR(parseDateBR(purchasedAt)!)}
             </Text>
           )}
         </Field>
@@ -311,7 +311,7 @@ export default function LivroManualScreen() {
           ]}
         >
           <Text style={[styles.saveBtnText, { color: canSave ? colors.accentForeground : colors.mutedForeground }]}>
-            Salvar livro
+Guardar na estante
           </Text>
         </TouchableOpacity>
       </View>

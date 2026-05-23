@@ -85,8 +85,8 @@ export default function LivroDetailScreen() {
 
   function handleDelete() {
     Alert.alert(
-      "Remover livro",
-      `Tem certeza que quer remover "${book!.title}" da biblioteca?`,
+      "Tirar da estante",
+      `Vai mesmo despachar "${book!.title}" da biblioteca?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -164,7 +164,7 @@ export default function LivroDetailScreen() {
           <View style={styles.freeSectionHeader}>
             <Ionicons name="gift-outline" size={18} color={colors.accentText} />
             <Text style={[styles.freeSectionTitle, { color: colors.foreground }]}>
-              Livro em domínio público
+Clássico de domínio público
             </Text>
           </View>
           {book.excerpt && (
@@ -178,14 +178,14 @@ export default function LivroDetailScreen() {
             >
               <Ionicons name="book-outline" size={18} color={colors.accentForeground} />
               <Text style={[styles.freeReadBtnText, { color: colors.accentForeground }]}>
-                Ler trecho no app
+                Ler trecho aqui mesmo
               </Text>
             </TouchableOpacity>
           )}
           {book.downloadSources && book.downloadSources.length > 0 && (
             <>
               <Text style={[styles.freeDownloadLabel, { color: colors.mutedForeground }]}>
-                Baixar grátis
+Baixar de graça
               </Text>
               {book.downloadSources.map((src) => (
                 <TouchableOpacity
@@ -265,7 +265,7 @@ export default function LivroDetailScreen() {
         >
           <Ionicons name="play" size={20} color={colors.accentForeground} />
           <Text style={[styles.primaryActionText, { color: colors.accentForeground }]}>
-            {book.status === "want" ? "Começar a ler" : "Continuar lendo"}
+            {book.status === "want" ? "Abrir o livro" : "Voltar pro capítulo"}
           </Text>
         </TouchableOpacity>
       )}
@@ -317,7 +317,7 @@ export default function LivroDetailScreen() {
         </Text>
         {bookSessions.length === 0 ? (
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-            Nenhuma sessão registrada ainda
+Nenhuma sessão por aqui — capa fechada, conta zerada
           </Text>
         ) : (
           bookSessions
@@ -366,7 +366,7 @@ export default function LivroDetailScreen() {
       >
         <Ionicons name="trash-outline" size={16} color={colors.destructive} />
         <Text style={[styles.deleteBtnText, { color: colors.destructive }]}>
-          Remover da biblioteca
+Tirar da estante
         </Text>
       </TouchableOpacity>
     </ScrollView>
