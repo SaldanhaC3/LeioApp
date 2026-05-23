@@ -1,7 +1,7 @@
 import { BookCard } from "@/components/BookCard";
 import { CapiMascot } from "@/components/CapiMascot";
 import { MissionCard } from "@/components/MissionCard";
-import { useApp, getLevel } from "@/contexts/AppContext";
+import { useApp, getLevel, GENRE_LABELS } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -91,6 +91,24 @@ export default function HomeScreen() {
       : 0;
 
   const eta = currentBook ? formatETA(currentBook) : null;
+
+  const readBooks = useMemo(() => books.filter((b) => b.status === "read"), [books]);
+  const genreCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const b of readBooks) counts[b.genre] = (counts[b.genre] ?? 0) + 1;
+    return counts;
+  }, [readBooks]);
+  const topGenres = useMemo(
+    () => Object.entries(genreCounts).sort((a, b) => b[1] - a[1]).slice(0, 4),
+    [genreCounts]
+  );
+  const totalGenreCount = Object.values(genreCounts).reduce((a, b) => a + b, 0);
+  const femaleAuthors = readBooks.filter((b) => b.authorGender === "F").length;
+  const brAuthors = readBooks.filter((b) => b.authorNationality === "BR").length;
+  const femalePct =
+    readBooks.length > 0 ? Math.round((femaleAuthors / readBooks.length) * 100) : 0;
+  const brPct =
+    readBooks.length > 0 ? Math.round((brAuthors / readBooks.length) * 100) : 0;
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = Platform.OS === "web" ? 34 : 0;
@@ -298,6 +316,93 @@ export default function HomeScreen() {
           ))}
         </View>
       </View>
+
+      {/* Top Genres */}
+      {topGenres.length > 0 && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            Gêneros favoritos
+          </Text>
+          <View style={[styles.genresCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {topGenres.map(([genre, count], i) => {
+              const pct = totalGenreCount > 0 ? count / totalGenreCount : 0;
+              return (
+                <View key={i} style={styles.genreRow}>
+                  <Text
+                    style={[styles.genreName, { color: colors.foreground }]}
+                    numberOfLines={1}
+                  >
+                    {GENRE_LABELS[genre] ?? genre}
+                  </Text>
+                  <View style={[styles.genreBar, { backgroundColor: colors.secondary }]}>
+                    <View
+                      style={[
+                        styles.genreFill,
+                        { backgroundColor: colors.volt, width: `${pct * 100}%` },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.genreCount, { color: colors.mutedForeground }]}>
+                    {count}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
+      {/* Shelf Diversity */}
+      {readBooks.length > 0 && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            Diversidade da estante
+          </Text>
+          <View style={styles.diversityRow}>
+            <View style={[styles.diversityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.diversityHeader}>
+                <Ionicons name="person-outline" size={14} color={colors.accentText} />
+                <Text style={[styles.diversityLabel, { color: colors.mutedForeground }]}>
+                  Autoras mulheres
+                </Text>
+              </View>
+              <Text style={[styles.diversityPct, { color: colors.foreground }]}>
+                {femalePct}%
+              </Text>
+              <View style={[styles.diversityBar, { backgroundColor: colors.secondary }]}>
+                <View
+                  style={[
+                    styles.diversityFill,
+                    { backgroundColor: colors.volt, width: `${femalePct}%` },
+                  ]}
+                />
+              </View>
+            </View>
+            <View style={[styles.diversityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.diversityHeader}>
+                <Ionicons name="flag-outline" size={14} color={colors.accentText} />
+                <Text style={[styles.diversityLabel, { color: colors.mutedForeground }]}>
+                  Autores BR
+                </Text>
+              </View>
+              <Text style={[styles.diversityPct, { color: colors.foreground }]}>
+                {brPct}%
+              </Text>
+              <View style={[styles.diversityBar, { backgroundColor: colors.secondary }]}>
+                <View
+                  style={[
+                    styles.diversityFill,
+                    { backgroundColor: colors.volt, width: `${brPct}%` },
+                  ]}
+                />
+              </View>
+            </View>
+          </View>
+          <Text style={[styles.diversityNote, { color: colors.mutedForeground }]}>
+            Só uma observação — sem julgamento.
+          </Text>
+        </View>
+      )}
 
       {/* Recent Badges */}
       {unlockedBadges.length > 0 && (
@@ -522,4 +627,18 @@ const styles = StyleSheet.create({
   freeBadgeText: { fontSize: 9, fontWeight: "900", letterSpacing: 0.5 },
   freeTitle: { fontSize: 15, fontWeight: "700" },
   freeAuthor: { fontSize: 12 },
+  genresCard: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 10 },
+  genreRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  genreName: { fontSize: 13, fontWeight: "700", width: 110 },
+  genreBar: { flex: 1, height: 6, borderRadius: 3, overflow: "hidden" },
+  genreFill: { height: "100%", borderRadius: 3 },
+  genreCount: { fontSize: 12, width: 20, textAlign: "right", fontWeight: "700" },
+  diversityRow: { flexDirection: "row", gap: 10, marginBottom: 8 },
+  diversityCard: { flex: 1, borderRadius: 14, borderWidth: 1, padding: 14, gap: 6 },
+  diversityHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
+  diversityLabel: { fontSize: 11, fontWeight: "600" },
+  diversityPct: { fontSize: 24, fontWeight: "900", letterSpacing: -1 },
+  diversityBar: { height: 5, borderRadius: 3, overflow: "hidden" },
+  diversityFill: { height: "100%", borderRadius: 3 },
+  diversityNote: { fontSize: 11, fontStyle: "italic", textAlign: "center" },
 });

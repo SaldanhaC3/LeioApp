@@ -1,6 +1,6 @@
 import { BadgeItem } from "@/components/BadgeItem";
 import { CapiMascot } from "@/components/CapiMascot";
-import { useApp, getLevel, GENRE_LABELS } from "@/contexts/AppContext";
+import { useApp, getLevel } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -15,27 +15,46 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-function buildHeatmap(sessions: Array<{ date: string }>) {
-  const map: Record<string, number> = {};
-  sessions.forEach((s) => {
-    const d = s.date.split("T")[0];
-    map[d] = (map[d] ?? 0) + 1;
-  });
-  const weeks: Array<Array<{ date: string; count: number }>> = [];
+const DAY_LABELS = ["S", "T", "Q", "Q", "S", "S", "D"];
+
+interface DayStat {
+  date: string;
+  dayLabel: string;
+  pages: number;
+  isToday: boolean;
+  isFuture: boolean;
+}
+
+function buildWeekStats(
+  sessions: Array<{ date: string; startPage: number; endPage: number }>,
+  weeksAgo: number
+): DayStat[] {
   const today = new Date();
-  const start = new Date(today);
-  start.setDate(start.getDate() - 52 * 7);
-  let week: Array<{ date: string; count: number }> = [];
-  for (let d = new Date(start); d <= today; d.setDate(d.getDate() + 1)) {
-    const key = d.toISOString().split("T")[0];
-    week.push({ date: key, count: map[key] ?? 0 });
-    if (week.length === 7) {
-      weeks.push(week);
-      week = [];
-    }
+  today.setHours(0, 0, 0, 0);
+  const dayOfWeek = (today.getDay() + 6) % 7;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - dayOfWeek - weeksAgo * 7);
+
+  const pagesByDate: Record<string, number> = {};
+  for (const s of sessions) {
+    const key = s.date.split("T")[0];
+    pagesByDate[key] = (pagesByDate[key] ?? 0) + Math.max(0, s.endPage - s.startPage);
   }
-  if (week.length > 0) weeks.push(week);
-  return weeks;
+
+  const days: DayStat[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const key = d.toISOString().split("T")[0];
+    days.push({
+      date: key,
+      dayLabel: DAY_LABELS[i],
+      pages: pagesByDate[key] ?? 0,
+      isToday: d.getTime() === today.getTime(),
+      isFuture: d.getTime() > today.getTime(),
+    });
+  }
+  return days;
 }
 
 export default function PerfilScreen() {
@@ -69,23 +88,24 @@ export default function PerfilScreen() {
   );
 
   const featuredBadges = badges.filter((b) => b.unlocked).slice(0, 3);
-  const heatmap = useMemo(() => buildHeatmap(sessions), [sessions]);
 
-  // Genre distribution
-  const genreCounts: Record<string, number> = {};
-  books
-    .filter((b) => b.status === "read")
-    .forEach((b) => {
-      genreCounts[b.genre] = (genreCounts[b.genre] ?? 0) + 1;
-    });
-  const topGenres = Object.entries(genreCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4);
+  const thisWeek = useMemo(() => buildWeekStats(sessions, 0), [sessions]);
+  const lastWeek = useMemo(() => buildWeekStats(sessions, 1), [sessions]);
 
-  // Diversity
-  const readBooks = books.filter((b) => b.status === "read");
-  const femaleAuthors = readBooks.filter((b) => b.authorGender === "F").length;
-  const brAuthors = readBooks.filter((b) => b.authorNationality === "BR").length;
+  const thisWeekPages = thisWeek.reduce((acc, d) => acc + d.pages, 0);
+  const lastWeekPages = lastWeek.reduce((acc, d) => acc + d.pages, 0);
+  const daysReadThisWeek = thisWeek.filter((d) => d.pages > 0).length;
+  const maxPagesInWeek = Math.max(
+    1,
+    ...thisWeek.map((d) => d.pages),
+    ...lastWeek.map((d) => d.pages)
+  );
+  const weekDelta =
+    lastWeekPages > 0
+      ? Math.round(((thisWeekPages - lastWeekPages) / lastWeekPages) * 100)
+      : thisWeekPages > 0
+      ? 100
+      : 0;
 
   return (
     <ScrollView
@@ -152,103 +172,109 @@ export default function PerfilScreen() {
         </View>
       </View>
 
-      {/* Heatmap */}
+      {/* Weekly Activity */}
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          Atividade de leitura
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.heatmap}>
-            {heatmap.slice(-26).map((week, wi) => (
-              <View key={wi} style={styles.heatmapWeek}>
-                {week.map((day, di) => (
-                  <View
-                    key={di}
+        <View style={styles.activityHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>
+            Atividade da semana
+          </Text>
+          {lastWeekPages > 0 && (
+            <View
+              style={[
+                styles.deltaPill,
+                {
+                  backgroundColor:
+                    weekDelta >= 0 ? `${colors.volt}22` : `${colors.coral}22`,
+                },
+              ]}
+            >
+              <Ionicons
+                name={weekDelta >= 0 ? "trending-up" : "trending-down"}
+                size={12}
+                color={weekDelta >= 0 ? colors.accentText : colors.coral}
+              />
+              <Text
+                style={[
+                  styles.deltaText,
+                  { color: weekDelta >= 0 ? colors.accentText : colors.coral },
+                ]}
+              >
+                {weekDelta > 0 ? "+" : ""}
+                {weekDelta}%
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={[styles.activityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.activitySummary}>
+            <View style={styles.activitySummaryItem}>
+              <Text style={[styles.activityBigNum, { color: colors.foreground }]}>
+                {thisWeekPages}
+              </Text>
+              <Text style={[styles.activitySmallLabel, { color: colors.mutedForeground }]}>
+                páginas
+              </Text>
+            </View>
+            <View style={[styles.activityDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.activitySummaryItem}>
+              <Text style={[styles.activityBigNum, { color: colors.foreground }]}>
+                {daysReadThisWeek}
+              </Text>
+              <Text style={[styles.activitySmallLabel, { color: colors.mutedForeground }]}>
+                de 7 dias
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.weekStrip}>
+            {thisWeek.map((day, i) => {
+              const heightPct = day.pages > 0 ? Math.max(0.15, day.pages / maxPagesInWeek) : 0;
+              return (
+                <View key={i} style={styles.dayCol}>
+                  <View style={[styles.dayBarTrack, { backgroundColor: colors.secondary }]}>
+                    {day.pages > 0 && (
+                      <View
+                        style={[
+                          styles.dayBarFill,
+                          {
+                            height: `${heightPct * 100}%`,
+                            backgroundColor: day.isToday ? colors.volt : `${colors.volt}99`,
+                          },
+                        ]}
+                      />
+                    )}
+                  </View>
+                  <Text
                     style={[
-                      styles.heatmapCell,
+                      styles.dayLabel,
                       {
-                        backgroundColor:
-                          day.count === 0
-                            ? colors.secondary
-                            : day.count === 1
-                            ? `${colors.volt}55`
-                            : day.count === 2
-                            ? `${colors.volt}99`
-                            : colors.volt,
+                        color: day.isToday
+                          ? colors.foreground
+                          : day.isFuture
+                          ? `${colors.mutedForeground}55`
+                          : colors.mutedForeground,
+                        fontWeight: day.isToday ? "900" : "600",
                       },
                     ]}
-                  />
-                ))}
-              </View>
-            ))}
-          </View>
-        </ScrollView>
-      </View>
-
-      {/* Top Genres */}
-      {topGenres.length > 0 && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Gêneros favoritos
-          </Text>
-          <View style={styles.genres}>
-            {topGenres.map(([genre, count], i) => {
-              const total = Object.values(genreCounts).reduce((a, b) => a + b, 0);
-              const pct = total > 0 ? count / total : 0;
-              return (
-                <View key={i} style={styles.genreRow}>
-                  <Text style={[styles.genreName, { color: colors.foreground }]} numberOfLines={1}>
-                    {GENRE_LABELS[genre] ?? genre}
+                  >
+                    {day.dayLabel}
                   </Text>
-                  <View style={[styles.genreBar, { backgroundColor: colors.border }]}>
-                    <View
-                      style={[
-                        styles.genreFill,
-                        { backgroundColor: colors.volt, width: `${pct * 100}%` },
-                      ]}
-                    />
-                  </View>
-                  <Text style={[styles.genreCount, { color: colors.mutedForeground }]}>
-                    {count}
-                  </Text>
+                  {day.pages > 0 && (
+                    <Text style={[styles.dayPages, { color: colors.mutedForeground }]}>
+                      {day.pages}
+                    </Text>
+                  )}
                 </View>
               );
             })}
           </View>
-        </View>
-      )}
 
-      {/* Diversity */}
-      {readBooks.length > 0 && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Diversidade da estante
+          <Text style={[styles.activityFootnote, { color: colors.mutedForeground }]}>
+            Semana passada: {lastWeekPages} páginas
           </Text>
-          <View style={[styles.diversityCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {readBooks.length > 0 && (
-              <View style={styles.diversityRow}>
-                <Ionicons name="person-outline" size={16} color={colors.accentText} />
-                <Text style={[styles.diversityText, { color: colors.foreground }]}>
-                  {femaleAuthors > 0
-                    ? `${Math.round((femaleAuthors / readBooks.length) * 100)}% de autoras mulheres`
-                    : "Nenhuma autora mulher ainda — que tal explorar?"}
-                </Text>
-              </View>
-            )}
-            <View style={styles.diversityRow}>
-              <Ionicons name="flag-outline" size={16} color={colors.accentText} />
-              <Text style={[styles.diversityText, { color: colors.foreground }]}>
-                {brAuthors > 0
-                  ? `${Math.round((brAuthors / readBooks.length) * 100)}% de autores brasileiros`
-                  : "Nenhum autor brasileiro ainda"}
-              </Text>
-            </View>
-            <Text style={[styles.diversityNote, { color: colors.mutedForeground }]}>
-              Só uma observação — sem julgamento.
-            </Text>
-          </View>
         </View>
-      )}
+      </View>
 
       {/* Featured Badges */}
       {featuredBadges.length > 0 && (
@@ -298,23 +324,50 @@ const styles = StyleSheet.create({
   },
   bestValue: { fontSize: 20, fontWeight: "900", letterSpacing: -0.5 },
   bestLabel: { fontSize: 11 },
-  heatmap: { flexDirection: "row", gap: 3 },
-  heatmapWeek: { gap: 3 },
-  heatmapCell: { width: 11, height: 11, borderRadius: 2 },
-  genres: { gap: 12 },
-  genreRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  genreName: { fontSize: 13, fontWeight: "600", width: 120 },
-  genreBar: { flex: 1, height: 6, borderRadius: 3, overflow: "hidden" },
-  genreFill: { height: "100%", borderRadius: 3 },
-  genreCount: { fontSize: 12, width: 20, textAlign: "right" },
-  diversityCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 16,
-    gap: 10,
+  activityHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 14,
   },
-  diversityRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  diversityText: { fontSize: 14, flex: 1 },
-  diversityNote: { fontSize: 11, fontStyle: "italic" },
+  deltaPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  deltaText: { fontSize: 11, fontWeight: "800" },
+  activityCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 18,
+    gap: 16,
+  },
+  activitySummary: { flexDirection: "row", alignItems: "center", gap: 16 },
+  activitySummaryItem: { flex: 1, alignItems: "flex-start", gap: 2 },
+  activityBigNum: { fontSize: 32, fontWeight: "900", letterSpacing: -1.5, lineHeight: 36 },
+  activitySmallLabel: { fontSize: 12 },
+  activityDivider: { width: 1, height: 40 },
+  weekStrip: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    gap: 6,
+    paddingTop: 4,
+  },
+  dayCol: { flex: 1, alignItems: "center", gap: 6 },
+  dayBarTrack: {
+    width: "100%",
+    height: 64,
+    borderRadius: 8,
+    justifyContent: "flex-end",
+    overflow: "hidden",
+  },
+  dayBarFill: { width: "100%", borderRadius: 8 },
+  dayLabel: { fontSize: 11 },
+  dayPages: { fontSize: 10, fontWeight: "700" },
+  activityFootnote: { fontSize: 11, textAlign: "center" },
   featuredBadges: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "space-between" },
 });
