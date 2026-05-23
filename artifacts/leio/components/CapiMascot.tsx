@@ -18,6 +18,9 @@ const CAPI_IMAGES: Record<CapiVariant, ImageSourcePropType> = {
   erudite: require("@/assets/images/capi-erudite.png") as ImageSourcePropType,
 };
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const CAPI_READING_IMAGE = require("@/assets/images/capi-reading.png") as ImageSourcePropType;
+
 interface CapiMascotProps {
   state?: CapiState;
   variant?: CapiVariant;
@@ -177,7 +180,11 @@ export function CapiMascot({
   return (
     <Animated.View style={[animatedStyle, style]}>
       <Image
-        source={CAPI_IMAGES[activeVariant]}
+        source={
+          activeState === "reading"
+            ? CAPI_READING_IMAGE
+            : CAPI_IMAGES[activeVariant]
+        }
         style={[styles.image, { width: size, height: size }]}
         resizeMode="contain"
       />

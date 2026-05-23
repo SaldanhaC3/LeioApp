@@ -1,4 +1,5 @@
 import { CapiMascot } from "@/components/CapiMascot";
+import { VocabularyModal } from "@/components/VocabularyModal";
 import { useApp } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { sendFocusBreakNotification } from "@/services/notifications";
@@ -81,6 +82,9 @@ export default function SessaoAtivaScreen() {
   const [showEndModal, setShowEndModal] = useState(false);
   const [endPageInput, setEndPageInput] = useState("");
   const [endError, setEndError] = useState("");
+  const [showVocabModal, setShowVocabModal] = useState(false);
+  const wasRunningBeforeVocabRef = useRef(false);
+  const wasRunningBeforeEndRef = useRef(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backgroundStartRef = useRef<number | null>(null);
@@ -207,6 +211,7 @@ export default function SessaoAtivaScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(
       () => undefined
     );
+    wasRunningBeforeEndRef.current = isRunning;
     stopTimer();
     setEndPageInput("");
     setEndError("");
@@ -273,7 +278,22 @@ export default function SessaoAtivaScreen() {
 
   function cancelEndModal() {
     setShowEndModal(false);
-    startTimer();
+    if (wasRunningBeforeEndRef.current) startTimer();
+  }
+
+  function openVocabModal() {
+    Haptics.selectionAsync().catch(() => undefined);
+    wasRunningBeforeVocabRef.current = isRunning;
+    if (isRunning) stopTimer();
+    setShowVocabModal(true);
+  }
+
+  function closeVocabModal() {
+    setShowVocabModal(false);
+    // Don't auto-resume if another blocking modal is up
+    if (wasRunningBeforeVocabRef.current && !showFocusReturn && !showEndModal) {
+      startTimer();
+    }
   }
 
   if (!book) {
@@ -595,7 +615,7 @@ export default function SessaoAtivaScreen() {
           <View style={{ height: 48 }} />
         )}
 
-        {/* Controls - only pause and end */}
+        {/* Controls - pause, vocab, and end */}
         <View style={styles.controls}>
           <TouchableOpacity
             style={[
@@ -615,6 +635,24 @@ export default function SessaoAtivaScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
+            style={[
+              styles.vocabBtn,
+              {
+                backgroundColor: `${colors.volt}22`,
+                borderColor: colors.accentBorder,
+              },
+            ]}
+            onPress={openVocabModal}
+            accessibilityLabel="Anotar palavra no vocabulário"
+          >
+            <Ionicons
+              name="language"
+              size={26}
+              color={colors.accentText}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.endBtn, { backgroundColor: colors.coral }]}
             onPress={openEndModal}
           >
@@ -625,6 +663,12 @@ export default function SessaoAtivaScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      <VocabularyModal
+        visible={showVocabModal}
+        bookId={params.bookId ?? ""}
+        onClose={closeVocabModal}
+      />
     </View>
   );
 }
@@ -700,6 +744,14 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   pauseBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  vocabBtn: {
     width: 64,
     height: 64,
     borderRadius: 32,
