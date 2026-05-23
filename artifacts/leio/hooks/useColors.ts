@@ -1,10 +1,14 @@
 import colors from "@/constants/colors";
+import { useApp } from "@/contexts/AppContext";
 
 type Palette = typeof colors.dark;
 
 /**
- * Leio is a dark-first app. Always returns the dark palette.
+ * Returns the active palette based on user setting (Papel/Couro).
+ * Defaults to the dark "Couro" theme until settings are loaded.
  */
 export function useColors(): Palette & { radius: number } {
-  return { ...colors.dark, radius: colors.radius };
+  const { settings } = useApp();
+  const palette = settings?.theme === "light" ? colors.light : colors.dark;
+  return { ...palette, radius: colors.radius };
 }

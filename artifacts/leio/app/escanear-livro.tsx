@@ -158,7 +158,7 @@ export default function EscanearLivroScreen() {
             onPress={submitManualIsbn}
             style={[styles.primaryBtn, { backgroundColor: colors.volt }]}
           >
-            <Text style={[styles.primaryBtnText, { color: "#0A0A0A" }]}>Buscar</Text>
+            <Text style={[styles.primaryBtnText, { color: colors.accentForeground }]}>Buscar</Text>
           </TouchableOpacity>
         </View>
       ) : !permission ? (
@@ -175,7 +175,7 @@ export default function EscanearLivroScreen() {
             onPress={requestPermission}
             style={[styles.primaryBtn, { backgroundColor: colors.volt, marginTop: 16 }]}
           >
-            <Text style={[styles.primaryBtnText, { color: "#0A0A0A" }]}>Permitir câmera</Text>
+            <Text style={[styles.primaryBtnText, { color: colors.accentForeground }]}>Permitir câmera</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -226,7 +226,7 @@ export default function EscanearLivroScreen() {
                   onPress={() => router.replace("/livro-manual")}
                   style={[styles.primaryBtn, { backgroundColor: colors.volt }]}
                 >
-                  <Text style={[styles.primaryBtnText, { color: "#0A0A0A" }]}>Adicionar manual</Text>
+                  <Text style={[styles.primaryBtnText, { color: colors.accentForeground }]}>Adicionar manual</Text>
                 </TouchableOpacity>
               </View>
             </>
@@ -264,7 +264,7 @@ export default function EscanearLivroScreen() {
                   onPress={() => addAndClose("reading")}
                   style={[styles.primaryBtn, { backgroundColor: colors.volt, flex: 1 }]}
                 >
-                  <Text style={[styles.primaryBtnText, { color: "#0A0A0A" }]}>Lendo agora</Text>
+                  <Text style={[styles.primaryBtnText, { color: colors.accentForeground }]}>Lendo agora</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => addAndClose("want")}

@@ -310,7 +310,7 @@ export default function LivroManualScreen() {
             { backgroundColor: canSave ? colors.volt : colors.border },
           ]}
         >
-          <Text style={[styles.saveBtnText, { color: canSave ? "#0A0A0A" : colors.muted }]}>
+          <Text style={[styles.saveBtnText, { color: canSave ? colors.accentForeground : colors.mutedForeground }]}>
             Salvar livro
           </Text>
         </TouchableOpacity>

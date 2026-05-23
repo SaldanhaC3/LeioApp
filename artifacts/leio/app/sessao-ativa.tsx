@@ -86,8 +86,8 @@ export default function SessaoAtivaScreen() {
   // Gradient animation - reactive to nowPlaying
   const gradientProgress = useSharedValue(0);
   const [gradient, setGradient] = useState<[string, string]>([
-    "#0A0A0A",
-    "#000000",
+    colors.background,
+    colors.card,
   ]);
 
   useEffect(() => {
@@ -108,7 +108,7 @@ export default function SessaoAtivaScreen() {
       gradientProgress.value = 0;
       gradientProgress.value = withTiming(1, { duration: 1200 });
     } else {
-      setGradient(["#0A0A0A", "#000000"]);
+      setGradient([colors.background, colors.card]);
       gradientProgress.value = withTiming(1, { duration: 800 });
     }
   }, [nowPlaying?.trackId]);
