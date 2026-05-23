@@ -342,7 +342,7 @@ export default function HomeScreen() {
           {[
             { label: "Páginas lidas", value: totalPagesRead.toString(), icon: "document-text" },
             { label: "Livros lidos", value: booksRead.toString(), icon: "library" },
-            { label: "Pace médio", value: avgPace > 0 ? `${avgPace.toFixed(1)} pág./min` : "—", icon: "speedometer" },
+            { label: "Pace médio", value: avgPace > 0 ? `${avgPace >= 100 ? Math.min(999, Math.round(avgPace)) : avgPace.toFixed(1)} pág./min` : "—", icon: "speedometer" },
             { label: "Sessões", value: sessions.length.toString(), icon: "timer" },
           ].map((stat, i) => (
             <View

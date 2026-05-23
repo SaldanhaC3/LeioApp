@@ -238,7 +238,7 @@ Baixar de graça
         {[
           { label: "Sessões", value: bookSessions.length.toString(), icon: "timer-outline" },
           { label: "Tempo total", value: formatDuration(totalTime), icon: "hourglass-outline" },
-          { label: "Pace médio", value: avgPace > 0 ? `${avgPace.toFixed(1)} pág./min` : "—", icon: "speedometer-outline" },
+          { label: "Pace médio", value: avgPace > 0 ? `${avgPace >= 100 ? Math.min(999, Math.round(avgPace)) : avgPace.toFixed(1)} pág./min` : "—", icon: "speedometer-outline" },
           { label: "Gênero", value: GENRE_LABELS[book.genre] ?? book.genre, icon: "bookmark-outline" },
         ].map((stat, i) => (
           <View
@@ -338,7 +338,7 @@ Nenhuma sessão por aqui — capa fechada, conta zerada
                   </Text>
                 </View>
                 <Text style={[styles.sessionPace, { color: colors.accentText }]}>
-                  {session.pace.toFixed(1)} pág./min
+                  {session.pace >= 100 ? Math.min(999, Math.round(session.pace)) : session.pace.toFixed(1)} pág./min
                 </Text>
               </View>
             ))

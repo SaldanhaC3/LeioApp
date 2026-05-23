@@ -249,7 +249,7 @@ export default function ConclusaoScreen() {
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.statVal, { color: colors.accentText }]}>
-            {pace > 0 ? pace.toFixed(1) : "—"}
+            {pace > 0 ? (pace >= 100 ? Math.min(999, Math.round(pace)).toString() : pace.toFixed(1)) : "—"}
           </Text>
           <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
             págs/min

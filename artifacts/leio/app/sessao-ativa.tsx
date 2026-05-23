@@ -2,19 +2,28 @@ import { CapiMascot } from "@/components/CapiMascot";
 import { VocabularyModal } from "@/components/VocabularyModal";
 import { useApp } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
+import {
+  startAmbient,
+  pauseAmbient,
+  resumeAmbient,
+  stopAmbient,
+  type AmbientId,
+} from "@/services/ambientAudio";
 import { sendFocusBreakNotification } from "@/services/notifications";
 import { deriveGradient } from "@/services/spotify";
+import { formatPace } from "@/utils/formatPace";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   AppState,
   ImageBackground,
+  KeyboardAvoidingView,
   Modal,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -107,9 +116,12 @@ export default function SessaoAtivaScreen() {
     setCapiState("reading");
     setReadingSessionActive(true);
     startTimer();
+    const ambientId = (params.ambient ?? "none") as AmbientId;
+    startAmbient(ambientId).catch(() => undefined);
     return () => {
       stopTimer();
       setReadingSessionActive(false);
+      stopAmbient().catch(() => undefined);
     };
   }, []);
 
@@ -196,8 +208,10 @@ export default function SessaoAtivaScreen() {
     );
     if (isRunning) {
       stopTimer();
+      pauseAmbient().catch(() => undefined);
     } else {
       startTimer();
+      resumeAmbient().catch(() => undefined);
     }
   }
 
@@ -213,6 +227,7 @@ export default function SessaoAtivaScreen() {
     );
     wasRunningBeforeEndRef.current = isRunning;
     stopTimer();
+    pauseAmbient().catch(() => undefined);
     setEndPageInput("");
     setEndError("");
     setShowEndModal(true);
@@ -278,13 +293,19 @@ export default function SessaoAtivaScreen() {
 
   function cancelEndModal() {
     setShowEndModal(false);
-    if (wasRunningBeforeEndRef.current) startTimer();
+    if (wasRunningBeforeEndRef.current) {
+      startTimer();
+      resumeAmbient().catch(() => undefined);
+    }
   }
 
   function openVocabModal() {
     Haptics.selectionAsync().catch(() => undefined);
     wasRunningBeforeVocabRef.current = isRunning;
-    if (isRunning) stopTimer();
+    if (isRunning) {
+      stopTimer();
+      pauseAmbient().catch(() => undefined);
+    }
     setShowVocabModal(true);
   }
 
@@ -293,6 +314,7 @@ export default function SessaoAtivaScreen() {
     // Don't auto-resume if another blocking modal is up
     if (wasRunningBeforeVocabRef.current && !showFocusReturn && !showEndModal) {
       startTimer();
+      resumeAmbient().catch(() => undefined);
     }
   }
 
@@ -417,98 +439,115 @@ export default function SessaoAtivaScreen() {
         </Modal>
 
         {/* End Session Modal */}
-        <Modal visible={showEndModal} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View
-              style={[
-                styles.endModal,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                },
-              ]}
+        <Modal
+          visible={showEndModal}
+          transparent
+          animationType="slide"
+          onRequestClose={cancelEndModal}
+        >
+          <KeyboardAvoidingView
+            style={styles.modalOverlay}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={0}
+          >
+            <ScrollView
+              contentContainerStyle={styles.endModalScroll}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
             >
-              <Text
-                style={[styles.endModalTitle, { color: colors.foreground }]}
-              >
-                Em que página o capítulo te soltou?
-              </Text>
-              <Text
+              <View
                 style={[
-                  styles.endModalSub,
-                  { color: colors.mutedForeground },
-                ]}
-              >
-                Começou na {startPage} · livro tem {book.totalPages}
-              </Text>
-              <TextInput
-                style={[
-                  styles.endModalInput,
+                  styles.endModal,
                   {
-                    color: colors.foreground,
-                    borderColor: endError ? colors.coral : colors.border,
-                    backgroundColor: colors.background,
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
                   },
                 ]}
-                value={endPageInput}
-                onChangeText={(v) => {
-                  setEndPageInput(v);
-                  if (endError) setEndError("");
-                }}
-                keyboardType="numeric"
-                placeholder={String(startPage)}
-                placeholderTextColor={colors.mutedForeground}
-                autoFocus
-              />
-              {!!endError && (
-                <Text style={[styles.endModalError, { color: colors.coral }]}>
-                  {endError}
-                </Text>
-              )}
-              <TouchableOpacity
-                style={[
-                  styles.endModalConfirm,
-                  { backgroundColor: colors.volt },
-                ]}
-                onPress={() => confirmEnd(false)}
               >
                 <Text
-                  style={[
-                    styles.endModalConfirmText,
-                    { color: colors.accentForeground },
-                  ]}
+                  style={[styles.endModalTitle, { color: colors.foreground }]}
                 >
-                  Salvar e encerrar
+                  Em que página o capítulo te soltou?
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.endModalSecondary}
-                onPress={() => confirmEnd(true)}
-              >
                 <Text
                   style={[
-                    styles.endModalSecondaryText,
+                    styles.endModalSub,
                     { color: colors.mutedForeground },
                   ]}
                 >
-                  Não lembro · manter na {startPage}
+                  Começou na {startPage} · livro tem {book.totalPages}
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.endModalCancel}
-                onPress={cancelEndModal}
-              >
-                <Text
+                <TextInput
                   style={[
-                    styles.endModalCancelText,
-                    { color: colors.mutedForeground },
+                    styles.endModalInput,
+                    {
+                      color: colors.foreground,
+                      borderColor: endError ? colors.coral : colors.border,
+                      backgroundColor: colors.background,
+                    },
                   ]}
+                  value={endPageInput}
+                  onChangeText={(v) => {
+                    setEndPageInput(v);
+                    if (endError) setEndError("");
+                  }}
+                  keyboardType="numeric"
+                  placeholder={String(startPage)}
+                  placeholderTextColor={colors.mutedForeground}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={() => confirmEnd(false)}
+                />
+                {!!endError && (
+                  <Text style={[styles.endModalError, { color: colors.coral }]}>
+                    {endError}
+                  </Text>
+                )}
+                <TouchableOpacity
+                  style={[
+                    styles.endModalConfirm,
+                    { backgroundColor: colors.volt },
+                  ]}
+                  onPress={() => confirmEnd(false)}
                 >
-                  Cancelar · continuar lendo
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+                  <Text
+                    style={[
+                      styles.endModalConfirmText,
+                      { color: colors.accentForeground },
+                    ]}
+                  >
+                    Salvar e encerrar
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.endModalSecondary}
+                  onPress={() => confirmEnd(true)}
+                >
+                  <Text
+                    style={[
+                      styles.endModalSecondaryText,
+                      { color: colors.mutedForeground },
+                    ]}
+                  >
+                    Não lembro · manter na {startPage}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.endModalCancel}
+                  onPress={cancelEndModal}
+                >
+                  <Text
+                    style={[
+                      styles.endModalCancelText,
+                      { color: colors.mutedForeground },
+                    ]}
+                  >
+                    Cancelar · continuar lendo
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </Modal>
 
         {/* Book Info */}
@@ -801,6 +840,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   focusBtnOutlineText: { fontSize: 15, fontWeight: "600" },
+  endModalScroll: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingVertical: 24,
+    paddingHorizontal: 24,
+  },
   endModal: {
     borderRadius: 20,
     borderWidth: 1,

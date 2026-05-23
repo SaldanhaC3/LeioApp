@@ -564,7 +564,7 @@ export default function PerfilScreen() {
             {
               icon: "speedometer",
               label: "Maior velocidade",
-              value: bestPace > 0 ? `${bestPace.toFixed(1)} pág./min` : "—",
+              value: bestPace > 0 ? `${bestPace >= 100 ? Math.min(999, Math.round(bestPace)) : bestPace.toFixed(1)} pág./min` : "—",
             },
             {
               icon: "trophy",
