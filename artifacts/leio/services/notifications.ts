@@ -114,3 +114,32 @@ export async function hasNotificationPermission(): Promise<boolean> {
     return false;
   }
 }
+
+const FOCUS_BREAK_MESSAGES = [
+  "Tá me deixando sozinha, hein?",
+  "Voltei pra te esperar. Vem cá.",
+  "Capi tá olhando pra parede aqui. Bora?",
+  "Cinco minutinhos só… né? Volta.",
+  "O livro fechou de tristeza. Reabre aí.",
+  "Ei, o Modo Foco era pra ser foco, lembra?",
+];
+
+export async function sendFocusBreakNotification(): Promise<void> {
+  if (!isSupported) return;
+  try {
+    const body =
+      FOCUS_BREAK_MESSAGES[
+        Math.floor(Math.random() * FOCUS_BREAK_MESSAGES.length)
+      ];
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Capi tá te chamando",
+        body,
+        sound: true,
+      },
+      trigger: null,
+    });
+  } catch {
+    // silent
+  }
+}

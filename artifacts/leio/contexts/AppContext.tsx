@@ -4,12 +4,21 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import {
   hasNotificationPermission,
   scheduleDailyReminder,
 } from "@/services/notifications";
+import {
+  clearTokens as clearSpotifyTokens,
+  fetchNowPlaying,
+  loadTokens as loadSpotifyTokens,
+  SPOTIFY_ENABLED,
+  startAuthFlow as startSpotifyAuth,
+  type NowPlaying,
+} from "@/services/spotify";
 
 const NOTIF_ENABLED_KEY = "leio:notifications-enabled";
 
@@ -618,6 +627,12 @@ interface AppContextType {
   getCurrentBook: () => Book | undefined;
   capiState: CapiState;
   setCapiState: (state: CapiState) => void;
+  spotifyEnabled: boolean;
+  spotifyConnected: boolean;
+  nowPlaying: NowPlaying | null;
+  connectSpotify: () => Promise<boolean>;
+  disconnectSpotify: () => Promise<void>;
+  setReadingSessionActive: (active: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -645,9 +660,55 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [xp, setXp] = useState(340);
   const [isLoaded, setIsLoaded] = useState(false);
   const [capiState, setCapiState] = useState<CapiState>("waving");
+  const [spotifyConnected, setSpotifyConnected] = useState(false);
+  const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
+  const [readingSessionActive, setReadingSessionActive] = useState(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     loadData();
+    loadSpotifyTokens().then((t) => setSpotifyConnected(!!t));
+  }, []);
+
+  useEffect(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    if (!spotifyConnected || !readingSessionActive) {
+      setNowPlaying(null);
+      return;
+    }
+    let cancelled = false;
+    const tick = async () => {
+      const np = await fetchNowPlaying();
+      if (!cancelled) setNowPlaying(np);
+    };
+    tick();
+    pollIntervalRef.current = setInterval(tick, 25000);
+    return () => {
+      cancelled = true;
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [spotifyConnected, readingSessionActive]);
+
+  const connectSpotify = useCallback(async () => {
+    if (!SPOTIFY_ENABLED) return false;
+    const tokens = await startSpotifyAuth();
+    if (tokens) {
+      setSpotifyConnected(true);
+      return true;
+    }
+    return false;
+  }, []);
+
+  const disconnectSpotify = useCallback(async () => {
+    await clearSpotifyTokens();
+    setSpotifyConnected(false);
+    setNowPlaying(null);
   }, []);
 
   useEffect(() => {
@@ -1032,6 +1093,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         getCurrentBook,
         capiState,
         setCapiState,
+        spotifyEnabled: SPOTIFY_ENABLED,
+        spotifyConnected,
+        nowPlaying,
+        connectSpotify,
+        disconnectSpotify,
+        setReadingSessionActive,
       }}
     >
       {children}

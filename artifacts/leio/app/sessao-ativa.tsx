@@ -1,10 +1,13 @@
 import { CapiMascot } from "@/components/CapiMascot";
 import { useApp } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
+import { sendFocusBreakNotification } from "@/services/notifications";
+import { deriveGradient } from "@/services/spotify";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   AppState,
@@ -16,7 +19,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const AnimatedGradient = Animated.createAnimatedComponent(LinearGradient);
 
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -39,7 +49,15 @@ export default function SessaoAtivaScreen() {
     focusDuration: string;
     modoVagao: string;
   }>();
-  const { getBookById, addSession, checkAndUnlockBadges, setCapiState } = useApp();
+  const {
+    getBookById,
+    addSession,
+    checkAndUnlockBadges,
+    setCapiState,
+    nowPlaying,
+    spotifyConnected,
+    setReadingSessionActive,
+  } = useApp();
 
   const book = getBookById(params.bookId ?? "");
   const startPage = parseInt(params.startPage ?? "0", 10);
@@ -48,27 +66,69 @@ export default function SessaoAtivaScreen() {
   const isModoVagao = params.modoVagao === "1";
 
   const [elapsed, setElapsed] = useState(0);
-  const [currentPage, setCurrentPage] = useState(startPage);
   const [isRunning, setIsRunning] = useState(true);
   const [focusExitSeconds, setFocusExitSeconds] = useState(0);
   const [showFocusReturn, setShowFocusReturn] = useState(false);
-  const [showPageModal, setShowPageModal] = useState(false);
-  const [newPageInput, setNewPageInput] = useState("");
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [endPageInput, setEndPageInput] = useState("");
+  const [endError, setEndError] = useState("");
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backgroundStartRef = useRef<number | null>(null);
   const focusExitRef = useRef(0);
   const startTimeRef = useRef(Date.now());
   const elapsedRef = useRef(0);
+  const lastMilestoneRef = useRef(0);
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = insets.bottom + (Platform.OS === "web" ? 34 : 0);
 
+  // Gradient animation - reactive to nowPlaying
+  const gradientProgress = useSharedValue(0);
+  const [gradient, setGradient] = useState<[string, string]>([
+    "#0A0A0A",
+    "#000000",
+  ]);
+
   useEffect(() => {
     setCapiState("reading");
+    setReadingSessionActive(true);
     startTimer();
-    return () => stopTimer();
+    return () => {
+      stopTimer();
+      setReadingSessionActive(false);
+    };
   }, []);
+
+  // Update gradient when nowPlaying changes
+  useEffect(() => {
+    if (nowPlaying) {
+      const next = deriveGradient(nowPlaying.energy, nowPlaying.valence);
+      setGradient(next);
+      gradientProgress.value = 0;
+      gradientProgress.value = withTiming(1, { duration: 1200 });
+    } else {
+      setGradient(["#0A0A0A", "#000000"]);
+      gradientProgress.value = withTiming(1, { duration: 800 });
+    }
+  }, [nowPlaying?.trackId]);
+
+  const gradientAnimStyle = useAnimatedStyle(() => ({
+    opacity: 0.5 + gradientProgress.value * 0.5,
+  }));
+
+  // Milestones - small Capi reactions every 10 min
+  useEffect(() => {
+    const milestone = Math.floor(elapsed / 600);
+    if (milestone > lastMilestoneRef.current && milestone > 0) {
+      lastMilestoneRef.current = milestone;
+      setCapiState("motivating");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => undefined
+      );
+      setTimeout(() => setCapiState("reading"), 1800);
+    }
+  }, [elapsed]);
 
   useEffect(() => {
     if (!isFocusMode) return;
@@ -76,6 +136,8 @@ export default function SessaoAtivaScreen() {
       if (nextState === "background" || nextState === "inactive") {
         backgroundStartRef.current = Date.now();
         stopTimer();
+        // Trigger notification: Capi calling you back
+        sendFocusBreakNotification().catch(() => undefined);
       } else if (nextState === "active") {
         if (backgroundStartRef.current !== null) {
           const outsideSeconds = Math.round(
@@ -116,7 +178,9 @@ export default function SessaoAtivaScreen() {
   }
 
   function togglePause() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
+      () => undefined
+    );
     if (isRunning) {
       stopTimer();
     } else {
@@ -130,15 +194,42 @@ export default function SessaoAtivaScreen() {
     startTimer();
   }
 
-  function endSession() {
+  function openEndModal() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(
+      () => undefined
+    );
     stopTimer();
-    const pages = currentPage - startPage;
+    setEndPageInput("");
+    setEndError("");
+    setShowEndModal(true);
+  }
+
+  function confirmEnd(useStartPage: boolean) {
+    let endPage = startPage;
+    if (!useStartPage) {
+      const parsed = parseInt(endPageInput, 10);
+      if (isNaN(parsed)) {
+        setEndError("Coloca um número aí.");
+        return;
+      }
+      if (parsed < startPage) {
+        setEndError(`Não pode ser menor que ${startPage}.`);
+        return;
+      }
+      if (book && parsed > book.totalPages) {
+        setEndError(`O livro só tem ${book.totalPages} páginas.`);
+        return;
+      }
+      endPage = parsed;
+    }
+
+    const pages = endPage - startPage;
     const pace = elapsed > 0 && pages > 0 ? pages / (elapsed / 60) : 0;
 
     const session = {
       bookId: params.bookId ?? "",
       startPage,
-      endPage: currentPage,
+      endPage,
       durationSeconds: elapsed,
       pace: Math.round(pace * 10) / 10,
       date: new Date().toISOString(),
@@ -149,17 +240,20 @@ export default function SessaoAtivaScreen() {
 
     addSession(session);
     checkAndUnlockBadges(session as never);
+    setReadingSessionActive(false);
 
     if (isFocusMode && focusExitRef.current === 0) {
       setCapiState("celebrating");
     }
+
+    setShowEndModal(false);
 
     router.replace({
       pathname: "/conclusao",
       params: {
         bookId: params.bookId,
         startPage: startPage.toString(),
-        endPage: currentPage.toString(),
+        endPage: endPage.toString(),
         durationSeconds: elapsed.toString(),
         pace: pace.toFixed(1),
         focusMode: isFocusMode ? "1" : "0",
@@ -168,42 +262,23 @@ export default function SessaoAtivaScreen() {
     });
   }
 
-  function handleEndPress() {
-    if (currentPage <= startPage) {
-      Alert.alert(
-        "Encerrar sessão",
-        "Você não atualizou a página. Quer encerrar mesmo assim?",
-        [
-          { text: "Continuar lendo", style: "cancel" },
-          { text: "Encerrar", onPress: endSession, style: "destructive" },
-        ]
-      );
-      return;
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    endSession();
+  function cancelEndModal() {
+    setShowEndModal(false);
+    startTimer();
   }
-
-  function updatePage() {
-    const page = parseInt(newPageInput, 10);
-    if (!isNaN(page) && page > startPage && page <= (book?.totalPages ?? 9999)) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setCurrentPage(page);
-    }
-    setShowPageModal(false);
-    setNewPageInput("");
-  }
-
-  const pages = currentPage - startPage;
-  const pace = elapsed > 60 && pages > 0 ? pages / (elapsed / 60) : 0;
-  const totalMinutes = focusDuration * 60;
-  const focusProgress = isFocusMode
-    ? Math.min(1, elapsed / totalMinutes)
-    : 0;
 
   if (!book) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: "center", alignItems: "center" }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: colors.background,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
         <Text style={[styles.errorText, { color: colors.foreground }]}>
           Livro não encontrado
         </Text>
@@ -214,241 +289,320 @@ export default function SessaoAtivaScreen() {
     );
   }
 
+  const totalMinutes = focusDuration * 60;
+  const focusProgress = isFocusMode ? Math.min(1, elapsed / totalMinutes) : 0;
+
   return (
     <View
       style={[
         styles.container,
         {
           backgroundColor: colors.background,
-          paddingTop: topInset,
-          paddingBottom: bottomInset,
         },
       ]}
     >
-      {/* Focus Return Modal */}
-      <Modal visible={showFocusReturn} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.focusModal, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <CapiMascot state="sad" size={100} />
-            <Text style={[styles.focusModalTitle, { color: colors.foreground }]}>
-              Capi ficou te esperando...
-            </Text>
-            <Text style={[styles.focusModalTime, { color: colors.mutedForeground }]}>
-              {Math.floor(focusExitSeconds / 60)}min {focusExitSeconds % 60}s fora do app
-            </Text>
-            <TouchableOpacity
-              style={[styles.focusBtn, { backgroundColor: colors.volt }]}
-              onPress={resumeAfterFocus}
-            >
-              <Text style={[styles.focusBtnText, { color: colors.accentForeground }]}>
-                Voltar pra leitura
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.focusBtnOutline, { borderColor: colors.border }]}
-              onPress={handleEndPress}
-            >
-              <Text style={[styles.focusBtnOutlineText, { color: colors.mutedForeground }]}>
-                Encerrar sessão
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {/* Reactive Spotify gradient background */}
+      <AnimatedGradient
+        colors={gradient}
+        style={[StyleSheet.absoluteFillObject, gradientAnimStyle]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      />
 
-      {/* Page Update Modal */}
-      <Modal visible={showPageModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.pageModal, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.pageModalTitle, { color: colors.foreground }]}>
-              Atualizar página
-            </Text>
-            <TextInput
+      <View
+        style={[
+          styles.inner,
+          {
+            paddingTop: topInset,
+            paddingBottom: bottomInset,
+          },
+        ]}
+      >
+        {/* Focus Return Modal */}
+        <Modal visible={showFocusReturn} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View
               style={[
-                styles.pageModalInput,
-                { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background },
+                styles.focusModal,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
               ]}
-              value={newPageInput}
-              onChangeText={setNewPageInput}
-              keyboardType="numeric"
-              placeholder={`Pág. atual: ${currentPage}`}
-              placeholderTextColor={colors.mutedForeground}
-              autoFocus
-            />
-            <Text style={[styles.pageModalSub, { color: colors.mutedForeground }]}>
-              Total: {book.totalPages} páginas
-            </Text>
-            <View style={styles.pageModalBtns}>
-              <TouchableOpacity
-                style={[styles.pageModalCancelBtn, { borderColor: colors.border }]}
-                onPress={() => { setShowPageModal(false); setNewPageInput(""); }}
+            >
+              <CapiMascot state="sad" size={100} />
+              <Text
+                style={[styles.focusModalTitle, { color: colors.foreground }]}
               >
-                <Text style={[styles.pageModalCancelText, { color: colors.mutedForeground }]}>Cancelar</Text>
+                Capi ficou te esperando...
+              </Text>
+              <Text
+                style={[
+                  styles.focusModalTime,
+                  { color: colors.mutedForeground },
+                ]}
+              >
+                {Math.floor(focusExitSeconds / 60)}min {focusExitSeconds % 60}s
+                fora do app
+              </Text>
+              <TouchableOpacity
+                style={[styles.focusBtn, { backgroundColor: colors.volt }]}
+                onPress={resumeAfterFocus}
+              >
+                <Text
+                  style={[
+                    styles.focusBtnText,
+                    { color: colors.accentForeground },
+                  ]}
+                >
+                  Voltar pra leitura
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.pageModalConfirmBtn, { backgroundColor: colors.volt }]}
-                onPress={updatePage}
+                style={[styles.focusBtnOutline, { borderColor: colors.border }]}
+                onPress={openEndModal}
               >
-                <Text style={[styles.pageModalConfirmText, { color: colors.accentForeground }]}>Salvar</Text>
+                <Text
+                  style={[
+                    styles.focusBtnOutlineText,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
+                  Encerrar sessão
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Book Info */}
-      <View style={styles.bookInfo}>
-        <View style={[styles.coverDot, { backgroundColor: book.coverColor }]} />
-        <View style={styles.bookText}>
-          <Text style={[styles.bookTitle, { color: colors.foreground }]} numberOfLines={1}>
-            {book.title}
-          </Text>
-          <Text style={[styles.bookAuthor, { color: colors.mutedForeground }]}>
-            {book.author}
-          </Text>
-        </View>
-        {isFocusMode && (
-          <View style={[styles.focusBadge, { backgroundColor: `${colors.volt}22` }]}>
-            <Ionicons name="eye" size={12} color={colors.volt} />
-            <Text style={[styles.focusBadgeText, { color: colors.volt }]}>Foco</Text>
-          </View>
-        )}
-        {isModoVagao && (
-          <View style={[styles.focusBadge, { backgroundColor: `${colors.coral}22` }]}>
-            <Ionicons name="train" size={12} color={colors.coral} />
-            <Text style={[styles.focusBadgeText, { color: colors.coral }]}>Vagão</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Timer */}
-      <View style={styles.timerSection}>
-        <Text style={[styles.timer, { color: colors.foreground }]}>
-          {formatTime(elapsed)}
-        </Text>
-        {isFocusMode && (
-          <View style={[styles.focusProgress, { backgroundColor: colors.border }]}>
+        {/* End Session Modal */}
+        <Modal visible={showEndModal} transparent animationType="slide">
+          <View style={styles.modalOverlay}>
             <View
               style={[
-                styles.focusProgressFill,
+                styles.endModal,
                 {
-                  backgroundColor: colors.volt,
-                  width: `${focusProgress * 100}%`,
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
                 },
               ]}
-            />
+            >
+              <Text
+                style={[styles.endModalTitle, { color: colors.foreground }]}
+              >
+                Em que página você parou?
+              </Text>
+              <Text
+                style={[
+                  styles.endModalSub,
+                  { color: colors.mutedForeground },
+                ]}
+              >
+                Começou na {startPage} · livro tem {book.totalPages}
+              </Text>
+              <TextInput
+                style={[
+                  styles.endModalInput,
+                  {
+                    color: colors.foreground,
+                    borderColor: endError ? colors.coral : colors.border,
+                    backgroundColor: colors.background,
+                  },
+                ]}
+                value={endPageInput}
+                onChangeText={(v) => {
+                  setEndPageInput(v);
+                  if (endError) setEndError("");
+                }}
+                keyboardType="numeric"
+                placeholder={String(startPage)}
+                placeholderTextColor={colors.mutedForeground}
+                autoFocus
+              />
+              {!!endError && (
+                <Text style={[styles.endModalError, { color: colors.coral }]}>
+                  {endError}
+                </Text>
+              )}
+              <TouchableOpacity
+                style={[
+                  styles.endModalConfirm,
+                  { backgroundColor: colors.volt },
+                ]}
+                onPress={() => confirmEnd(false)}
+              >
+                <Text
+                  style={[
+                    styles.endModalConfirmText,
+                    { color: colors.accentForeground },
+                  ]}
+                >
+                  Salvar e encerrar
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.endModalSecondary}
+                onPress={() => confirmEnd(true)}
+              >
+                <Text
+                  style={[
+                    styles.endModalSecondaryText,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
+                  Não lembro · manter na {startPage}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.endModalCancel}
+                onPress={cancelEndModal}
+              >
+                <Text
+                  style={[
+                    styles.endModalCancelText,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
+                  Cancelar · continuar lendo
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        )}
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statVal, { color: colors.volt }]}>
-              {pages}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-              páginas
-            </Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statVal, { color: colors.volt }]}>
-              {pace > 0 ? pace.toFixed(1) : "—"}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-              págs/min
-            </Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statVal, { color: colors.volt }]}>
-              {currentPage}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-              pág. atual
-            </Text>
-          </View>
-        </View>
-      </View>
+        </Modal>
 
-      {/* Capi */}
-      <View style={styles.capiWrap}>
-        <CapiMascot state="reading" size={isModoVagao ? 64 : 80} />
-      </View>
-
-      {/* Modo Vagão Controls */}
-      {isModoVagao ? (
-        <View style={styles.vagaoControls}>
-          <TouchableOpacity
-            style={[styles.vagaoBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setCurrentPage((p) => Math.max(startPage, p - 1));
-            }}
-          >
-            <Ionicons name="remove" size={36} color={colors.foreground} />
-          </TouchableOpacity>
-          <View style={styles.vagaoPage}>
-            <Text style={[styles.vagaoPageNum, { color: colors.foreground }]}>
-              {currentPage}
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.vagaoBtn, { backgroundColor: colors.volt }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setCurrentPage((p) => Math.min(book.totalPages, p + 1));
-            }}
-          >
-            <Ionicons name="add" size={36} color={colors.accentForeground} />
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity
-          style={[styles.updatePageBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
-          onPress={() => {
-            Haptics.selectionAsync();
-            setShowPageModal(true);
-          }}
-        >
-          <Ionicons name="pencil-outline" size={18} color={colors.foreground} />
-          <Text style={[styles.updatePageText, { color: colors.foreground }]}>
-            Atualizar página
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Controls */}
-      <View style={styles.controls}>
-        <TouchableOpacity
-          style={[styles.pauseBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
-          onPress={togglePause}
-        >
-          <Ionicons
-            name={isRunning ? "pause" : "play"}
-            size={24}
-            color={colors.foreground}
+        {/* Book Info */}
+        <View style={styles.bookInfo}>
+          <View
+            style={[styles.coverDot, { backgroundColor: book.coverColor }]}
           />
-        </TouchableOpacity>
+          <View style={styles.bookText}>
+            <Text
+              style={[styles.bookTitle, { color: colors.foreground }]}
+              numberOfLines={1}
+            >
+              {book.title}
+            </Text>
+            <Text
+              style={[styles.bookAuthor, { color: colors.mutedForeground }]}
+            >
+              {book.author}
+            </Text>
+          </View>
+          {isFocusMode && (
+            <View
+              style={[
+                styles.focusBadge,
+                { backgroundColor: `${colors.volt}22` },
+              ]}
+            >
+              <Ionicons name="eye" size={12} color={colors.volt} />
+              <Text style={[styles.focusBadgeText, { color: colors.volt }]}>
+                Foco
+              </Text>
+            </View>
+          )}
+          {isModoVagao && (
+            <View
+              style={[
+                styles.focusBadge,
+                { backgroundColor: `${colors.coral}22` },
+              ]}
+            >
+              <Ionicons name="train" size={12} color={colors.coral} />
+              <Text style={[styles.focusBadgeText, { color: colors.coral }]}>
+                Vagão
+              </Text>
+            </View>
+          )}
+        </View>
 
-        {isModoVagao && (
-          <TouchableOpacity
-            style={[styles.chegouBtn, { backgroundColor: colors.coral }]}
-            onPress={handleEndPress}
+        {/* Timer */}
+        <View style={styles.timerSection}>
+          <Text style={[styles.startPageHint, { color: colors.mutedForeground }]}>
+            começou na pág. {startPage}
+          </Text>
+          <Text style={[styles.timer, { color: colors.foreground }]}>
+            {formatTime(elapsed)}
+          </Text>
+          {isFocusMode && (
+            <View
+              style={[styles.focusProgress, { backgroundColor: colors.border }]}
+            >
+              <View
+                style={[
+                  styles.focusProgressFill,
+                  {
+                    backgroundColor: colors.volt,
+                    width: `${focusProgress * 100}%`,
+                  },
+                ]}
+              />
+            </View>
+          )}
+        </View>
+
+        {/* Capi - reading along */}
+        <View style={styles.capiWrap}>
+          <CapiMascot state="reading" size={120} />
+        </View>
+
+        {/* Now Playing - Spotify */}
+        {spotifyConnected && nowPlaying ? (
+          <View
+            style={[
+              styles.nowPlaying,
+              { backgroundColor: "rgba(0,0,0,0.4)" },
+            ]}
           >
-            <Text style={[styles.chegouText, { color: "#FFFFFF" }]}>Cheguei</Text>
-          </TouchableOpacity>
+            <Ionicons name="musical-notes" size={14} color={colors.volt} />
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[styles.npTrack, { color: colors.foreground }]}
+                numberOfLines={1}
+              >
+                {nowPlaying.track}
+              </Text>
+              <Text
+                style={[styles.npArtist, { color: colors.mutedForeground }]}
+                numberOfLines={1}
+              >
+                {nowPlaying.artist}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View style={{ height: 48 }} />
         )}
 
-        <TouchableOpacity
-          style={[styles.endBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
-          onPress={handleEndPress}
-        >
-          <Ionicons name="stop" size={24} color={colors.foreground} />
-          {!isModoVagao && (
-            <Text style={[styles.endBtnText, { color: colors.foreground }]}>
+        {/* Controls - only pause and end */}
+        <View style={styles.controls}>
+          <TouchableOpacity
+            style={[
+              styles.pauseBtn,
+              {
+                backgroundColor: colors.secondary,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={togglePause}
+          >
+            <Ionicons
+              name={isRunning ? "pause" : "play"}
+              size={28}
+              color={colors.foreground}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.endBtn, { backgroundColor: colors.coral }]}
+            onPress={openEndModal}
+          >
+            <Ionicons name="stop" size={22} color="#FFFFFF" />
+            <Text style={[styles.endBtnText, { color: "#FFFFFF" }]}>
               Encerrar
             </Text>
-          )}
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -456,6 +610,7 @@ export default function SessaoAtivaScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  inner: { flex: 1 },
   bookInfo: {
     flexDirection: "row",
     alignItems: "center",
@@ -480,62 +635,41 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 16,
+    gap: 12,
     paddingHorizontal: 20,
   },
+  startPageHint: {
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    fontWeight: "700",
+  },
   timer: {
-    fontSize: 64,
+    fontSize: 84,
     fontWeight: "900",
-    letterSpacing: -3,
+    letterSpacing: -4,
     fontVariant: ["tabular-nums"],
   },
   focusProgress: {
-    width: "80%",
+    width: "70%",
     height: 6,
     borderRadius: 3,
     overflow: "hidden",
   },
   focusProgressFill: { height: "100%", borderRadius: 3 },
-  statsRow: {
+  capiWrap: { alignItems: "center", paddingVertical: 8 },
+  nowPlaying: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 24,
-  },
-  statItem: { alignItems: "center", gap: 2 },
-  statVal: { fontSize: 24, fontWeight: "900", letterSpacing: -0.5 },
-  statLabel: { fontSize: 11 },
-  statDivider: { width: 1, height: 32, backgroundColor: "#2A2A2A" },
-  capiWrap: { alignItems: "center", paddingVertical: 16 },
-  vagaoControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 24,
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-  },
-  vagaoBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  vagaoPage: { alignItems: "center" },
-  vagaoPageNum: { fontSize: 40, fontWeight: "900", letterSpacing: -1 },
-  updatePageBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderRadius: 12,
-    borderWidth: 1,
+    gap: 10,
     marginHorizontal: 20,
-    padding: 14,
     marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
-  updatePageText: { fontSize: 15, fontWeight: "600" },
+  npTrack: { fontSize: 13, fontWeight: "700" },
+  npArtist: { fontSize: 11, marginTop: 1 },
   controls: {
     flexDirection: "row",
     alignItems: "center",
@@ -545,31 +679,23 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   pauseBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  chegouBtn: {
-    flex: 1,
-    height: 56,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  chegouText: { fontSize: 18, fontWeight: "900" },
   endBtn: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    justifyContent: "center",
+    gap: 8,
+    height: 64,
+    borderRadius: 18,
   },
-  endBtnText: { fontSize: 15, fontWeight: "700" },
+  endBtnText: { fontSize: 17, fontWeight: "900" },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.85)",
@@ -602,39 +728,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   focusBtnOutlineText: { fontSize: 15, fontWeight: "600" },
-  pageModal: {
+  endModal: {
     borderRadius: 20,
     borderWidth: 1,
     padding: 24,
     width: "100%",
     gap: 12,
   },
-  pageModalTitle: { fontSize: 18, fontWeight: "800" },
-  pageModalInput: {
+  endModalTitle: { fontSize: 20, fontWeight: "900" },
+  endModalSub: { fontSize: 13, marginTop: -4 },
+  endModalInput: {
     borderWidth: 1,
     borderRadius: 12,
     padding: 14,
-    fontSize: 24,
-    fontWeight: "700",
+    fontSize: 32,
+    fontWeight: "800",
     textAlign: "center",
+    marginTop: 4,
   },
-  pageModalSub: { fontSize: 12, textAlign: "center" },
-  pageModalBtns: { flexDirection: "row", gap: 10, marginTop: 4 },
-  pageModalCancelBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
+  endModalError: { fontSize: 12, marginTop: -4 },
+  endModalConfirm: {
+    borderRadius: 14,
+    padding: 16,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  endModalConfirmText: { fontSize: 16, fontWeight: "900" },
+  endModalSecondary: {
+    padding: 10,
     alignItems: "center",
   },
-  pageModalCancelText: { fontSize: 15, fontWeight: "600" },
-  pageModalConfirmBtn: {
-    flex: 1,
-    borderRadius: 12,
-    padding: 14,
+  endModalSecondaryText: { fontSize: 13, fontWeight: "600" },
+  endModalCancel: {
+    padding: 10,
     alignItems: "center",
   },
-  pageModalConfirmText: { fontSize: 15, fontWeight: "800" },
+  endModalCancelText: { fontSize: 13 },
   errorText: { fontSize: 16, marginBottom: 12 },
   backLink: { fontSize: 15, fontWeight: "700" },
 });

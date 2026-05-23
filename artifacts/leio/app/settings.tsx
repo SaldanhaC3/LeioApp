@@ -25,6 +25,115 @@ import type { CapiVariant } from "@/contexts/AppContext";
 
 const NOTIF_ENABLED_KEY = "leio:notifications-enabled";
 
+function SpotifySection() {
+  const colors = useColors();
+  const {
+    spotifyEnabled,
+    spotifyConnected,
+    connectSpotify,
+    disconnectSpotify,
+  } = useApp();
+  const [busy, setBusy] = useState(false);
+
+  if (!spotifyEnabled) {
+    return (
+      <View
+        style={[
+          styles.toggleCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.toggleLabel, { color: colors.foreground }]}>
+            Spotify desativado
+          </Text>
+          <Text style={[styles.toggleSub, { color: colors.mutedForeground }]}>
+            Configure EXPO_PUBLIC_SPOTIFY_CLIENT_ID pra liberar o ambiente reativo.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  async function handleConnect() {
+    if (busy) return;
+    Haptics.selectionAsync();
+    setBusy(true);
+    const ok = await connectSpotify();
+    setBusy(false);
+    if (!ok) {
+      Alert.alert(
+        "Não rolou",
+        "Não consegui conectar com o Spotify. Tenta de novo daqui a pouco."
+      );
+    }
+  }
+
+  async function handleDisconnect() {
+    if (busy) return;
+    Alert.alert(
+      "Desconectar Spotify",
+      "A Capi não vai mais reagir à sua trilha. Continuar?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Desconectar",
+          style: "destructive",
+          onPress: async () => {
+            setBusy(true);
+            await disconnectSpotify();
+            setBusy(false);
+          },
+        },
+      ]
+    );
+  }
+
+  return (
+    <View
+      style={[
+        styles.toggleCard,
+        { backgroundColor: colors.card, borderColor: colors.border },
+      ]}
+    >
+      <View style={{ flex: 1, paddingRight: 12 }}>
+        <Text style={[styles.toggleLabel, { color: colors.foreground }]}>
+          Spotify {spotifyConnected ? "conectado" : ""}
+        </Text>
+        <Text style={[styles.toggleSub, { color: colors.mutedForeground }]}>
+          {spotifyConnected
+            ? "A Capi reage à sua música durante a leitura."
+            : "Deixa o ambiente da sessão reagir à sua trilha sonora."}
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={[
+          styles.spotifyBtn,
+          {
+            backgroundColor: spotifyConnected ? colors.secondary : colors.volt,
+            opacity: busy ? 0.5 : 1,
+          },
+        ]}
+        onPress={spotifyConnected ? handleDisconnect : handleConnect}
+        disabled={busy}
+      >
+        <Text
+          style={[
+            styles.spotifyBtnText,
+            {
+              color: spotifyConnected
+                ? colors.foreground
+                : colors.accentForeground,
+            },
+          ]}
+        >
+          {spotifyConnected ? "Desconectar" : "Conectar"}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 const CAPI_VARIANTS: Array<{ id: CapiVariant; label: string; desc: string }> = [
   { id: "default", label: "Capi Padrão", desc: "A capivara fofa original" },
   { id: "vampire", label: "Capi Vampira", desc: "Para os amantes do terror" },
@@ -319,6 +428,14 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Spotify */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+          Trilha sonora
+        </Text>
+        <SpotifySection />
+      </View>
+
       {/* LGPD */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
@@ -418,6 +535,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   actionText: { flex: 1, fontSize: 15, fontWeight: "600" },
+  spotifyBtn: {
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  spotifyBtnText: { fontSize: 13, fontWeight: "800" },
   about: { alignItems: "center", paddingTop: 20 },
   aboutText: { fontSize: 12, textAlign: "center" },
 });

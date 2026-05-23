@@ -118,13 +118,33 @@ export function CapiMascot({
         );
         break;
       case "reading":
+        // Respiração contínua: sobe e desce sutil + leve crescimento/redução
         translateY.value = withRepeat(
           withSequence(
-            withTiming(-2, { duration: 2000 }),
-            withTiming(0, { duration: 2000 })
+            withTiming(-3, { duration: 2400 }),
+            withTiming(0, { duration: 2400 })
           ),
           -1,
           true
+        );
+        scale.value = withRepeat(
+          withSequence(
+            withTiming(1.02, { duration: 2400 }),
+            withTiming(1, { duration: 2400 })
+          ),
+          -1,
+          true
+        );
+        // Microbalanço de "virar página" - rotação muito sutil ocasional
+        rotate.value = withRepeat(
+          withSequence(
+            withTiming(0, { duration: 4500 }),
+            withTiming(0.03, { duration: 250 }),
+            withTiming(-0.02, { duration: 250 }),
+            withTiming(0, { duration: 250 })
+          ),
+          -1,
+          false
         );
         break;
       case "motivating":
