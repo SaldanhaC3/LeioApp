@@ -2,6 +2,7 @@ import { useApp, GENRE_LABELS } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -156,6 +157,59 @@ export default function LivroDetailScreen() {
           </View>
         </View>
       </View>
+
+      {/* Free book: read in-app + download sources */}
+      {book.isFree && (book.excerpt || (book.downloadSources && book.downloadSources.length > 0)) && (
+        <View style={[styles.freeSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.freeSectionHeader}>
+            <Ionicons name="gift-outline" size={18} color={colors.volt} />
+            <Text style={[styles.freeSectionTitle, { color: colors.foreground }]}>
+              Livro em domínio público
+            </Text>
+          </View>
+          {book.excerpt && (
+            <TouchableOpacity
+              style={[styles.freeReadBtn, { backgroundColor: colors.volt }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(`/leitor/${book.id}`);
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="book-outline" size={18} color={colors.accentForeground} />
+              <Text style={[styles.freeReadBtnText, { color: colors.accentForeground }]}>
+                Ler trecho no app
+              </Text>
+            </TouchableOpacity>
+          )}
+          {book.downloadSources && book.downloadSources.length > 0 && (
+            <>
+              <Text style={[styles.freeDownloadLabel, { color: colors.mutedForeground }]}>
+                Baixar grátis
+              </Text>
+              {book.downloadSources.map((src) => (
+                <TouchableOpacity
+                  key={src.url}
+                  style={[styles.downloadRow, { borderColor: colors.border }]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    Linking.openURL(src.url).catch(() =>
+                      Alert.alert("Erro", "Não foi possível abrir o link.")
+                    );
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="cloud-download-outline" size={16} color={colors.volt} />
+                  <Text style={[styles.downloadLabel, { color: colors.foreground }]} numberOfLines={1}>
+                    {src.label}
+                  </Text>
+                  <Ionicons name="open-outline" size={14} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+        </View>
+      )}
 
       {/* Progress */}
       {book.status === "reading" && (
@@ -426,4 +480,39 @@ const styles = StyleSheet.create({
   },
   deleteBtnText: { fontSize: 14, fontWeight: "700" },
   errorText: { fontSize: 16, marginTop: 20 },
+  freeSection: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 16,
+    gap: 10,
+  },
+  freeSectionHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  freeSectionTitle: { fontSize: 14, fontWeight: "800" },
+  freeReadBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 12,
+    padding: 12,
+  },
+  freeReadBtnText: { fontSize: 14, fontWeight: "800" },
+  freeDownloadLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginTop: 4,
+  },
+  downloadRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  downloadLabel: { flex: 1, fontSize: 13, fontWeight: "600" },
 });

@@ -8,6 +8,7 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useMemo } from "react";
 import {
+  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -70,7 +71,7 @@ function formatETA(book: { totalPages: number; currentPage: number; pace?: numbe
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { books, sessions, missions, badges, folego, folegoGuardado, xp, getCurrentBook, getAbandoned, completeMission } = useApp();
+  const { books, sessions, missions, badges, folego, folegoGuardado, xp, getCurrentBook, getAbandoned } = useApp();
 
   const greeting = useMemo(() => getGreeting(), []);
   const currentBook = getCurrentBook();
@@ -185,7 +186,21 @@ export default function HomeScreen() {
                 </View>
               )}
             </View>
-            <CapiMascot state="reading" size={80} />
+            {currentBook.coverImage ? (
+              <Image
+                source={{ uri: currentBook.coverImage }}
+                style={styles.currentBookCover}
+                resizeMode="cover"
+              />
+            ) : currentBook.authorImage ? (
+              <Image
+                source={{ uri: currentBook.authorImage }}
+                style={styles.currentBookCover}
+                resizeMode="cover"
+              />
+            ) : (
+              <CapiMascot state="reading" size={80} />
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.startSessionBtn, { backgroundColor: colors.volt }]}
@@ -252,7 +267,7 @@ export default function HomeScreen() {
           </Text>
         </View>
         {missions.map((m) => (
-          <MissionCard key={m.id} mission={m} onComplete={completeMission} />
+          <MissionCard key={m.id} mission={m} />
         ))}
       </View>
 
@@ -405,6 +420,12 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   currentBookInfo: { flex: 1, gap: 4, paddingRight: 12 },
+  currentBookCover: {
+    width: 80,
+    height: 110,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,0,0,0.2)",
+  },
   currentBookTitle: {
     fontSize: 22,
     fontWeight: "900",

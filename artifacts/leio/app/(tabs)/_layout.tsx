@@ -86,12 +86,12 @@ function ClassicTabLayout() {
               <SymbolView
                 name={focused ? "house.fill" : "house"}
                 tintColor={color}
-                size={24}
+                size={18}
               />
             ) : (
               <Ionicons
                 name={focused ? "home" : "home-outline"}
-                size={22}
+                size={18}
                 color={color}
               />
             ),
@@ -106,12 +106,12 @@ function ClassicTabLayout() {
               <SymbolView
                 name={focused ? "books.vertical.fill" : "books.vertical"}
                 tintColor={color}
-                size={24}
+                size={18}
               />
             ) : (
               <Ionicons
                 name={focused ? "library" : "library-outline"}
-                size={22}
+                size={18}
                 color={color}
               />
             ),
@@ -126,12 +126,12 @@ function ClassicTabLayout() {
               <SymbolView
                 name={focused ? "play.circle.fill" : "play.circle"}
                 tintColor={color}
-                size={28}
+                size={32}
               />
             ) : (
               <Ionicons
                 name={focused ? "play-circle" : "play-circle-outline"}
-                size={28}
+                size={32}
                 color={color}
               />
             ),
@@ -146,12 +146,12 @@ function ClassicTabLayout() {
               <SymbolView
                 name={focused ? "trophy.fill" : "trophy"}
                 tintColor={color}
-                size={22}
+                size={18}
               />
             ) : (
               <Ionicons
                 name={focused ? "trophy" : "trophy-outline"}
-                size={22}
+                size={18}
                 color={color}
               />
             ),
@@ -166,12 +166,12 @@ function ClassicTabLayout() {
               <SymbolView
                 name={focused ? "person.fill" : "person"}
                 tintColor={color}
-                size={22}
+                size={18}
               />
             ) : (
               <Ionicons
                 name={focused ? "person" : "person-outline"}
-                size={22}
+                size={18}
                 color={color}
               />
             ),

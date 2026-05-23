@@ -107,6 +107,7 @@ export default function BuscarLivroScreen() {
       status,
       coverColor: pickCoverColor(selected.title + selected.author),
       isbn: selected.isbn,
+      coverImage: selected.coverUrl,
       finishedAt: status === "read" ? new Date().toISOString() : undefined,
     });
     setSelected(null);

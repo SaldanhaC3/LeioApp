@@ -1,8 +1,7 @@
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import type { Mission } from "@/contexts/AppContext";
 
 const MISSION_ICONS: Record<string, string> = {
@@ -15,18 +14,11 @@ const MISSION_ICONS: Record<string, string> = {
 
 interface MissionCardProps {
   mission: Mission;
-  onComplete?: (id: string) => void;
 }
 
-export function MissionCard({ mission, onComplete }: MissionCardProps) {
+export function MissionCard({ mission }: MissionCardProps) {
   const colors = useColors();
   const progress = Math.min(1, mission.progress / mission.target);
-
-  function handlePress() {
-    if (mission.completed) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onComplete?.(mission.id);
-  }
 
   return (
     <View
@@ -92,14 +84,10 @@ export function MissionCard({ mission, onComplete }: MissionCardProps) {
         </View>
       </View>
 
-      {!mission.completed && (
-        <TouchableOpacity
-          style={[styles.checkBtn, { borderColor: colors.border }]}
-          onPress={handlePress}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="checkmark" size={16} color={colors.mutedForeground} />
-        </TouchableOpacity>
+      {mission.completed && (
+        <View style={[styles.checkBtn, { backgroundColor: colors.volt, borderColor: colors.volt }]}>
+          <Ionicons name="checkmark" size={16} color={colors.accentForeground} />
+        </View>
       )}
     </View>
   );

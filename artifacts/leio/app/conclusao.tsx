@@ -65,7 +65,7 @@ export default function ConclusaoScreen() {
     focusMode: string;
     focusExitSeconds: string;
   }>();
-  const { getBookById, badges, freeBooks } = useApp();
+  const { getBookById, badges, freeBooks, progressShareMission } = useApp();
 
   const book = getBookById(params.bookId ?? "");
   const endPage = parseInt(params.endPage ?? "0", 10);
@@ -147,6 +147,7 @@ export default function ConclusaoScreen() {
         dialogTitle: "Compartilhar sessão de leitura",
         UTI: "public.png",
       });
+      progressShareMission();
     } catch {
       Alert.alert("Ops", "Não rolou compartilhar agora. Tenta de novo daqui a pouco.");
     } finally {

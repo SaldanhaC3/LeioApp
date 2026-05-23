@@ -321,13 +321,18 @@ export default function SessaoScreen() {
 
       <FlatList
         data={[
+          { type: "addNew" } as { type: string; label?: string; book?: Book },
           ...(readingBooks.length > 0 ? [{ type: "header", label: "Lendo" }] : []),
           ...readingBooks.map((b) => ({ type: "book", book: b })),
           ...(wantBooks.length > 0 ? [{ type: "header", label: "Quero Ler" }] : []),
           ...wantBooks.map((b) => ({ type: "book", book: b })),
         ] as Array<{ type: string; label?: string; book?: Book }>}
         keyExtractor={(item, i) =>
-          item.type === "header" ? `h-${i}` : item.book!.id
+          item.type === "addNew"
+            ? "add-new"
+            : item.type === "header"
+            ? `h-${i}`
+            : item.book!.id
         }
         contentContainerStyle={{
           paddingHorizontal: 20,
@@ -344,6 +349,34 @@ export default function SessaoScreen() {
           </View>
         }
         renderItem={({ item }) => {
+          if (item.type === "addNew") {
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.addNewBtn,
+                  { backgroundColor: `${colors.volt}11`, borderColor: colors.volt },
+                ]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push("/buscar-livro");
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.addNewIcon, { backgroundColor: colors.volt }]}>
+                  <Ionicons name="add" size={20} color={colors.accentForeground} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.addNewTitle, { color: colors.foreground }]}>
+                    Adicionar livro novo
+                  </Text>
+                  <Text style={[styles.addNewSub, { color: colors.mutedForeground }]}>
+                    Busque por título, autor ou ISBN
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.volt} />
+              </TouchableOpacity>
+            );
+          }
           if (item.type === "header") {
             return (
               <Text style={[styles.listHeader, { color: colors.mutedForeground }]}>
@@ -430,6 +463,24 @@ const styles = StyleSheet.create({
   bookTitle: { fontSize: 15, fontWeight: "700" },
   bookAuthor: { fontSize: 13, marginTop: 2 },
   bookPage: { fontSize: 11, marginTop: 3 },
+  addNewBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    padding: 14,
+    marginBottom: 12,
+  },
+  addNewIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addNewTitle: { fontSize: 15, fontWeight: "800" },
+  addNewSub: { fontSize: 12, marginTop: 2 },
   empty: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 14, textAlign: "center" },
   backBtn: { marginBottom: 16 },
