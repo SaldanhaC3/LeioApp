@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/leio/"
+title = "Leio"
+version = "1.0.0"
+id = "artifacts/leio"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/leio/" ]
+localPort = 26047
+
+[services.development]
+run = "pnpm --filter @workspace/leio run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/leio", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/leio", "run", "serve" ]
+
+[services.env]
+PORT = "26047"
+BASE_PATH = "/leio/"

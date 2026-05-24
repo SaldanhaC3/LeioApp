@@ -1,0 +1,72 @@
+{
+  "expo": {
+    "name": "Leio",
+    "slug": "leio",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "leio",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#14110D"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.leio.app",
+      "infoPlist": {
+        "UIBackgroundModes": ["audio"]
+      }
+    },
+    "android": {
+      "package": "com.leio.app",
+      "permissions": [
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "expo-notifications",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "A Capi precisa da câmera pra escanear o código de barras dos seus livros ou tirar a foto que vai virar fundo do card de leitura.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "A Capi precisa acessar suas fotos pra usar uma de fundo no seu card de leitura.",
+          "savePhotosPermission": "Deixa a Capi salvar o card de leitura direto na sua galeria.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "A Capi precisa acessar suas fotos pra usar como capa do livro ou fundo do card de leitura.",
+          "cameraPermission": "A Capi precisa da câmera pra fotografar a capa do livro ou tirar a foto do card de leitura."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
