@@ -1,7 +1,10 @@
 import { useBookGroup } from "@/contexts/BookGroupContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
+import * as FileSystem from "expo-file-system";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -26,6 +29,8 @@ const MOODS: { value: Mood; label: string; emoji: string }[] = [
   { value: "difícil", label: "Difícil", emoji: "😓" },
 ];
 
+const PHOTO_SUGGESTIONS = ["mesa do café", "cama", "transporte", "sofá", "jardim"];
+
 export default function CheckInScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -41,6 +46,7 @@ export default function CheckInScreen() {
   const [mood, setMood] = useState<Mood | null>(null);
   const [bookTitle, setBookTitle] = useState(group?.currentBook ?? "");
   const [comment, setComment] = useState("");
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
@@ -48,7 +54,68 @@ export default function CheckInScreen() {
 
   const alreadyCheckedIn = hasCheckedInToday(groupId ?? "");
 
-  function handleSubmit() {
+  async function handlePickPhoto(useCamera: boolean) {
+    Haptics.selectionAsync();
+    try {
+      let result: ImagePicker.ImagePickerResult;
+      if (useCamera) {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert("Permissão negada", "Precisamos de acesso à câmera para tirar a foto.");
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync({
+          mediaTypes: "images",
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.75,
+        });
+      } else {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert("Permissão negada", "Precisamos de acesso à galeria para escolher a foto.");
+          return;
+        }
+        result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: "images",
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.75,
+        });
+      }
+      if (!result.canceled && result.assets[0]) {
+        setPhotoUri(result.assets[0].uri);
+      }
+    } catch {
+      Alert.alert("Erro", "Não foi possível acessar a câmera ou galeria.");
+    }
+  }
+
+  function handlePhotoOptions() {
+    Alert.alert(
+      "Adicionar foto",
+      "Onde você quer buscar a foto?",
+      [
+        { text: "Câmera", onPress: () => handlePickPhoto(true) },
+        { text: "Galeria", onPress: () => handlePickPhoto(false) },
+        { text: "Cancelar", style: "cancel" },
+      ]
+    );
+  }
+
+  async function copyPhotoToDocuments(uri: string): Promise<string | null> {
+    if (Platform.OS === "web") return uri;
+    try {
+      const filename = `checkin_${Date.now()}.jpg`;
+      const dest = `${FileSystem.documentDirectory}${filename}`;
+      await FileSystem.copyAsync({ from: uri, to: dest });
+      return dest;
+    } catch {
+      return uri;
+    }
+  }
+
+  async function handleSubmit() {
     const pagesNum = parseInt(pages, 10);
     if (!pagesNum || pagesNum <= 0) {
       Alert.alert("Páginas inválidas", "Informe quantas páginas você leu.");
@@ -59,12 +126,18 @@ export default function CheckInScreen() {
       return;
     }
 
+    let savedPhotoUri: string | undefined;
+    if (photoUri) {
+      savedPhotoUri = (await copyPhotoToDocuments(photoUri)) ?? undefined;
+    }
+
     addCheckIn(groupId ?? "", {
       pagesRead: pagesNum,
       mood,
       comment: comment.trim() || undefined,
       bookTitle: bookTitle.trim() || undefined,
       groupId: groupId ?? "",
+      photoUri: savedPhotoUri,
     });
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -255,8 +328,54 @@ export default function CheckInScreen() {
           />
         </View>
 
-        {/* Comment */}
+        {/* Foto do check-in */}
         <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+          Foto da leitura (opcional)
+        </Text>
+        <View style={[styles.photoPromptCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.photoPromptTitle, { color: colors.foreground }]}>
+            Mostra pra gente onde você tá lendo hoje 📸
+          </Text>
+          <Text style={[styles.photoPromptSub, { color: colors.mutedForeground }]}>
+            {PHOTO_SUGGESTIONS.join(" · ")}
+          </Text>
+        </View>
+
+        {photoUri ? (
+          <View style={styles.photoPreviewWrap}>
+            <Image
+              source={{ uri: photoUri }}
+              style={styles.photoPreview}
+              contentFit="cover"
+            />
+            <TouchableOpacity
+              style={[styles.removePhotoBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setPhotoUri(null);
+              }}
+            >
+              <Ionicons name="close" size={16} color={colors.foreground} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.addPhotoBtn, { backgroundColor: `${colors.volt}11`, borderColor: colors.accentBorder }]}
+            onPress={handlePhotoOptions}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.addPhotoIcon, { backgroundColor: colors.volt }]}>
+              <Ionicons name="camera" size={18} color={colors.accentForeground} />
+            </View>
+            <Text style={[styles.addPhotoBtnText, { color: colors.foreground }]}>
+              Adicionar foto
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
+        )}
+
+        {/* Comment */}
+        <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>
           Deixa uma mensagem pro grupo (opcional)
         </Text>
         <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.card }]}>
@@ -312,7 +431,7 @@ const styles = StyleSheet.create({
   pagesUnit: { textAlign: "center", fontSize: 13, paddingBottom: 8 },
   input: { fontSize: 15, paddingVertical: 12 },
   textArea: { fontSize: 15, paddingVertical: 12, minHeight: 90, textAlignVertical: "top" },
-  charCount: { fontSize: 11, textAlign: "right", marginBottom: 16 },
+  charCount: { fontSize: 11, textAlign: "right", marginBottom: 4 },
   moodGrid: {
     flexDirection: "row",
     gap: 10,
@@ -330,6 +449,54 @@ const styles = StyleSheet.create({
   },
   moodBtnEmoji: { fontSize: 28 },
   moodBtnLabel: { fontSize: 12, fontWeight: "700" },
+  photoPromptCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 10,
+    gap: 4,
+  },
+  photoPromptTitle: { fontSize: 14, fontWeight: "700" },
+  photoPromptSub: { fontSize: 12 },
+  addPhotoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    padding: 14,
+    marginBottom: 4,
+  },
+  addPhotoIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addPhotoBtnText: { flex: 1, fontSize: 15, fontWeight: "700" },
+  photoPreviewWrap: {
+    position: "relative",
+    borderRadius: 14,
+    overflow: "hidden",
+    marginBottom: 4,
+    height: 180,
+  },
+  photoPreview: {
+    width: "100%",
+    height: "100%",
+  },
+  removePhotoBtn: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   submitBtn: {
     flexDirection: "row",
     alignItems: "center",

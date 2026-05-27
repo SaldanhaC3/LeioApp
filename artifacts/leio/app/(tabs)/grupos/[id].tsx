@@ -3,10 +3,12 @@ import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Alert,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -53,6 +55,7 @@ export default function GroupDetailScreen() {
 
   const group = getGroupById(id ?? "");
   const today = todayString();
+  const [lightboxUri, setLightboxUri] = useState<string | null>(null);
 
   const todayCheckIns = getCheckInsForGroup(id ?? "", today);
   const myCheckInToday = todayCheckIns.find((c) => c.username === myUsername);
@@ -121,6 +124,27 @@ export default function GroupDetailScreen() {
         paddingHorizontal: 24,
       }}
     >
+      {/* Photo lightbox */}
+      <Modal
+        visible={!!lightboxUri}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLightboxUri(null)}
+      >
+        <TouchableOpacity
+          style={styles.lightboxOverlay}
+          activeOpacity={1}
+          onPress={() => setLightboxUri(null)}
+        >
+          {lightboxUri ? (
+            <Image
+              source={{ uri: lightboxUri }}
+              style={styles.lightboxImage}
+              contentFit="contain"
+            />
+          ) : null}
+        </TouchableOpacity>
+      </Modal>
       {/* Back */}
       <TouchableOpacity style={styles.backRow} onPress={() => router.back()} activeOpacity={0.7}>
         <Ionicons name="chevron-back" size={20} color={colors.foreground} />
@@ -224,6 +248,21 @@ export default function GroupDetailScreen() {
                   <Text style={[styles.activityPages, { color: colors.accentText }]}>
                     {ci.pagesRead} págs
                   </Text>
+                  {ci.photoUri ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setLightboxUri(ci.photoUri!);
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <Image
+                        source={{ uri: ci.photoUri }}
+                        style={styles.activityThumb}
+                        contentFit="cover"
+                      />
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
                 {ci.bookTitle ? (
                   <Text style={[styles.activityBook, { color: colors.mutedForeground }]} numberOfLines={1}>
@@ -419,6 +458,21 @@ const styles = StyleSheet.create({
   activityPages: { fontSize: 13, fontWeight: "700" },
   activityBook: { fontSize: 12 },
   activityComment: { fontSize: 13, fontStyle: "italic" },
+  activityThumb: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+  },
+  lightboxOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.92)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lightboxImage: {
+    width: "100%",
+    height: "80%",
+  },
   calendarCard: {
     borderRadius: 14,
     borderWidth: 1,
