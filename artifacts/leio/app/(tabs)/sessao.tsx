@@ -1,11 +1,14 @@
 import { useApp } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Alert,
   FlatList,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -16,6 +19,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Book } from "@/contexts/AppContext";
+
+const AMBIENT_STORAGE_KEY = "leio:session:last-ambient";
 
 const AMBIENT_OPTIONS = [
   { id: "cafe", label: "Café", icon: "cafe-outline" },
@@ -38,9 +43,52 @@ export default function SessaoScreen() {
   const [focusMode, setFocusMode] = useState(false);
   const [focusDuration, setFocusDuration] = useState(30);
   const [search, setSearch] = useState("");
+  const [spotifyOpened, setSpotifyOpened] = useState(false);
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = Platform.OS === "web" ? 34 : 0;
+
+  useEffect(() => {
+    AsyncStorage.getItem(AMBIENT_STORAGE_KEY)
+      .then((saved) => {
+        if (saved && AMBIENT_OPTIONS.some((o) => o.id === saved)) {
+          setAmbient(saved);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
+
+  function handleAmbientSelect(id: string) {
+    Haptics.selectionAsync();
+    setAmbient(id);
+    AsyncStorage.setItem(AMBIENT_STORAGE_KEY, id).catch(() => undefined);
+  }
+
+  async function handleOpenSpotify() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
+    try {
+      const canOpen = await Linking.canOpenURL("spotify:");
+      if (canOpen) {
+        await Linking.openURL("spotify:");
+        setSpotifyOpened(true);
+      } else {
+        Alert.alert(
+          "Spotify não encontrado",
+          "Parece que o Spotify não está instalado. Você pode usar um dos sons ambiente enquanto lê — eles foram feitos pra isso!",
+          [
+            { text: "Abrir na web", onPress: () => Linking.openURL("https://open.spotify.com").catch(() => undefined) },
+            { text: "Usar sons ambiente", style: "cancel" },
+          ]
+        );
+      }
+    } catch {
+      Alert.alert(
+        "Não foi possível abrir o Spotify",
+        "Escolha um som ambiente ou tente abrir o Spotify manualmente.",
+        [{ text: "Ok" }]
+      );
+    }
+  }
 
   const readingBooks = books.filter(
     (b) =>
@@ -62,6 +110,7 @@ export default function SessaoScreen() {
     Haptics.selectionAsync();
     setSelectedBook(book);
     setStartPage(book.currentPage.toString());
+    setSpotifyOpened(false);
     setStep("config");
   }
 
@@ -128,10 +177,15 @@ export default function SessaoScreen() {
           </View>
         </View>
 
-        {/* Ambient Sound */}
+        {/* Audio Section */}
         <View style={styles.configSection}>
           <Text style={[styles.configLabel, { color: colors.foreground }]}>
-            Som ambiente
+            Trilha sonora
+          </Text>
+
+          {/* Ambient Sound */}
+          <Text style={[styles.audioSubLabel, { color: colors.mutedForeground }]}>
+            Sons ambiente
           </Text>
           <View style={styles.ambientGrid}>
             {AMBIENT_OPTIONS.map((opt) => (
@@ -144,10 +198,7 @@ export default function SessaoScreen() {
                     borderColor: ambient === opt.id ? colors.accentBorder : colors.border,
                   },
                 ]}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setAmbient(opt.id);
-                }}
+                onPress={() => handleAmbientSelect(opt.id)}
               >
                 <Ionicons
                   name={opt.icon as never}
@@ -167,6 +218,45 @@ export default function SessaoScreen() {
               </TouchableOpacity>
             ))}
           </View>
+
+          {/* Spotify Deep Link */}
+          <Text style={[styles.audioSubLabel, { color: colors.mutedForeground, marginTop: 16 }]}>
+            Ou escolha uma música
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.spotifyBtn,
+              {
+                backgroundColor: spotifyOpened ? `${colors.volt}11` : colors.card,
+                borderColor: spotifyOpened ? colors.accentBorder : colors.border,
+              },
+            ]}
+            onPress={handleOpenSpotify}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.spotifyIconWrap, { backgroundColor: spotifyOpened ? colors.volt : colors.secondary }]}>
+              <Ionicons
+                name="musical-notes"
+                size={20}
+                color={spotifyOpened ? colors.accentForeground : colors.mutedForeground}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.spotifyBtnTitle, { color: colors.foreground }]}>
+                {spotifyOpened ? "Spotify aberto — volte quando quiser" : "Abrir no Spotify"}
+              </Text>
+              <Text style={[styles.spotifyBtnSub, { color: colors.mutedForeground }]}>
+                {spotifyOpened
+                  ? "A sessão começa com o que estiver tocando"
+                  : "Escolha a playlist e volte aqui para começar"}
+              </Text>
+            </View>
+            {spotifyOpened ? (
+              <Ionicons name="checkmark-circle" size={20} color={colors.accentText} />
+            ) : (
+              <Ionicons name="open-outline" size={18} color={colors.mutedForeground} />
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Modo Foco */}
@@ -464,6 +554,13 @@ const styles = StyleSheet.create({
   configSection: { marginBottom: 24 },
   configLabel: { fontSize: 16, fontWeight: "800", marginBottom: 12 },
   configSub: { fontSize: 12, marginTop: 2 },
+  audioSubLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
   pageInput: {
     flexDirection: "row",
     alignItems: "center",
@@ -485,6 +582,24 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   ambientLabel: { fontSize: 13, fontWeight: "600" },
+  spotifyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    padding: 14,
+  },
+  spotifyIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  spotifyBtnTitle: { fontSize: 15, fontWeight: "700" },
+  spotifyBtnSub: { fontSize: 12, marginTop: 2 },
   toggleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
