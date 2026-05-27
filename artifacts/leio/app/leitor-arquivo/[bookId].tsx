@@ -3,12 +3,14 @@ import * as Clipboard from "expo-clipboard";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Modal,
   Platform,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -317,6 +319,26 @@ export default function LeitorArquivoScreen() {
     closeSelBar();
   }, [selectedText]);
 
+  const handleTranslateExcerpt = useCallback(() => {
+    if (!selectedText) return;
+    Haptics.selectionAsync();
+    const encoded = encodeURIComponent(selectedText.slice(0, 500));
+    Linking.openURL(
+      `https://translate.google.com/?sl=auto&tl=pt&text=${encoded}&op=translate`
+    ).catch(() => {});
+    closeSelBar();
+  }, [selectedText]);
+
+  const handleShareExcerpt = useCallback(async () => {
+    if (!selectedText) return;
+    Haptics.selectionAsync();
+    const msg = book
+      ? `"${selectedText}"\n\n— ${book.title}, ${book.author}`
+      : `"${selectedText}"`;
+    Share.share({ message: msg }).catch(() => {});
+    closeSelBar();
+  }, [selectedText, book]);
+
   const handleImportFile = useCallback(async () => {
     if (!bookId) return;
     try {
@@ -563,27 +585,41 @@ export default function LeitorArquivoScreen() {
         ]}
         pointerEvents={selectedText ? "auto" : "none"}
       >
-        <Text style={styles.selPreview} numberOfLines={2}>
-          "{selectedText.slice(0, 80)}
-          {selectedText.length > 80 ? "…" : ""}"
-        </Text>
-        <View style={styles.selActions}>
-          <TouchableOpacity style={styles.selBtn} onPress={handleSaveExcerpt} activeOpacity={0.75}>
-            <Ionicons name="bookmark-outline" size={16} color="#CDFF00" />
-            <Text style={[styles.selBtnText, { color: "#CDFF00" }]}>Salvar trecho</Text>
-          </TouchableOpacity>
-          <View style={styles.selDivider} />
-          <TouchableOpacity style={styles.selBtn} onPress={handleCopyExcerpt} activeOpacity={0.75}>
-            <Ionicons name="copy-outline" size={16} color="#B0B0B0" />
-            <Text style={[styles.selBtnText, { color: "#B0B0B0" }]}>Copiar</Text>
-          </TouchableOpacity>
-          <View style={styles.selDivider} />
-          <TouchableOpacity
-            style={[styles.selBtn, { flex: 0, paddingHorizontal: 18 }]}
-            onPress={closeSelBar}
-            activeOpacity={0.75}
-          >
+        {/* Preview + close */}
+        <View style={styles.selHeader}>
+          <Text style={styles.selPreview} numberOfLines={2}>
+            "{selectedText.slice(0, 80)}{selectedText.length > 80 ? "…" : ""}"
+          </Text>
+          <TouchableOpacity onPress={closeSelBar} hitSlop={8}>
             <Ionicons name="close" size={18} color="#666" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Primary action: Salvar trecho */}
+        <TouchableOpacity
+          style={styles.selPrimaryBtn}
+          onPress={handleSaveExcerpt}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="bookmark-outline" size={15} color="#0A0A0A" />
+          <Text style={styles.selPrimaryBtnText}>Salvar no caderno</Text>
+        </TouchableOpacity>
+
+        {/* Secondary actions row */}
+        <View style={styles.selActions}>
+          <TouchableOpacity style={styles.selSecBtn} onPress={handleCopyExcerpt} activeOpacity={0.75}>
+            <Ionicons name="copy-outline" size={15} color="#B0B0B0" />
+            <Text style={styles.selSecBtnText}>Copiar</Text>
+          </TouchableOpacity>
+          <View style={styles.selDivider} />
+          <TouchableOpacity style={styles.selSecBtn} onPress={handleTranslateExcerpt} activeOpacity={0.75}>
+            <Ionicons name="language-outline" size={15} color="#B0B0B0" />
+            <Text style={styles.selSecBtnText}>Traduzir</Text>
+          </TouchableOpacity>
+          <View style={styles.selDivider} />
+          <TouchableOpacity style={styles.selSecBtn} onPress={handleShareExcerpt} activeOpacity={0.75}>
+            <Ionicons name="share-outline" size={15} color="#B0B0B0" />
+            <Text style={styles.selSecBtnText}>Compartilhar</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -718,11 +754,32 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 18,
     gap: 10,
   },
+  selHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
   selPreview: {
+    flex: 1,
     fontSize: 12,
     color: "#666",
     fontStyle: "italic",
     lineHeight: 17,
+  },
+  selPrimaryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#CDFF00",
+    borderRadius: 12,
+    paddingVertical: 13,
+  },
+  selPrimaryBtnText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#0A0A0A",
+    letterSpacing: -0.3,
   },
   selActions: {
     flexDirection: "row",
@@ -731,15 +788,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "rgba(255,255,255,0.05)",
   },
-  selBtn: {
+  selSecBtn: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 13,
+    gap: 5,
+    paddingVertical: 12,
   },
-  selBtnText: { fontSize: 13, fontWeight: "700" },
+  selSecBtnText: { fontSize: 12, fontWeight: "600", color: "#B0B0B0" },
   selDivider: {
     width: StyleSheet.hairlineWidth,
     backgroundColor: "#2A2A2A",

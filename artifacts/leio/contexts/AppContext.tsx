@@ -686,6 +686,7 @@ interface AppContextType {
   addVocabularyEntry: (
     entry: Omit<VocabularyEntry, "id" | "savedAt">
   ) => void;
+  removeVocabularyEntry: (id: string) => void;
   progressShareMission: () => boolean;
   addSharedCard: (
     card: Omit<SharedCard, "id" | "sharedAt" | "thumbnailUri">,
@@ -1275,6 +1276,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [highlights]
   );
 
+  const removeVocabularyEntry = useCallback(
+    (id: string) => {
+      const updated = vocabulary.filter((v) => v.id !== id);
+      setVocabulary(updated);
+      persistState({ vocabulary: updated });
+    },
+    [books, sessions, badges, vocabulary, highlights, settings, folego, folegoGuardado, xp, missions]
+  );
+
   return (
     <AppContext.Provider
       value={{
@@ -1304,6 +1314,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         checkAndUnlockBadges,
         earnXP,
         addVocabularyEntry,
+        removeVocabularyEntry,
         progressShareMission,
         addSharedCard,
         getBookById,

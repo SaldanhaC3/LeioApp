@@ -53,6 +53,7 @@ export default function BibliotecaScreen() {
     vocabulary,
     getBookById,
     removeHighlight,
+    removeVocabularyEntry,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState("reading");
@@ -149,6 +150,28 @@ export default function BibliotecaScreen() {
     [removeHighlight]
   );
 
+  const handleDeleteVocabulary = useCallback(
+    (v: VocabularyEntry) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Alert.alert(
+        "Excluir palavra?",
+        `"${v.word}" — ${v.definition.slice(0, 60)}${v.definition.length > 60 ? "…" : ""}`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Excluir",
+            style: "destructive",
+            onPress: () => {
+              removeVocabularyEntry(v.id);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            },
+          },
+        ]
+      );
+    },
+    [removeVocabularyEntry]
+  );
+
   const handleShareHighlight = useCallback(
     (h: Highlight) => {
       const book = getBookById(h.bookId);
@@ -237,13 +260,21 @@ export default function BibliotecaScreen() {
               {book.title}
             </Text>
           )}
-          <Text style={[styles.hlDate, { color: colors.mutedForeground }]}>
-            {new Date(v.savedAt).toLocaleDateString("pt-BR", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })}
-          </Text>
+          <View style={styles.hlActions}>
+            <Text style={[styles.hlDate, { color: colors.mutedForeground }]}>
+              {new Date(v.savedAt).toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
+            </Text>
+            <TouchableOpacity
+              onPress={() => handleDeleteVocabulary(v)}
+              hitSlop={8}
+            >
+              <Ionicons name="trash-outline" size={16} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );
