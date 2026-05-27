@@ -111,7 +111,7 @@ export default function MeusCardsScreen() {
             Nenhum card ainda
           </Text>
           <Text style={[styles.emptyDesc, { color: colors.mutedForeground }]}>
-            Compartilhe sua próxima sessão e ela vai aparecer aqui.
+            Compartilhe sua próxima sessão e ela aparece aqui. Fourth Wing virou trend — sua leitura também pode.
           </Text>
         </View>
       ) : (

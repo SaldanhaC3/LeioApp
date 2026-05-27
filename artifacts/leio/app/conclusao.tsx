@@ -29,15 +29,15 @@ const FOCUS_MESSAGES = [
   "Foco total. Nem o Big Brother do Orwell te vigiou tanto.",
   "Capi orgulhosa. Riobaldo também. A travessia valeu.",
   "Disciplina drummondiana: no meio do caminho, leitura.",
-  "Harry Potter tinha o mapa do maroto. Você tem o Leio. Mesma energia.",
-  "Hari Seldon calculou o futuro. Você calculou seu ritmo. Fundação aprovaria.",
-  "Jane Austen escreveu sem fazer barulho. Você leu sem se distrair. Orgulho e Preconceito, orgulho e foco.",
+  "Fourth Wing tem 800 páginas. Você tem foco. Isso basta.",
+  "A Mulher na Janela viu tudo pela vidraça. Você viu cada página.",
+  "Torto Arado foi escrito devagar, lido com atenção. Exatamente o que você fez.",
 ];
 
 const ABANDON_MESSAGES = [
   "Sem drama. Até o Bentinho parava pra respirar.",
-  "Tá bom por hoje. A travessia do sertão continua amanhã.",
-  "Página fechada não é página perdida. Fabiano sabe disso.",
+  "Tá bom por hoje. O Problema dos 3 Corpos demorou décadas pra ser traduzido — seu livro espera.",
+  "Página fechada não é página perdida. Carolina Maria de Jesus retomava todo dia.",
 ];
 
 const SHARE_PHRASES = [
@@ -50,9 +50,9 @@ const SHARE_PHRASES = [
   "Capítulo fechado, ego saudavelmente inflado.",
   "Eça aprovaria essa sessão.",
   "Sessão concluída. Capitu não desconfiou de nada.",
-  "Nem Hermione estudava tanto. Mas quase.",
-  "Fundação lida, sequência mantida. Seldon ficaria orgulhoso.",
-  "Darcy admiraria a dedicação. Bennet também.",
+  "Fourth Wing lido assim é voar. Literalmente.",
+  "Intermezzo de Sally Rooney. Você sentiu cada pausa.",
+  "O Problema dos 3 Corpos tem solução. O seu é ler todo dia.",
 ];
 
 export default function ConclusaoScreen() {

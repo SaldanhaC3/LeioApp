@@ -23,21 +23,21 @@ const SLIDES = [
     id: "1",
     title: "Hoje você lê,\nou inventa desculpa?",
     subtitle:
-      "O Leio anota cada sessão como o Bentinho anotava ciúme: tudo, com data. Dom Casmurro nunca esqueceu nada — você também não vai.",
+      "O Leio anota cada sessão como o Bentinho anotava ciúme: tudo, com data. Torto Arado foi escrito em cadernos velhos. Você tem um app — não tem desculpa.",
     capiState: "waving" as const,
   },
   {
     id: "2",
     title: "Fôlego de leitor\nse cultiva.",
     subtitle:
-      "Mantenha a sequência diária. Furou um dia? Você tem Fôlego Guardado pra cobrir o tropeço. Fabiano de Vidas Secas sobreviveu ao sertão — você sobrevive a um dia sem meta.",
+      "Mantenha a sequência diária. Furou um dia? Você tem Fôlego Guardado. Carolina Maria de Jesus escrevia o Quarto de Despejo entre um turno e outro. Você dá conta.",
     capiState: "motivating" as const,
   },
   {
     id: "3",
     title: "Cada sessão\nvira um card.",
     subtitle:
-      "Trechos, números, conquistas — tudo vira card bonito pro Stories. O Riobaldo atravessou o sertão. Você atravessa o capítulo. O feed agradece.",
+      "Trechos, números, conquistas — tudo vira card bonito pro Stories. Fourth Wing, O Problema dos 3 Corpos, Intermezzo — o feed agradece o nível.",
     capiState: "celebrating" as const,
   },
 ];

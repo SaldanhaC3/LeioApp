@@ -156,12 +156,14 @@ export default function SessaoAtivaScreen() {
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = insets.bottom + (Platform.OS === "web" ? 34 : 0);
 
-  // Gradient animation - reactive to nowPlaying
+  // Gradient animation - genre base, replaced by Spotify when playing
   const gradientProgress = useSharedValue(0);
-  const [gradient, setGradient] = useState<[string, string]>([
-    colors.background,
-    colors.card,
-  ]);
+  const genreTheme = book ? getGenreTheme(book.genre) : null;
+  const genreVariant = book ? getGenreCapiVariant(book.genre) : "default";
+  const genreAnimation = book ? getGenreReadingAnimation(book.genre) : "head-nod";
+  const [gradient, setGradient] = useState<[string, string]>(
+    genreTheme ?? [colors.background, colors.card]
+  );
 
   useEffect(() => {
     setCapiState("reading");
@@ -191,11 +193,7 @@ export default function SessaoAtivaScreen() {
     };
   }, []);
 
-  const genreTheme = book ? getGenreTheme(book.genre) : null;
-  const genreVariant = book ? getGenreCapiVariant(book.genre) : "default";
-  const genreAnimation = book ? getGenreReadingAnimation(book.genre) : "head-nod";
-
-  // Update gradient when nowPlaying changes
+  // Update gradient when nowPlaying changes — Spotify replaces genre gradient
   useEffect(() => {
     if (nowPlaying) {
       const next = deriveGradient(nowPlaying.energy, nowPlaying.valence);
@@ -209,7 +207,9 @@ export default function SessaoAtivaScreen() {
   }, [nowPlaying?.trackId]);
 
   const gradientAnimStyle = useAnimatedStyle(() => ({
-    opacity: 0.5 + gradientProgress.value * 0.5,
+    opacity: genreTheme
+      ? 0.7 + gradientProgress.value * 0.3
+      : gradientProgress.value * 0.3,
   }));
 
   // Milestones - small Capi reactions every 10 min
@@ -432,15 +432,8 @@ export default function SessaoAtivaScreen() {
         },
       ]}
     >
-      {/* Background — genre-themed gradient or day/night photo */}
-      {genreTheme ? (
-        <LinearGradient
-          colors={genreTheme}
-          style={StyleSheet.absoluteFillObject}
-          start={{ x: 0.3, y: 0 }}
-          end={{ x: 0.7, y: 1 }}
-        />
-      ) : (
+      {/* Photo background — only for default genre (no theme) */}
+      {!genreTheme && (
         <ImageBackground
           source={night ? BG_NOITE : BG_DIA}
           style={StyleSheet.absoluteFillObject}
@@ -450,13 +443,13 @@ export default function SessaoAtivaScreen() {
         </ImageBackground>
       )}
 
-      {/* Reactive Spotify gradient tint */}
-      {nowPlaying && (
+      {/* Unified gradient: genre theme OR Spotify replacement (smooth transition between them) */}
+      {(genreTheme !== null || nowPlaying !== null) && (
         <AnimatedGradient
           colors={gradient}
-          style={[StyleSheet.absoluteFillObject, gradientAnimStyle, { opacity: genreTheme ? 0.35 : 0.25 }]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          style={[StyleSheet.absoluteFillObject, gradientAnimStyle]}
+          start={{ x: 0.3, y: 0 }}
+          end={{ x: 0.7, y: 1 }}
         />
       )}
 

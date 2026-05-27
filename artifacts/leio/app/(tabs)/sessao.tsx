@@ -398,7 +398,7 @@ export default function SessaoScreen() {
           <View style={styles.empty}>
             <Ionicons name="book-outline" size={48} color={colors.mutedForeground} />
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-Estante meio órfã.{"\n"}Adiciona um livro na Biblioteca.
+Estante meio órfã.{"\n"}Torto Arado não leu a si mesmo — adiciona um livro na Biblioteca.
             </Text>
           </View>
         }

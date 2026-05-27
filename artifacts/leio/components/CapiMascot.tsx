@@ -241,7 +241,7 @@ export function CapiMascot({
     <Animated.View style={[animatedStyle, style]}>
       <Image
         source={
-          activeState === "reading"
+          activeState === "reading" && activeVariant === "default"
             ? CAPI_READING_IMAGE
             : CAPI_IMAGES[activeVariant]
         }
