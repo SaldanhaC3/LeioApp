@@ -1,7 +1,7 @@
 import { useBookGroup } from "@/contexts/BookGroupContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
-import * as FileSystem from "expo-file-system";
+import { File, Paths } from "expo-file-system";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -103,13 +103,14 @@ export default function CheckInScreen() {
     );
   }
 
-  async function copyPhotoToDocuments(uri: string): Promise<string | null> {
+  function copyPhotoToDocuments(uri: string): string {
     if (Platform.OS === "web") return uri;
     try {
       const filename = `checkin_${Date.now()}.jpg`;
-      const dest = `${FileSystem.documentDirectory}${filename}`;
-      await FileSystem.copyAsync({ from: uri, to: dest });
-      return dest;
+      const dest = new File(Paths.document, filename);
+      const src = new File(uri);
+      src.copy(dest);
+      return dest.uri;
     } catch {
       return uri;
     }
@@ -128,7 +129,7 @@ export default function CheckInScreen() {
 
     let savedPhotoUri: string | undefined;
     if (photoUri) {
-      savedPhotoUri = (await copyPhotoToDocuments(photoUri)) ?? undefined;
+      savedPhotoUri = copyPhotoToDocuments(photoUri);
     }
 
     addCheckIn(groupId ?? "", {
