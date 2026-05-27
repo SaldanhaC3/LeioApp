@@ -89,6 +89,10 @@ function RootLayoutNav() {
         name="livro-manual"
         options={{ headerShown: false, presentation: "modal" }}
       />
+      <Stack.Screen
+        name="perfil"
+        options={{ headerShown: false, presentation: "modal" }}
+      />
       <Stack.Screen name="+not-found" />
     </Stack>
   );

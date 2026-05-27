@@ -33,10 +33,6 @@ function NativeTabLayout() {
         <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
         <Label>Grupos</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="perfil">
-        <Icon sf={{ default: "person", selected: "person.fill" }} />
-        <Label>Perfil</Label>
-      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -183,23 +179,7 @@ function ClassicTabLayout() {
       />
       <Tabs.Screen
         name="perfil"
-        options={{
-          title: "Perfil",
-          tabBarIcon: ({ color, focused }) =>
-            isIOS ? (
-              <SymbolView
-                name={focused ? "person.fill" : "person"}
-                tintColor={color}
-                size={18}
-              />
-            ) : (
-              <Ionicons
-                name={focused ? "person" : "person-outline"}
-                size={18}
-                color={color}
-              />
-            ),
-        }}
+        options={{ href: null }}
       />
     </Tabs>
   );

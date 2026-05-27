@@ -167,7 +167,21 @@ export default function HomeScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <TouchableOpacity
+          onPress={() => router.push("/perfil")}
+          activeOpacity={0.8}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        >
+          <View
+            style={[
+              styles.avatarCircle,
+              { backgroundColor: `${colors.volt}22`, borderColor: colors.accentBorder },
+            ]}
+          >
+            <CapiMascot size={28} state="waving" />
+          </View>
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
           <Text style={[styles.greeting, { color: colors.mutedForeground }]}>
             {greeting}
           </Text>
@@ -504,12 +518,22 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 20 },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
+    gap: 12,
   },
-  greeting: { fontSize: 14, fontWeight: "500", marginBottom: 2 },
-  level: { fontSize: 18, fontWeight: "900", letterSpacing: -0.5 },
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  headerCenter: { flex: 1 },
+  greeting: { fontSize: 13, fontWeight: "500", marginBottom: 1 },
+  level: { fontSize: 17, fontWeight: "900", letterSpacing: -0.5 },
   folegoCard: {
     flexDirection: "row",
     justifyContent: "space-between",

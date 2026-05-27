@@ -26,35 +26,54 @@ function GroupCard({ group }: { group: ReadingGroup }) {
 
   return (
     <TouchableOpacity
-      style={[styles.groupCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+      style={[
+        styles.groupCard,
+        {
+          backgroundColor: checkedToday ? `${colors.volt}10` : colors.card,
+          borderColor: checkedToday ? colors.accentBorder : colors.border,
+        },
+      ]}
       onPress={() => {
         Haptics.selectionAsync();
         router.push(`/grupos/${group.id}`);
       }}
       activeOpacity={0.85}
     >
-      <View style={styles.groupCardLeft}>
+      {/* Top row: emoji + name + member count */}
+      <View style={styles.groupCardTop}>
         <Text style={styles.groupEmoji}>{group.emoji}</Text>
         <View style={styles.groupCardInfo}>
           <Text style={[styles.groupName, { color: colors.foreground }]} numberOfLines={1}>
             {group.name}
           </Text>
           <Text style={[styles.groupMeta, { color: colors.mutedForeground }]}>
-            {group.memberUsernames.length} {group.memberUsernames.length === 1 ? "membro" : "membros"} · streak: {streak} {streak === 1 ? "dia" : "dias"}
+            {group.memberUsernames.length}{" "}
+            {group.memberUsernames.length === 1 ? "membro" : "membros"}
           </Text>
         </View>
+        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
       </View>
-      <View style={styles.groupCardRight}>
+
+      {/* Bottom row: streak badge + check-in status */}
+      <View style={styles.groupCardBottom}>
+        <View style={[styles.streakBadge, { backgroundColor: streak > 0 ? `${colors.volt}18` : colors.secondary, borderColor: streak > 0 ? colors.accentBorder : colors.border }]}>
+          <Text style={styles.streakFire}>🔥</Text>
+          <Text style={[styles.streakCount, { color: streak > 0 ? colors.accentText : colors.mutedForeground }]}>
+            {streak} {streak === 1 ? "dia" : "dias"}
+          </Text>
+        </View>
+
         {checkedToday ? (
-          <View style={[styles.checkBadge, { backgroundColor: `${colors.volt}20`, borderColor: colors.volt }]}>
-            <Ionicons name="checkmark" size={14} color={colors.accentText} />
+          <View style={[styles.checkInDone, { backgroundColor: `${colors.volt}18`, borderColor: colors.accentBorder }]}>
+            <Ionicons name="checkmark-circle" size={14} color={colors.accentText} />
+            <Text style={[styles.checkInDoneText, { color: colors.accentText }]}>Check-in feito</Text>
           </View>
         ) : (
-          <View style={[styles.checkBadge, { backgroundColor: "transparent", borderColor: colors.border }]}>
-            <View style={[styles.checkEmpty, { borderColor: colors.mutedForeground }]} />
+          <View style={[styles.checkInPending, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+            <Ionicons name="ellipse-outline" size={14} color={colors.mutedForeground} />
+            <Text style={[styles.checkInPendingText, { color: colors.mutedForeground }]}>Sem check-in</Text>
           </View>
         )}
-        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
       </View>
     </TouchableOpacity>
   );
@@ -373,32 +392,56 @@ const styles = StyleSheet.create({
   sectionBlock: { marginBottom: 24, gap: 10 },
   sectionTitle: { fontSize: 11, fontWeight: "700", letterSpacing: 1.2, marginBottom: 4 },
   groupCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     padding: 16,
+    gap: 12,
   },
-  groupCardLeft: { flexDirection: "row", alignItems: "center", gap: 14, flex: 1 },
-  groupEmoji: { fontSize: 36 },
-  groupCardInfo: { flex: 1, gap: 4 },
-  groupName: { fontSize: 16, fontWeight: "800" },
-  groupMeta: { fontSize: 13 },
-  groupCardRight: { flexDirection: "row", alignItems: "center", gap: 8 },
-  checkBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1.5,
+  groupCardTop: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    gap: 14,
   },
-  checkEmpty: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 1.5,
+  groupCardBottom: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
+  groupEmoji: { fontSize: 34 },
+  groupCardInfo: { flex: 1, gap: 3 },
+  groupName: { fontSize: 16, fontWeight: "800" },
+  groupMeta: { fontSize: 12 },
+  streakBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  streakFire: { fontSize: 13 },
+  streakCount: { fontSize: 12, fontWeight: "800" },
+  checkInDone: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  checkInDoneText: { fontSize: 12, fontWeight: "700" },
+  checkInPending: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  checkInPendingText: { fontSize: 12, fontWeight: "600" },
   emptyState: {
     borderRadius: 20,
     borderWidth: 1,

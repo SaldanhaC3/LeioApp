@@ -19,6 +19,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Book } from "@/contexts/AppContext";
 import type { ViewShotRef } from "react-native-view-shot";
@@ -58,7 +63,31 @@ export default function BibliotecaScreen() {
 
   const [activeTab, setActiveTab] = useState("reading");
   const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [cadernoFilter, setCadernoFilter] = useState<"trechos" | "vocabulario">("trechos");
+  const searchInputRef = useRef<TextInput>(null);
+
+  const searchHeight = useSharedValue(0);
+  const searchOpacity = useSharedValue(0);
+
+  const animatedSearchStyle = useAnimatedStyle(() => ({
+    height: searchHeight.value,
+    opacity: searchOpacity.value,
+    overflow: "hidden",
+  }));
+
+  function toggleSearch() {
+    Haptics.selectionAsync();
+    const opening = !searchOpen;
+    setSearchOpen(opening);
+    searchHeight.value = withTiming(opening ? 56 : 0, { duration: 220 });
+    searchOpacity.value = withTiming(opening ? 1 : 0, { duration: 180 });
+    if (!opening) {
+      setSearch("");
+    } else {
+      setTimeout(() => searchInputRef.current?.focus(), 240);
+    }
+  }
 
   const [pendingShare, setPendingShare] = useState<{ highlight: Highlight; book: Book } | null>(
     null
@@ -293,22 +322,34 @@ export default function BibliotecaScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingHorizontal: 20 }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>Biblioteca</Text>
-        {!isCaderno && (
+        <View style={styles.headerActions}>
           <TouchableOpacity
-            style={[styles.addBtn, { backgroundColor: colors.volt }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push("/adicionar-livro");
-            }}
-            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+            onPress={toggleSearch}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
-            <Ionicons name="add" size={20} color={colors.accentForeground} />
+            <Ionicons
+              name={searchOpen ? "close" : "search-outline"}
+              size={22}
+              color={searchOpen ? colors.accentText : colors.mutedForeground}
+            />
           </TouchableOpacity>
-        )}
+          {!isCaderno && (
+            <TouchableOpacity
+              style={[styles.addBtn, { backgroundColor: colors.volt }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push("/adicionar-livro");
+              }}
+              hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+            >
+              <Ionicons name="add" size={20} color={colors.accentForeground} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      {/* Search */}
-      <View style={[styles.searchWrap, { paddingHorizontal: 20 }]}>
+      {/* Animated Search */}
+      <Animated.View style={[styles.searchWrap, { paddingHorizontal: 20 }, animatedSearchStyle]}>
         <View
           style={[
             styles.searchBar,
@@ -317,6 +358,7 @@ export default function BibliotecaScreen() {
         >
           <Ionicons name="search-outline" size={16} color={colors.mutedForeground} />
           <TextInput
+            ref={searchInputRef}
             style={[styles.searchInput, { color: colors.foreground }]}
             placeholder={
               isCaderno
@@ -335,7 +377,7 @@ export default function BibliotecaScreen() {
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </Animated.View>
 
       {/* Main tabs row */}
       <ScrollView
@@ -544,6 +586,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingBottom: 12,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
   title: { fontSize: 28, fontWeight: "900", letterSpacing: -1 },
   addBtn: {
     width: 36,
@@ -552,7 +599,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  searchWrap: { marginBottom: 12 },
+  searchWrap: { marginBottom: 0 },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
