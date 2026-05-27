@@ -65,6 +65,10 @@ function RootLayoutNav() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="leitor-arquivo/[bookId]"
+        options={{ headerShown: false, presentation: "fullScreenModal" }}
+      />
+      <Stack.Screen
         name="settings"
         options={{ headerShown: false }}
       />
