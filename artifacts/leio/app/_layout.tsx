@@ -15,6 +15,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider, useApp } from "@/contexts/AppContext";
+import { BookGroupProvider } from "@/contexts/BookGroupContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -88,6 +89,10 @@ function RootLayoutNav() {
         name="livro-manual"
         options={{ headerShown: false, presentation: "modal" }}
       />
+      <Stack.Screen
+        name="grupos"
+        options={{ headerShown: false }}
+      />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
@@ -116,7 +121,9 @@ export default function RootLayout() {
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
               <AppProvider>
-                <RootLayoutNav />
+                <BookGroupProvider>
+                  <RootLayoutNav />
+                </BookGroupProvider>
               </AppProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>

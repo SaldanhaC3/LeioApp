@@ -1,4 +1,4 @@
-import { useBookGroup } from "@/contexts/BookGroupContext";
+import { ReadingGroup, useBookGroup } from "@/contexts/BookGroupContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -6,7 +6,6 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
-  Animated,
   Platform,
   ScrollView,
   StyleSheet,
@@ -19,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const EMOJI_OPTIONS = ["📚", "📖", "🌙", "☕", "🌿", "✨", "🔥", "💫", "🎭", "🌊"];
 
-function GroupCard({ group }: { group: import("@/contexts/BookGroupContext").ReadingGroup }) {
+function GroupCard({ group }: { group: ReadingGroup }) {
   const colors = useColors();
   const { hasCheckedInToday, getStreak, myUsername } = useBookGroup();
   const checkedToday = hasCheckedInToday(group.id);
