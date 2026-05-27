@@ -6,7 +6,11 @@ export const SPOTIFY_CLIENT_ID =
   process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID ?? "";
 export const SPOTIFY_ENABLED = SPOTIFY_CLIENT_ID.length > 0;
 
-const SCOPES = ["user-read-currently-playing", "user-read-playback-state"];
+const SCOPES = [
+  "user-read-currently-playing",
+  "user-read-playback-state",
+  "user-modify-playback-state",
+];
 
 const DISCOVERY: AuthSession.DiscoveryDocument = {
   authorizationEndpoint: "https://accounts.spotify.com/authorize",
@@ -240,6 +244,40 @@ export async function fetchNowPlaying(): Promise<NowPlaying | null> {
   } catch {
     return null;
   }
+}
+
+async function playerCommand(
+  method: "PUT" | "POST",
+  endpoint: string
+): Promise<boolean> {
+  const token = await getValidAccessToken();
+  if (!token) return false;
+  try {
+    const res = await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    // 204 No Content = success; 202 Accepted = also ok
+    return res.status === 204 || res.status === 202 || res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function spotifyPause(): Promise<boolean> {
+  return playerCommand("PUT", "pause");
+}
+
+export async function spotifyPlay(): Promise<boolean> {
+  return playerCommand("PUT", "play");
+}
+
+export async function spotifyNext(): Promise<boolean> {
+  return playerCommand("POST", "next");
+}
+
+export async function spotifyPrevious(): Promise<boolean> {
+  return playerCommand("POST", "previous");
 }
 
 function hsl(h: number, s: number, l: number): string {

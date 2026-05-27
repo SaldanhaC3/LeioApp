@@ -10,7 +10,13 @@ import {
   type AmbientId,
 } from "@/services/ambientAudio";
 import { sendFocusBreakNotification } from "@/services/notifications";
-import { deriveGradient } from "@/services/spotify";
+import {
+  deriveGradient,
+  spotifyPause,
+  spotifyPlay,
+  spotifyNext,
+  spotifyPrevious,
+} from "@/services/spotify";
 import { formatPace } from "@/utils/formatPace";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -92,6 +98,8 @@ export default function SessaoAtivaScreen() {
   const [showVocabModal, setShowVocabModal] = useState(false);
   const wasRunningBeforeVocabRef = useRef(false);
   const wasRunningBeforeEndRef = useRef(false);
+
+  const [isSpotifyPlaying, setIsSpotifyPlaying] = useState(true);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const backgroundStartRef = useRef<number | null>(null);
@@ -656,6 +664,45 @@ export default function SessaoAtivaScreen() {
                 {nowPlaying.artist}
               </Text>
             </View>
+            <View style={styles.spotifyControls}>
+              <TouchableOpacity
+                style={styles.spotifyBtn}
+                onPress={async () => {
+                  await spotifyPrevious();
+                }}
+                accessibilityLabel="Música anterior"
+              >
+                <Ionicons name="play-skip-back" size={18} color={colors.foreground} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.spotifyBtn}
+                onPress={async () => {
+                  if (isSpotifyPlaying) {
+                    setIsSpotifyPlaying(false);
+                    await spotifyPause();
+                  } else {
+                    setIsSpotifyPlaying(true);
+                    await spotifyPlay();
+                  }
+                }}
+                accessibilityLabel={isSpotifyPlaying ? "Pausar Spotify" : "Tocar Spotify"}
+              >
+                <Ionicons
+                  name={isSpotifyPlaying ? "pause" : "play"}
+                  size={18}
+                  color={colors.foreground}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.spotifyBtn}
+                onPress={async () => {
+                  await spotifyNext();
+                }}
+                accessibilityLabel="Próxima música"
+              >
+                <Ionicons name="play-skip-forward" size={18} color={colors.foreground} />
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
           <View style={{ height: 48 }} />
@@ -891,4 +938,17 @@ const styles = StyleSheet.create({
   endModalCancelText: { fontSize: 13 },
   errorText: { fontSize: 16, marginBottom: 12 },
   backLink: { fontSize: 15, fontWeight: "700" },
+  spotifyControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  spotifyBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
 });
