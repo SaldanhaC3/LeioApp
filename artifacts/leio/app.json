@@ -17,7 +17,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.leio.app",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": ["audio"],
+        "LSApplicationQueriesSchemes": ["spotify"]
       }
     },
     "android": {
