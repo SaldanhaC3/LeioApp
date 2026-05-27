@@ -1,5 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Clipboard from "expo-clipboard";
 import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -19,12 +21,13 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
+import { Ionicons } from "@expo/vector-icons";
 
 import ReaderSettingsPanel, {
   DEFAULT_READER_SETTINGS,
   type ReaderSettings,
 } from "@/components/ReaderSettingsPanel";
-import { useApp } from "@/contexts/AppContext";
+import { useApp, type Highlight } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import {
   bookFileExists,
@@ -38,33 +41,146 @@ const READER_THEMES = {
   dark: { background: "#141414", text: "#E8E8E8", surface: "#1E1E1E" },
 };
 
+const HIGHLIGHT_BG_COLORS: Record<Highlight["bgVariant"], string> = {
+  volt: "rgba(205,255,0,0.38)",
+  cream: "rgba(255,220,160,0.5)",
+  coral: "rgba(255,107,91,0.35)",
+  noir: "rgba(100,100,255,0.25)",
+};
+
 const BAR_HIDE_DELAY_MS = 3000;
 const PROGRESS_KEY_PREFIX = "leio:reader-progress:";
 
-function buildEpubHtml(content: string, s: ReaderSettings): string {
+function buildEpubHtml(
+  fileUri: string,
+  s: ReaderSettings,
+  savedProgress: number,
+  highlights: { text: string; color: string }[]
+): string {
   const rc = READER_THEMES[s.theme];
+  const fontFamily =
+    s.fontFamily === "serif"
+      ? "Georgia, 'Times New Roman', serif"
+      : "'Helvetica Neue', Arial, sans-serif";
+  const hlJson = JSON.stringify(highlights);
+
   return `<!DOCTYPE html>
-<html lang="pt">
+<html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: ${rc.background};
-    color: ${rc.text};
-    font-family: ${s.fontFamily === "serif" ? "Georgia, serif" : "'Helvetica Neue', Arial, sans-serif"};
-    font-size: ${s.fontSize}px;
-    line-height: ${s.lineHeight};
-    text-align: ${s.textAlign};
-    padding: 24px 20px 80px;
-    -webkit-font-smoothing: antialiased;
-  }
-  p { margin-bottom: 1em; }
-  h1, h2, h3 { margin: 1.2em 0 0.5em; line-height: 1.3; }
-  img { max-width: 100%; height: auto; display: block; margin: 1em auto; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: ${rc.background}; }
+  #viewer { position: absolute; inset: 0; }
+  #msg { color: ${rc.text}; font-family: sans-serif; padding: 24px; line-height: 1.6; font-size: 15px; }
+  ::selection { background: rgba(205,255,0,0.4); }
 </style>
 </head>
-<body>${content}</body>
+<body>
+  <div id="viewer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.js"></script>
+  <script>
+  (function() {
+    var EPUB_URI = ${JSON.stringify(fileUri)};
+    var SAVED = ${JSON.stringify(savedProgress)};
+    var HIGHLIGHTS = ${hlJson};
+    var selTimer = null;
+
+    function postMsg(obj) {
+      try { window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify(obj)); } catch(e) {}
+    }
+
+    if (typeof ePub === 'undefined') {
+      document.getElementById('viewer').innerHTML = '<div id="msg">Conexão necessária para carregar o leitor ePub pela primeira vez. Abra com internet e o leitor ficará disponível.</div>';
+      postMsg({ type: 'error', message: 'epubjs not loaded' });
+      return;
+    }
+
+    try {
+      var book = ePub(EPUB_URI);
+      var rendition = book.renderTo('viewer', {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        spread: 'none',
+        flow: 'paginated',
+        allowScriptedContent: false
+      });
+
+      rendition.hooks.content.register(function(contents) {
+        var doc = contents.document;
+        var style = doc.createElement('style');
+        style.textContent =
+          'body { font-size: ${s.fontSize}px; font-family: ' + ${JSON.stringify(fontFamily)} + '; line-height: ${s.lineHeight}; text-align: ${s.textAlign}; color: ${rc.text}; background: ${rc.background}; padding: 12px 4px; -webkit-user-select: text; user-select: text; }' +
+          'p { margin-bottom: 0.75em; }' +
+          'h1,h2,h3 { margin: 1em 0 0.4em; line-height: 1.3; }' +
+          '::selection { background: rgba(205,255,0,0.4); }';
+        doc.head.appendChild(style);
+
+        HIGHLIGHTS.forEach(function(h) {
+          if (!h.text || h.text.length < 3) return;
+          try {
+            var walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null, false);
+            var node;
+            while ((node = walker.nextNode())) {
+              var val = node.nodeValue || '';
+              var idx = val.indexOf(h.text);
+              if (idx >= 0 && node.parentNode) {
+                var range = doc.createRange();
+                range.setStart(node, idx);
+                range.setEnd(node, idx + h.text.length);
+                var mark = doc.createElement('mark');
+                mark.style.cssText = 'background:' + h.color + ';border-radius:2px;padding:0 1px;';
+                try { range.surroundContents(mark); } catch(e2) {}
+                break;
+              }
+            }
+          } catch(e) {}
+        });
+
+        doc.addEventListener('selectionchange', function() {
+          clearTimeout(selTimer);
+          var sel = contents.window.getSelection();
+          var txt = sel ? sel.toString().trim() : '';
+          if (txt.length > 2) {
+            selTimer = setTimeout(function() { postMsg({ type: 'selection', text: txt }); }, 500);
+          } else {
+            postMsg({ type: 'selectionCleared' });
+          }
+        });
+      });
+
+      book.ready.then(function() {
+        return book.locations.generate(1024);
+      }).then(function() {
+        if (SAVED > 0.005) {
+          try {
+            var cfi = book.locations.cfiFromPercentage(SAVED);
+            return rendition.display(cfi);
+          } catch(e) {}
+        }
+        return rendition.display();
+      }).catch(function() { rendition.display(); });
+
+      rendition.on('relocated', function(loc) {
+        try {
+          var pct = book.locations.percentageFromCfi(loc.start.cfi);
+          postMsg({ type: 'progress', value: typeof pct === 'number' ? pct : 0, current: loc.start.displayed.page, total: loc.start.displayed.total });
+        } catch(e) {}
+      });
+
+      rendition.on('displayError', function(err) {
+        document.getElementById('viewer').innerHTML = '<div id="msg">Erro ao abrir o ePub. Certifique-se de que o arquivo está íntegro.</div>';
+        postMsg({ type: 'error', message: String(err) });
+      });
+
+    } catch(e) {
+      document.getElementById('viewer').innerHTML = '<div id="msg">Erro ao inicializar o leitor: ' + String(e) + '</div>';
+      postMsg({ type: 'error', message: String(e) });
+    }
+  })();
+  </script>
+</body>
 </html>`;
 }
 
@@ -72,7 +188,7 @@ export default function LeitorArquivoScreen() {
   const uiColors = useColors();
   const insets = useSafeAreaInsets();
   const { bookId } = useLocalSearchParams<{ bookId: string }>();
-  const { getBookById, updateBook } = useApp();
+  const { getBookById, updateBook, addHighlight, getHighlightsForBook } = useApp();
 
   const book = getBookById(bookId ?? "");
 
@@ -83,9 +199,15 @@ export default function LeitorArquivoScreen() {
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [selectedText, setSelectedText] = useState("");
 
   const barsVisible = useSharedValue(1);
+  const selBarAnim = useSharedValue(0);
+  const toastAnim = useSharedValue(0);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function scheduleBarsHide() {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -106,6 +228,14 @@ export default function LeitorArquivoScreen() {
   const bottomBarStyle = useAnimatedStyle(() => ({
     opacity: barsVisible.value,
     transform: [{ translateY: barsVisible.value === 0 ? 60 : 0 }],
+  }));
+  const selBarStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: (1 - selBarAnim.value) * 90 }],
+    opacity: selBarAnim.value,
+  }));
+  const toastStyle = useAnimatedStyle(() => ({
+    opacity: toastAnim.value,
+    transform: [{ translateY: (1 - toastAnim.value) * 16 }],
   }));
 
   useEffect(() => {
@@ -141,6 +271,7 @@ export default function LeitorArquivoScreen() {
     scheduleBarsHide();
     return () => {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, [bookId]);
 
@@ -152,6 +283,39 @@ export default function LeitorArquivoScreen() {
     if (!bookId) return;
     AsyncStorage.setItem(`${PROGRESS_KEY_PREFIX}${bookId}`, String(progress)).catch(() => {});
   }, [progress, bookId]);
+
+  function openSelBar(text: string) {
+    setSelectedText(text);
+    selBarAnim.value = withTiming(1, { duration: 220 });
+  }
+
+  function closeSelBar() {
+    setSelectedText("");
+    selBarAnim.value = withTiming(0, { duration: 180 });
+  }
+
+  function flashToast() {
+    toastAnim.value = withTiming(1, { duration: 200 });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      toastAnim.value = withTiming(0, { duration: 300 });
+    }, 2200);
+  }
+
+  const handleSaveExcerpt = useCallback(() => {
+    if (!selectedText || !bookId) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    addHighlight({ bookId, text: selectedText, bgVariant: "volt" });
+    closeSelBar();
+    flashToast();
+  }, [selectedText, bookId, addHighlight]);
+
+  const handleCopyExcerpt = useCallback(async () => {
+    if (!selectedText) return;
+    Haptics.selectionAsync();
+    await Clipboard.setStringAsync(selectedText);
+    closeSelBar();
+  }, [selectedText]);
 
   const handleImportFile = useCallback(async () => {
     if (!bookId) return;
@@ -180,7 +344,7 @@ export default function LeitorArquivoScreen() {
       setImportModalVisible(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      Alert.alert("Erro", "N\u00e3o foi poss\u00edvel importar o arquivo. Tente novamente.");
+      Alert.alert("Erro", "Não foi possível importar o arquivo. Tente novamente.");
     } finally {
       setImporting(false);
     }
@@ -195,13 +359,9 @@ export default function LeitorArquivoScreen() {
       const approxPage = Math.round(progress * book.totalPages);
       Alert.alert(
         "Atualizar progresso?",
-        `Voc\u00ea est\u00e1 aproximadamente na p\u00e1gina ${approxPage} de ${book.totalPages}. Deseja atualizar?`,
+        `Você está na página ~${approxPage} de ${book.totalPages}. Deseja atualizar?`,
         [
-          {
-            text: "N\u00e3o",
-            style: "cancel",
-            onPress: () => router.back(),
-          },
+          { text: "Não", style: "cancel", onPress: () => router.back() },
           {
             text: "Atualizar",
             onPress: () => {
@@ -216,16 +376,32 @@ export default function LeitorArquivoScreen() {
     }
   }, [book, bookId, progress, updateBook]);
 
-  const handleWebViewMessage = useCallback((event: { nativeEvent: { data: string } }) => {
-    try {
-      const msg = JSON.parse(event.nativeEvent.data);
-      if (msg.type === "progress" && typeof msg.value === "number") {
-        setProgress(Math.max(0, Math.min(1, msg.value)));
-      }
-    } catch { /* ignore */ }
-  }, []);
+  const handleWebViewMessage = useCallback(
+    (event: { nativeEvent: { data: string } }) => {
+      try {
+        const msg = JSON.parse(event.nativeEvent.data);
+        if (msg.type === "progress" && typeof msg.value === "number") {
+          setProgress(Math.max(0, Math.min(1, msg.value)));
+          if (typeof msg.current === "number") setCurrentPage(msg.current);
+          if (typeof msg.total === "number") setTotalPages(msg.total);
+        } else if (msg.type === "selection" && msg.text) {
+          openSelBar(msg.text);
+        } else if (msg.type === "selectionCleared") {
+          closeSelBar();
+        }
+      } catch { /* ignore */ }
+    },
+    []
+  );
 
-  const INJECTED_JS = `
+  const bookHighlights = bookId
+    ? getHighlightsForBook(bookId).map((h) => ({
+        text: h.text,
+        color: HIGHLIGHT_BG_COLORS[h.bgVariant] ?? HIGHLIGHT_BG_COLORS.volt,
+      }))
+    : [];
+
+  const PDF_INJECTED_JS = `
     (function() {
       function reportProgress() {
         var el = document.documentElement;
@@ -255,31 +431,39 @@ export default function LeitorArquivoScreen() {
   const approxPage =
     book && book.totalPages > 0 ? Math.max(1, Math.round(progress * book.totalPages)) : null;
 
+  const epubKey = `${fileUri}-${settings.theme}-${settings.fontSize}-${settings.lineHeight}-${settings.fontFamily}-${settings.textAlign}-${bookHighlights.length}`;
+  const docDir = FileSystem.documentDirectory ?? undefined;
+
   return (
     <View style={[styles.container, { backgroundColor: rc.background }]}>
       <TouchableOpacity
         style={{ flex: 1 }}
         activeOpacity={1}
-        onPress={showBars}
+        onPress={() => {
+          showBars();
+          if (selectedText) closeSelBar();
+        }}
       >
         {fileUri && fileType ? (
           <WebView
-            key={`${fileUri}-${settings.theme}-${settings.fontSize}-${settings.lineHeight}-${settings.fontFamily}-${settings.textAlign}`}
+            key={fileType === "epub" ? epubKey : `${fileUri}-${settings.theme}`}
             source={
               fileType === "pdf"
                 ? { uri: fileUri }
-                : { html: buildEpubHtml("<p>Carregando...</p>", settings) }
+                : { html: buildEpubHtml(fileUri, settings, progress, bookHighlights), baseUrl: "" }
             }
             style={{ flex: 1, backgroundColor: rc.background }}
-            injectedJavaScript={INJECTED_JS}
+            injectedJavaScript={fileType === "pdf" ? PDF_INJECTED_JS : undefined}
             onMessage={handleWebViewMessage}
-            onError={() => Alert.alert("Erro", "N\u00e3o foi poss\u00edvel carregar o arquivo.")}
+            onError={() => Alert.alert("Erro", "Não foi possível carregar o arquivo.")}
             allowFileAccess
             allowUniversalAccessFromFileURLs
-            originWhitelist={["*"]}
+            allowingReadAccessToURL={fileType === "epub" ? docDir : undefined}
+            originWhitelist={["*", "file://*"]}
             javaScriptEnabled
             domStorageEnabled
             scalesPageToFit={fileType === "pdf"}
+            mixedContentMode="always"
           />
         ) : !importModalVisible ? (
           <View style={[styles.placeholder, { backgroundColor: rc.background }]}>
@@ -290,20 +474,22 @@ export default function LeitorArquivoScreen() {
         ) : null}
       </TouchableOpacity>
 
+      {/* Top bar */}
       <Animated.View
         style={[
           styles.topBar,
           {
             backgroundColor: `${rc.surface}EE`,
             paddingTop: topInset,
-            borderBottomColor: rc.background === "#141414" ? "#2A2A2A" : "rgba(0,0,0,0.08)",
+            borderBottomColor:
+              rc.background === "#141414" ? "#2A2A2A" : "rgba(0,0,0,0.08)",
           },
           topBarStyle,
         ]}
         pointerEvents="box-none"
       >
         <TouchableOpacity onPress={handleBack} hitSlop={10} style={styles.barBtn}>
-          <Text style={[styles.backIcon, { color: rc.text }]}>&#8592;</Text>
+          <Ionicons name="arrow-back" size={22} color={rc.text} />
         </TouchableOpacity>
 
         <Text style={[styles.barTitle, { color: rc.text }]} numberOfLines={1}>
@@ -318,23 +504,33 @@ export default function LeitorArquivoScreen() {
           hitSlop={10}
           style={styles.barBtn}
         >
-          <Text style={[styles.settingsIcon, { color: rc.text }]}>&#9881;</Text>
+          <Ionicons name="settings-outline" size={20} color={rc.text} />
         </TouchableOpacity>
       </Animated.View>
 
+      {/* Bottom bar */}
       <Animated.View
         style={[
           styles.bottomBar,
           {
             backgroundColor: `${rc.surface}EE`,
             paddingBottom: bottomInset + 12,
-            borderTopColor: rc.background === "#141414" ? "#2A2A2A" : "rgba(0,0,0,0.08)",
+            borderTopColor:
+              rc.background === "#141414" ? "#2A2A2A" : "rgba(0,0,0,0.08)",
           },
           bottomBarStyle,
         ]}
         pointerEvents="box-none"
       >
-        <View style={[styles.progressTrack, { backgroundColor: rc.background === "#141414" ? "#2A2A2A" : "rgba(0,0,0,0.12)" }]}>
+        <View
+          style={[
+            styles.progressTrack,
+            {
+              backgroundColor:
+                rc.background === "#141414" ? "#2A2A2A" : "rgba(0,0,0,0.12)",
+            },
+          ]}
+        >
           <View
             style={[styles.progressFill, { width: `${pct}%`, backgroundColor: "#CDFF00" }]}
           />
@@ -342,13 +538,60 @@ export default function LeitorArquivoScreen() {
 
         <View style={styles.progressMeta}>
           <Text style={[styles.progressPct, { color: rc.text }]}>{pct}%</Text>
-          {approxPage !== null && (
+          {fileType === "epub" && totalPages > 1 ? (
             <Text style={[styles.progressPage, { color: rc.text }]}>
-              P\u00e1g. ~{approxPage}
+              {currentPage} / {totalPages}
+            </Text>
+          ) : approxPage !== null ? (
+            <Text style={[styles.progressPage, { color: rc.text }]}>
+              Pág. ~{approxPage}
               {book?.totalPages ? ` / ${book.totalPages}` : ""}
             </Text>
-          )}
+          ) : null}
         </View>
+      </Animated.View>
+
+      {/* Text selection action bar */}
+      <Animated.View
+        style={[
+          styles.selBar,
+          {
+            backgroundColor: rc.background === "#141414" ? "#1C1C1C" : "#0F0F0F",
+            paddingBottom: bottomInset + 6,
+          },
+          selBarStyle,
+        ]}
+        pointerEvents={selectedText ? "auto" : "none"}
+      >
+        <Text style={styles.selPreview} numberOfLines={2}>
+          "{selectedText.slice(0, 80)}
+          {selectedText.length > 80 ? "…" : ""}"
+        </Text>
+        <View style={styles.selActions}>
+          <TouchableOpacity style={styles.selBtn} onPress={handleSaveExcerpt} activeOpacity={0.75}>
+            <Ionicons name="bookmark-outline" size={16} color="#CDFF00" />
+            <Text style={[styles.selBtnText, { color: "#CDFF00" }]}>Salvar trecho</Text>
+          </TouchableOpacity>
+          <View style={styles.selDivider} />
+          <TouchableOpacity style={styles.selBtn} onPress={handleCopyExcerpt} activeOpacity={0.75}>
+            <Ionicons name="copy-outline" size={16} color="#B0B0B0" />
+            <Text style={[styles.selBtnText, { color: "#B0B0B0" }]}>Copiar</Text>
+          </TouchableOpacity>
+          <View style={styles.selDivider} />
+          <TouchableOpacity
+            style={[styles.selBtn, { flex: 0, paddingHorizontal: 18 }]}
+            onPress={closeSelBar}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="close" size={18} color="#666" />
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+
+      {/* Saved toast */}
+      <Animated.View style={[styles.toast, toastStyle]} pointerEvents="none">
+        <Ionicons name="checkmark-circle" size={16} color="#CDFF00" />
+        <Text style={styles.toastText}>Salvo no caderno</Text>
       </Animated.View>
 
       {settingsVisible && (
@@ -381,7 +624,7 @@ export default function LeitorArquivoScreen() {
             </Text>
             <Text style={[styles.modalBody, { color: uiColors.mutedForeground }]}>
               {book
-                ? `Importe um arquivo PDF ou ePub de "${book.title}" para leitura no leitor integrado.`
+                ? `Importe um PDF ou ePub de "${book.title}" para leitura no leitor integrado.`
                 : "Importe um arquivo PDF ou ePub para leitura."}
             </Text>
 
@@ -436,8 +679,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textAlign: "center",
   },
-  backIcon: { fontSize: 22, fontWeight: "600" },
-  settingsIcon: { fontSize: 20 },
   bottomBar: {
     position: "absolute",
     bottom: 0,
@@ -465,6 +706,61 @@ const styles = StyleSheet.create({
   },
   progressPct: { fontSize: 12, fontWeight: "800" },
   progressPage: { fontSize: 12 },
+  selBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 14,
+    paddingHorizontal: 16,
+    zIndex: 10,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    gap: 10,
+  },
+  selPreview: {
+    fontSize: 12,
+    color: "#666",
+    fontStyle: "italic",
+    lineHeight: 17,
+  },
+  selActions: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
+  selBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 13,
+  },
+  selBtnText: { fontSize: 13, fontWeight: "700" },
+  selDivider: {
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: "#2A2A2A",
+    marginVertical: 8,
+  },
+  toast: {
+    position: "absolute",
+    bottom: 110,
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#141414",
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    zIndex: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "#2A2A2A",
+  },
+  toastText: { color: "#E8E8E8", fontSize: 13, fontWeight: "600" },
   placeholder: {
     flex: 1,
     alignItems: "center",
