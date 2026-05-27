@@ -11,19 +11,24 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+export type ReadingAnimation = "page-turn" | "absorbed" | "head-nod" | "blink";
+
 const CAPI_IMAGES: Record<CapiVariant, ImageSourcePropType> = {
   default: require("@/assets/images/capi-default.png") as ImageSourcePropType,
   vampire: require("@/assets/images/capi-vampire.png") as ImageSourcePropType,
   erudite: require("@/assets/images/capi-erudite.png") as ImageSourcePropType,
+  terror: require("@/assets/images/capi-terror.png") as ImageSourcePropType,
+  classico: require("@/assets/images/capi-classico.png") as ImageSourcePropType,
+  romance: require("@/assets/images/capi-romance.png") as ImageSourcePropType,
+  scifi: require("@/assets/images/capi-scifi.png") as ImageSourcePropType,
 };
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const CAPI_READING_IMAGE = require("@/assets/images/capi-reading.png") as ImageSourcePropType;
 
 interface CapiMascotProps {
   state?: CapiState;
   variant?: CapiVariant;
+  readingAnimation?: ReadingAnimation;
   size?: number;
   style?: object;
 }
@@ -31,6 +36,7 @@ interface CapiMascotProps {
 export function CapiMascot({
   state,
   variant,
+  readingAnimation = "head-nod",
   size = 80,
   style,
 }: CapiMascotProps) {
@@ -121,34 +127,88 @@ export function CapiMascot({
         );
         break;
       case "reading":
-        // Respiração contínua: sobe e desce sutil + leve crescimento/redução
-        translateY.value = withRepeat(
-          withSequence(
-            withTiming(-3, { duration: 2400 }),
-            withTiming(0, { duration: 2400 })
-          ),
-          -1,
-          true
-        );
-        scale.value = withRepeat(
-          withSequence(
-            withTiming(1.02, { duration: 2400 }),
-            withTiming(1, { duration: 2400 })
-          ),
-          -1,
-          true
-        );
-        // Microbalanço de "virar página" - rotação muito sutil ocasional
-        rotate.value = withRepeat(
-          withSequence(
-            withTiming(0, { duration: 4500 }),
-            withTiming(0.03, { duration: 250 }),
-            withTiming(-0.02, { duration: 250 }),
-            withTiming(0, { duration: 250 })
-          ),
-          -1,
-          false
-        );
+        switch (readingAnimation) {
+          case "page-turn":
+            // Corpo balança lateralmente a cada ~8s como virar de página
+            rotate.value = withRepeat(
+              withSequence(
+                withTiming(0, { duration: 7500 }),
+                withTiming(0.055, { duration: 280 }),
+                withTiming(-0.04, { duration: 280 }),
+                withTiming(0, { duration: 340 })
+              ),
+              -1,
+              false
+            );
+            scale.value = withRepeat(
+              withSequence(
+                withTiming(1.015, { duration: 4000 }),
+                withTiming(1, { duration: 4000 })
+              ),
+              -1,
+              true
+            );
+            break;
+          case "absorbed":
+            // Inclina levemente pra frente a cada ~12s — embebido no livro
+            translateY.value = withRepeat(
+              withSequence(
+                withTiming(0, { duration: 10000 }),
+                withTiming(5, { duration: 1000 }),
+                withTiming(0, { duration: 1000 })
+              ),
+              -1,
+              false
+            );
+            scale.value = withRepeat(
+              withSequence(
+                withTiming(1.015, { duration: 3500 }),
+                withTiming(1, { duration: 3500 })
+              ),
+              -1,
+              true
+            );
+            break;
+          case "blink":
+            // Pisca suavemente a cada ~10s — suspense
+            opacity.value = withRepeat(
+              withSequence(
+                withTiming(1, { duration: 9900 }),
+                withTiming(0.85, { duration: 80 }),
+                withTiming(1, { duration: 20 })
+              ),
+              -1,
+              false
+            );
+            translateY.value = withRepeat(
+              withSequence(
+                withTiming(-2, { duration: 3000 }),
+                withTiming(0, { duration: 3000 })
+              ),
+              -1,
+              true
+            );
+            break;
+          case "head-nod":
+          default:
+            // Cabeça balança de -3° a +3° em loop de 6s — leitura studada
+            rotate.value = withRepeat(
+              withSequence(
+                withTiming(-0.052, { duration: 3000 }),
+                withTiming(0.052, { duration: 3000 })
+              ),
+              -1,
+              true
+            );
+            scale.value = withRepeat(
+              withSequence(
+                withTiming(1.015, { duration: 3000 }),
+                withTiming(1, { duration: 3000 })
+              ),
+              -1,
+              true
+            );
+        }
         break;
       case "motivating":
         scale.value = withRepeat(
@@ -166,7 +226,7 @@ export function CapiMascot({
         opacity.value = withTiming(1);
         rotate.value = withTiming(0);
     }
-  }, [activeState]);
+  }, [activeState, readingAnimation]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [

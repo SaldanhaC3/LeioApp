@@ -27,14 +27,17 @@ function formatDuration(seconds: number): string {
 
 const FOCUS_MESSAGES = [
   "Foco total. Nem o Big Brother do Orwell te vigiou tanto.",
-  "Capi orgulhosa. Riobaldo também.",
+  "Capi orgulhosa. Riobaldo também. A travessia valeu.",
   "Disciplina drummondiana: no meio do caminho, leitura.",
+  "Harry Potter tinha o mapa do maroto. Você tem o Leio. Mesma energia.",
+  "Hari Seldon calculou o futuro. Você calculou seu ritmo. Fundação aprovaria.",
+  "Jane Austen escreveu sem fazer barulho. Você leu sem se distrair. Orgulho e Preconceito, orgulho e foco.",
 ];
 
 const ABANDON_MESSAGES = [
   "Sem drama. Até o Bentinho parava pra respirar.",
-  "Tá bom por hoje. A travessia continua amanhã.",
-  "Página fechada não é página perdida.",
+  "Tá bom por hoje. A travessia do sertão continua amanhã.",
+  "Página fechada não é página perdida. Fabiano sabe disso.",
 ];
 
 const SHARE_PHRASES = [
@@ -47,6 +50,9 @@ const SHARE_PHRASES = [
   "Capítulo fechado, ego saudavelmente inflado.",
   "Eça aprovaria essa sessão.",
   "Sessão concluída. Capitu não desconfiou de nada.",
+  "Nem Hermione estudava tanto. Mas quase.",
+  "Fundação lida, sequência mantida. Seldon ficaria orgulhoso.",
+  "Darcy admiraria a dedicação. Bennet também.",
 ];
 
 export default function ConclusaoScreen() {

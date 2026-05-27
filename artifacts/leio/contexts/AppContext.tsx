@@ -24,7 +24,7 @@ import {
 const NOTIF_ENABLED_KEY = "leio:notifications-enabled";
 
 export type BookStatus = "reading" | "read" | "want" | "abandoned";
-export type CapiVariant = "default" | "vampire" | "erudite";
+export type CapiVariant = "default" | "vampire" | "erudite" | "terror" | "classico" | "romance" | "scifi";
 export type CapiState =
   | "reading"
   | "sad"

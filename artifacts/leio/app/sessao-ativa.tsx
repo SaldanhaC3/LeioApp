@@ -1,6 +1,6 @@
-import { CapiMascot } from "@/components/CapiMascot";
+import { CapiMascot, type ReadingAnimation } from "@/components/CapiMascot";
 import { VocabularyModal } from "@/components/VocabularyModal";
-import { useApp } from "@/contexts/AppContext";
+import { useApp, type CapiVariant } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import {
   startAmbient,
@@ -11,7 +11,6 @@ import {
 } from "@/services/ambientAudio";
 import { sendFocusBreakNotification } from "@/services/notifications";
 import { deriveGradient } from "@/services/spotify";
-import { formatPace } from "@/utils/formatPace";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -45,6 +44,60 @@ const BG_NOITE = require("@/assets/images/bg-sessao-noite.png");
 function isNightTime(date = new Date()): boolean {
   const h = date.getHours();
   return h < 6 || h >= 18;
+}
+
+function getGenreTheme(genre: string): [string, string] | null {
+  switch (genre) {
+    case "terror":
+      return ["#0D0018", "#1A0A2E"];
+    case "classicos":
+    case "literaturaBrasileira":
+    case "filosofia":
+      return ["#1C0E05", "#2C1A0A"];
+    case "romance":
+      return ["#1A0010", "#2D0A1E"];
+    case "ficcaoCientifica":
+    case "fantasia":
+      return ["#020818", "#050A1E"];
+    default:
+      return null;
+  }
+}
+
+function getGenreCapiVariant(genre: string): CapiVariant {
+  switch (genre) {
+    case "terror":
+      return "terror";
+    case "classicos":
+    case "literaturaBrasileira":
+    case "filosofia":
+      return "classico";
+    case "romance":
+      return "romance";
+    case "ficcaoCientifica":
+    case "fantasia":
+      return "scifi";
+    default:
+      return "default";
+  }
+}
+
+function getGenreReadingAnimation(genre: string): ReadingAnimation {
+  switch (genre) {
+    case "terror":
+      return "blink";
+    case "classicos":
+    case "literaturaBrasileira":
+    case "filosofia":
+      return "head-nod";
+    case "romance":
+      return "absorbed";
+    case "ficcaoCientifica":
+    case "fantasia":
+      return "page-turn";
+    default:
+      return "head-nod";
+  }
 }
 
 function formatTime(seconds: number): string {
@@ -138,6 +191,10 @@ export default function SessaoAtivaScreen() {
     };
   }, []);
 
+  const genreTheme = book ? getGenreTheme(book.genre) : null;
+  const genreVariant = book ? getGenreCapiVariant(book.genre) : "default";
+  const genreAnimation = book ? getGenreReadingAnimation(book.genre) : "head-nod";
+
   // Update gradient when nowPlaying changes
   useEffect(() => {
     if (nowPlaying) {
@@ -146,7 +203,7 @@ export default function SessaoAtivaScreen() {
       gradientProgress.value = 0;
       gradientProgress.value = withTiming(1, { duration: 1200 });
     } else {
-      setGradient([colors.background, colors.card]);
+      setGradient(genreTheme ?? [colors.background, colors.card]);
       gradientProgress.value = withTiming(1, { duration: 800 });
     }
   }, [nowPlaying?.trackId]);
@@ -375,22 +432,33 @@ export default function SessaoAtivaScreen() {
         },
       ]}
     >
-      {/* Ambient artwork — Capi reading (day/night based on time) */}
-      <ImageBackground
-        source={night ? BG_NOITE : BG_DIA}
-        style={StyleSheet.absoluteFillObject}
-        resizeMode="cover"
-      >
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: overlayColor }]} />
-      </ImageBackground>
+      {/* Background — genre-themed gradient or day/night photo */}
+      {genreTheme ? (
+        <LinearGradient
+          colors={genreTheme}
+          style={StyleSheet.absoluteFillObject}
+          start={{ x: 0.3, y: 0 }}
+          end={{ x: 0.7, y: 1 }}
+        />
+      ) : (
+        <ImageBackground
+          source={night ? BG_NOITE : BG_DIA}
+          style={StyleSheet.absoluteFillObject}
+          resizeMode="cover"
+        >
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: overlayColor }]} />
+        </ImageBackground>
+      )}
 
-      {/* Reactive Spotify gradient tint (lower opacity so artwork shows) */}
-      <AnimatedGradient
-        colors={gradient}
-        style={[StyleSheet.absoluteFillObject, gradientAnimStyle, { opacity: 0.25 }]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      />
+      {/* Reactive Spotify gradient tint */}
+      {nowPlaying && (
+        <AnimatedGradient
+          colors={gradient}
+          style={[StyleSheet.absoluteFillObject, gradientAnimStyle, { opacity: genreTheme ? 0.35 : 0.25 }]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+      )}
 
       <View
         style={[
@@ -628,9 +696,14 @@ export default function SessaoAtivaScreen() {
           )}
         </View>
 
-        {/* Capi - reading along */}
+        {/* Capi - reading along, genre-aware variant and animation */}
         <View style={styles.capiWrap}>
-          <CapiMascot state="reading" size={120} />
+          <CapiMascot
+            state="reading"
+            variant={genreVariant}
+            readingAnimation={genreAnimation}
+            size={120}
+          />
         </View>
 
         {/* Now Playing - Spotify */}

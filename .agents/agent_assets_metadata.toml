@@ -12,6 +12,18 @@ uri = "file://artifacts/leio/assets/images/capi-reading.png"
 type = "image"
 title = "capi reading book mascot"
 
+[[generated]]
+id = "JGfsAJjBJGqg_I9fuazql"
+uri = "file://artifacts/leio/assets/images/capi-romance.png"
+type = "image"
+title = "capi romance variant"
+
+[[generated]]
+id = "dZ-MEy2C3lXGmhWmAJf1Z"
+uri = "file://artifacts/leio/assets/images/capi-scifi.png"
+type = "image"
+title = "capi scifi variant"
+
 [[outputs]]
 id = "5orAXMCUouqxR4sntrPWe"
 uri = "file://.local/outputs/Preparado-Context.pdf"
