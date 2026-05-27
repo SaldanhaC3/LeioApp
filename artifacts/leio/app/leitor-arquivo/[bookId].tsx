@@ -519,6 +519,20 @@ export default function LeitorArquivoScreen() {
           }, 300);
         });
       }
+
+      var pdfSelTimer = null;
+      document.addEventListener('selectionchange', function() {
+        clearTimeout(pdfSelTimer);
+        var sel = window.getSelection();
+        var txt = sel ? sel.toString().trim() : '';
+        if (txt.length > 2) {
+          pdfSelTimer = setTimeout(function() {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'selection', text: txt, cfi: null }));
+          }, 500);
+        } else {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'selectionCleared' }));
+        }
+      });
     })();
     true;
   `;
