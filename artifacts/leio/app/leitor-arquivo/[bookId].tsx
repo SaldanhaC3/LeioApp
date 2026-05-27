@@ -236,6 +236,7 @@ export default function LeitorArquivoScreen() {
   const toastAnim = useSharedValue(0);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialProgressRef = useRef(0);
 
   function scheduleBarsHide() {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -276,7 +277,11 @@ export default function LeitorArquivoScreen() {
       if (bookId) {
         try {
           const rawProg = await AsyncStorage.getItem(`${PROGRESS_KEY_PREFIX}${bookId}`);
-          if (rawProg) setProgress(parseFloat(rawProg));
+          if (rawProg) {
+            const p = parseFloat(rawProg);
+            setProgress(p);
+            initialProgressRef.current = p;
+          }
         } catch { /* ignore */ }
       }
 
@@ -563,7 +568,7 @@ export default function LeitorArquivoScreen() {
             source={
               fileType === "pdf"
                 ? { uri: fileUri }
-                : { html: buildEpubHtml(fileUri, settings, progress, bookHighlights), baseUrl: "" }
+                : { html: buildEpubHtml(fileUri, settings, initialProgressRef.current, bookHighlights), baseUrl: "" }
             }
             style={{ flex: 1, backgroundColor: rc.background }}
             injectedJavaScript={fileType === "pdf" ? PDF_INJECTED_JS : undefined}

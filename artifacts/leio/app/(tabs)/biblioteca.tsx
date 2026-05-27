@@ -283,11 +283,6 @@ export default function BibliotecaScreen() {
   const isCaderno = activeTab === "caderno";
   const cadernoData =
     cadernoFilter === "trechos" ? filteredHighlights : filteredVocabulary;
-  const cadernoEmpty =
-    cadernoFilter === "trechos"
-      ? filteredHighlights.length === 0
-      : filteredVocabulary.length === 0;
-
   return (
     <View
       style={[
