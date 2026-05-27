@@ -5,10 +5,12 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
 import { router, useLocalSearchParams } from "expo-router";
+import * as Sharing from "expo-sharing";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Modal,
+  PanResponder,
   Platform,
   Share,
   StyleSheet,
@@ -16,6 +18,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import ViewShot, { type ViewShotRef } from "react-native-view-shot";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -29,6 +32,7 @@ import ReaderSettingsPanel, {
   DEFAULT_READER_SETTINGS,
   type ReaderSettings,
 } from "@/components/ReaderSettingsPanel";
+import { TrechoShareCard } from "@/components/TrechoShareCard";
 import { useApp, type Highlight } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -57,7 +61,7 @@ function buildEpubHtml(
   fileUri: string,
   s: ReaderSettings,
   savedProgress: number,
-  highlights: { text: string; color: string }[]
+  highlights: { text: string; color: string; cfi?: string }[]
 ): string {
   const rc = READER_THEMES[s.theme];
   const fontFamily =
@@ -120,6 +124,7 @@ function buildEpubHtml(
         doc.head.appendChild(style);
 
         HIGHLIGHTS.forEach(function(h) {
+          if (h.cfi) return;
           if (!h.text || h.text.length < 3) return;
           try {
             var walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null, false);
@@ -145,7 +150,16 @@ function buildEpubHtml(
           var sel = contents.window.getSelection();
           var txt = sel ? sel.toString().trim() : '';
           if (txt.length > 2) {
-            selTimer = setTimeout(function() { postMsg({ type: 'selection', text: txt }); }, 500);
+            selTimer = setTimeout(function() {
+              var cfi = null;
+              try {
+                if (sel.rangeCount > 0) {
+                  var range = sel.getRangeAt(0);
+                  cfi = contents.cfiFromRange(range);
+                }
+              } catch(e) {}
+              postMsg({ type: 'selection', text: txt, cfi: cfi });
+            }, 500);
           } else {
             postMsg({ type: 'selectionCleared' });
           }
@@ -155,6 +169,15 @@ function buildEpubHtml(
       book.ready.then(function() {
         return book.locations.generate(1024);
       }).then(function() {
+        HIGHLIGHTS.forEach(function(h, i) {
+          if (!h.cfi) return;
+          try {
+            rendition.annotations.highlight(
+              h.cfi, {}, null, 'hl-cfi-' + i,
+              { fill: h.color, 'fill-opacity': '0.55' }
+            );
+          } catch(e) {}
+        });
         if (SAVED > 0.005) {
           try {
             var cfi = book.locations.cfiFromPercentage(SAVED);
@@ -204,6 +227,9 @@ export default function LeitorArquivoScreen() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedText, setSelectedText] = useState("");
+  const [selectedCfi, setSelectedCfi] = useState<string | null>(null);
+  const [pendingReaderShare, setPendingReaderShare] = useState<Highlight | null>(null);
+  const readerShareCardRef = useRef<ViewShotRef>(null);
 
   const barsVisible = useSharedValue(1);
   const selBarAnim = useSharedValue(0);
@@ -286,13 +312,15 @@ export default function LeitorArquivoScreen() {
     AsyncStorage.setItem(`${PROGRESS_KEY_PREFIX}${bookId}`, String(progress)).catch(() => {});
   }, [progress, bookId]);
 
-  function openSelBar(text: string) {
+  function openSelBar(text: string, cfi?: string | null) {
     setSelectedText(text);
+    setSelectedCfi(cfi ?? null);
     selBarAnim.value = withTiming(1, { duration: 220 });
   }
 
   function closeSelBar() {
     setSelectedText("");
+    setSelectedCfi(null);
     selBarAnim.value = withTiming(0, { duration: 180 });
   }
 
@@ -307,10 +335,10 @@ export default function LeitorArquivoScreen() {
   const handleSaveExcerpt = useCallback(() => {
     if (!selectedText || !bookId) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    addHighlight({ bookId, text: selectedText, bgVariant: "volt" });
+    addHighlight({ bookId, text: selectedText, bgVariant: "volt", cfi: selectedCfi ?? undefined });
     closeSelBar();
     flashToast();
-  }, [selectedText, bookId, addHighlight]);
+  }, [selectedText, bookId, addHighlight, selectedCfi]);
 
   const handleCopyExcerpt = useCallback(async () => {
     if (!selectedText) return;
@@ -329,15 +357,50 @@ export default function LeitorArquivoScreen() {
     closeSelBar();
   }, [selectedText]);
 
-  const handleShareExcerpt = useCallback(async () => {
+  const handleShareExcerpt = useCallback(() => {
     if (!selectedText) return;
     Haptics.selectionAsync();
-    const msg = book
-      ? `"${selectedText}"\n\n— ${book.title}, ${book.author}`
-      : `"${selectedText}"`;
-    Share.share({ message: msg }).catch(() => {});
+    if (!book) {
+      Share.share({ message: `"${selectedText}"` }).catch(() => {});
+      closeSelBar();
+      return;
+    }
+    const tempHighlight: Highlight = {
+      id: "reader-share-temp",
+      bookId: book.id,
+      text: selectedText,
+      bgVariant: "volt",
+      createdAt: new Date().toISOString(),
+      cfi: selectedCfi ?? undefined,
+    };
+    setPendingReaderShare(tempHighlight);
     closeSelBar();
-  }, [selectedText, book]);
+  }, [selectedText, book, selectedCfi]);
+
+  useEffect(() => {
+    if (!pendingReaderShare || !book) return;
+    const timer = setTimeout(async () => {
+      try {
+        const uri = await readerShareCardRef.current?.capture?.();
+        if (uri) {
+          const canShare = await Sharing.isAvailableAsync();
+          if (canShare) {
+            await Sharing.shareAsync(uri, {
+              mimeType: "image/png",
+              dialogTitle: "Compartilhar trecho",
+            });
+          } else {
+            Share.share({ message: `"${pendingReaderShare.text}"\n\n— ${book.title}` });
+          }
+        }
+      } catch {
+        Share.share({ message: `"${pendingReaderShare.text}"\n\n— ${book.title}` }).catch(() => {});
+      } finally {
+        setPendingReaderShare(null);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [pendingReaderShare, book]);
 
   const handleImportFile = useCallback(async () => {
     if (!bookId) return;
@@ -407,7 +470,7 @@ export default function LeitorArquivoScreen() {
           if (typeof msg.current === "number") setCurrentPage(msg.current);
           if (typeof msg.total === "number") setTotalPages(msg.total);
         } else if (msg.type === "selection" && msg.text) {
-          openSelBar(msg.text);
+          openSelBar(msg.text, msg.cfi ?? null);
         } else if (msg.type === "selectionCleared") {
           closeSelBar();
         }
@@ -420,8 +483,22 @@ export default function LeitorArquivoScreen() {
     ? getHighlightsForBook(bookId).map((h) => ({
         text: h.text,
         color: HIGHLIGHT_BG_COLORS[h.bgVariant] ?? HIGHLIGHT_BG_COLORS.volt,
+        cfi: h.cfi,
       }))
     : [];
+
+  const swipePanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) =>
+        gs.dy < -20 && Math.abs(gs.dy) > Math.abs(gs.dx) * 1.5,
+      onPanResponderRelease: (_, gs) => {
+        if (gs.dy < -50 && Math.abs(gs.dx) < 80) {
+          Haptics.selectionAsync();
+          setSettingsVisible(true);
+        }
+      },
+    })
+  ).current;
 
   const PDF_INJECTED_JS = `
     (function() {
@@ -629,6 +706,20 @@ export default function LeitorArquivoScreen() {
         <Ionicons name="checkmark-circle" size={16} color="#CDFF00" />
         <Text style={styles.toastText}>Salvo no caderno</Text>
       </Animated.View>
+
+      {/* Swipe-up zone at bottom to open settings */}
+      <View style={styles.swipeZone} {...swipePanResponder.panHandlers} />
+
+      {/* Off-screen share card for reader Compartilhar action */}
+      {pendingReaderShare && book && (
+        <View style={styles.offScreen} pointerEvents="none">
+          <TrechoShareCard
+            ref={readerShareCardRef}
+            highlight={pendingReaderShare}
+            book={book}
+          />
+        </View>
+      )}
 
       {settingsVisible && (
         <ReaderSettingsPanel
@@ -857,4 +948,17 @@ const styles = StyleSheet.create({
   importBtnText: { fontSize: 15, fontWeight: "900" },
   cancelBtn: { alignItems: "center", paddingVertical: 8 },
   cancelBtnText: { fontSize: 14, fontWeight: "600" },
+  swipeZone: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 44,
+    zIndex: 5,
+  },
+  offScreen: {
+    position: "absolute",
+    left: -2000,
+    top: -2000,
+  },
 });

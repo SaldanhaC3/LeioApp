@@ -66,6 +66,7 @@ export interface Highlight {
   text: string;
   bgVariant: "volt" | "noir" | "cream" | "coral";
   createdAt: string;
+  cfi?: string;
 }
 
 export interface Session {
