@@ -17,10 +17,10 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const MOOD_EMOJI: Record<string, string> = {
-  amei: "\ud83e\udd29",
-  bem: "\ud83d\ude0a",
-  ok: "\ud83d\ude10",
-  "dif\u00edcil": "\ud83d\ude13",
+  amei: "🤩",
+  bem: "😊",
+  ok: "😐",
+  "difícil": "😓",
 };
 
 function getLast28Days(): string[] {
@@ -70,7 +70,7 @@ export default function GroupDetailScreen() {
           <Ionicons name="chevron-back" size={20} color={colors.foreground} />
           <Text style={[styles.backText, { color: colors.foreground }]}>Voltar</Text>
         </TouchableOpacity>
-        <Text style={[styles.errorText, { color: colors.mutedForeground }]}>Grupo n\u00e3o encontrado.</Text>
+        <Text style={[styles.errorText, { color: colors.mutedForeground }]}>Grupo não encontrado.</Text>
       </View>
     );
   }
@@ -78,7 +78,7 @@ export default function GroupDetailScreen() {
   async function handleCopyCode() {
     await Clipboard.setStringAsync(group!.inviteCode);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("Copiado!", `C\u00f3digo ${group!.inviteCode} copiado para a \u00e1rea de transfer\u00eancia.`);
+    Alert.alert("Copiado!", `Código ${group!.inviteCode} copiado para a área de transferência.`);
   }
 
   function handleLeave() {
@@ -104,6 +104,7 @@ export default function GroupDetailScreen() {
     router.push(`/grupos/checkin?groupId=${group!.id}`);
   }
 
+  // Build check-in map: username -> Set<date>
   const allGroupCheckIns = getCheckInsForGroup(group.id);
   const checkInMap: Record<string, Set<string>> = {};
   for (const ci of allGroupCheckIns) {
@@ -120,11 +121,13 @@ export default function GroupDetailScreen() {
         paddingHorizontal: 24,
       }}
     >
+      {/* Back */}
       <TouchableOpacity style={styles.backRow} onPress={() => router.back()} activeOpacity={0.7}>
         <Ionicons name="chevron-back" size={20} color={colors.foreground} />
         <Text style={[styles.backText, { color: colors.foreground }]}>Grupos</Text>
       </TouchableOpacity>
 
+      {/* Header */}
       <View style={styles.headerBlock}>
         <Text style={styles.groupEmoji}>{group.emoji}</Text>
         <View style={styles.headerInfo}>
@@ -144,13 +147,14 @@ export default function GroupDetailScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Invite Code */}
       <TouchableOpacity
         style={[styles.inviteCard, { backgroundColor: colors.card, borderColor: colors.border }]}
         onPress={handleCopyCode}
         activeOpacity={0.85}
       >
         <View>
-          <Text style={[styles.inviteLabel, { color: colors.mutedForeground }]}>C\u00d3DIGO DE CONVITE</Text>
+          <Text style={[styles.inviteLabel, { color: colors.mutedForeground }]}>CÓDIGO DE CONVITE</Text>
           <Text style={[styles.inviteCode, { color: colors.accentText }]}>{group.inviteCode}</Text>
         </View>
         <View style={[styles.copyBtn, { backgroundColor: `${colors.volt}20`, borderColor: colors.volt }]}>
@@ -159,6 +163,7 @@ export default function GroupDetailScreen() {
         </View>
       </TouchableOpacity>
 
+      {/* Check-in de hoje */}
       <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>CHECK-IN DE HOJE</Text>
       {checkedIn && myCheckInToday ? (
         <View style={[styles.myCheckInCard, { backgroundColor: `${colors.volt}15`, borderColor: colors.volt }]}>
@@ -168,8 +173,8 @@ export default function GroupDetailScreen() {
             <Text style={styles.moodEmoji}>{MOOD_EMOJI[myCheckInToday.mood]}</Text>
           </View>
           <Text style={[styles.myCheckInPages, { color: colors.foreground }]}>
-            {myCheckInToday.pagesRead} p\u00e1ginas lidas
-            {myCheckInToday.bookTitle ? ` \u00b7 ${myCheckInToday.bookTitle}` : ""}
+            {myCheckInToday.pagesRead} páginas lidas
+            {myCheckInToday.bookTitle ? ` · ${myCheckInToday.bookTitle}` : ""}
           </Text>
           {myCheckInToday.comment ? (
             <Text style={[styles.myCheckInComment, { color: colors.mutedForeground }]}>
@@ -190,6 +195,7 @@ export default function GroupDetailScreen() {
         </TouchableOpacity>
       )}
 
+      {/* Atividade de hoje */}
       <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>ATIVIDADE HOJE</Text>
       {todayCheckIns.length === 0 ? (
         <View style={[styles.emptyActivity, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -216,7 +222,7 @@ export default function GroupDetailScreen() {
                   </Text>
                   <Text style={styles.activityMood}>{MOOD_EMOJI[ci.mood]}</Text>
                   <Text style={[styles.activityPages, { color: colors.accentText }]}>
-                    {ci.pagesRead} p\u00e1gs
+                    {ci.pagesRead} págs
                   </Text>
                 </View>
                 {ci.bookTitle ? (
@@ -235,8 +241,10 @@ export default function GroupDetailScreen() {
         </View>
       )}
 
-      <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>\u00daLTIMAS 4 SEMANAS</Text>
+      {/* Calendário de streaks */}
+      <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>ÚLTIMAS 4 SEMANAS</Text>
       <View style={[styles.calendarCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        {/* Day of week labels */}
         <View style={styles.calendarRow}>
           {["D", "S", "T", "Q", "Q", "S", "S"].map((d, i) => (
             <View key={i} style={styles.calendarCell}>
@@ -247,7 +255,7 @@ export default function GroupDetailScreen() {
         {group.memberUsernames.map((username) => (
           <View key={username} style={styles.memberCalRow}>
             <Text style={[styles.calMemberName, { color: colors.mutedForeground }]} numberOfLines={1}>
-              {username.length > 6 ? username.slice(0, 5) + "\u2026" : username}
+              {username.length > 6 ? username.slice(0, 5) + "…" : username}
             </Text>
             <View style={styles.calDots}>
               {last28Days.map((date) => {
@@ -274,6 +282,7 @@ export default function GroupDetailScreen() {
         ))}
       </View>
 
+      {/* Membros */}
       <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>MEMBROS</Text>
       <View style={[styles.membersCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         {group.memberUsernames.map((username, idx) => {
@@ -299,12 +308,12 @@ export default function GroupDetailScreen() {
               <View style={styles.memberInfo}>
                 <Text style={[styles.memberName, { color: colors.foreground }]}>
                   {username}
-                  {isMe ? " (voc\u00ea)" : ""}
-                  {isCreator ? " \ud83d\udc51" : ""}
+                  {isMe ? " (você)" : ""}
+                  {isCreator ? " 👑" : ""}
                 </Text>
               </View>
               <View style={styles.memberStreak}>
-                <Text style={styles.memberStreakFire}>\ud83d\udd25</Text>
+                <Text style={styles.memberStreakFire}>🔥</Text>
                 <Text style={[styles.memberStreakCount, { color: colors.accentText }]}>
                   {streak}
                 </Text>

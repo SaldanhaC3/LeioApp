@@ -17,13 +17,13 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type Mood = "amei" | "bem" | "ok" | "dif\u00edcil";
+type Mood = "amei" | "bem" | "ok" | "difícil";
 
 const MOODS: { value: Mood; label: string; emoji: string }[] = [
-  { value: "amei", label: "Amei!", emoji: "\ud83e\udd29" },
-  { value: "bem", label: "Bem", emoji: "\ud83d\ude0a" },
-  { value: "ok", label: "OK", emoji: "\ud83d\ude10" },
-  { value: "dif\u00edcil", label: "Dif\u00edcil", emoji: "\ud83d\ude13" },
+  { value: "amei", label: "Amei!", emoji: "🤩" },
+  { value: "bem", label: "Bem", emoji: "😊" },
+  { value: "ok", label: "OK", emoji: "😐" },
+  { value: "difícil", label: "Difícil", emoji: "😓" },
 ];
 
 export default function CheckInScreen() {
@@ -51,7 +51,7 @@ export default function CheckInScreen() {
   function handleSubmit() {
     const pagesNum = parseInt(pages, 10);
     if (!pagesNum || pagesNum <= 0) {
-      Alert.alert("P\u00e1ginas inv\u00e1lidas", "Informe quantas p\u00e1ginas voc\u00ea leu.");
+      Alert.alert("Páginas inválidas", "Informe quantas páginas você leu.");
       return;
     }
     if (!mood) {
@@ -93,7 +93,7 @@ export default function CheckInScreen() {
           },
         ]}
       >
-        <Text style={styles.successEmoji}>\ud83c\udf89</Text>
+        <Text style={styles.successEmoji}>🎉</Text>
         <Text style={[styles.successTitle, { color: colors.foreground }]}>
           Check-in feito!
         </Text>
@@ -120,7 +120,7 @@ export default function CheckInScreen() {
           <Ionicons name="chevron-back" size={20} color={colors.foreground} />
           <Text style={[styles.backText, { color: colors.foreground }]}>Voltar</Text>
         </TouchableOpacity>
-        <Text style={[styles.errorText, { color: colors.mutedForeground }]}>Grupo n\u00e3o encontrado.</Text>
+        <Text style={[styles.errorText, { color: colors.mutedForeground }]}>Grupo não encontrado.</Text>
       </View>
     );
   }
@@ -140,12 +140,12 @@ export default function CheckInScreen() {
           },
         ]}
       >
-        <Text style={styles.successEmoji}>\u2705</Text>
+        <Text style={styles.successEmoji}>✅</Text>
         <Text style={[styles.successTitle, { color: colors.foreground }]}>
-          J\u00e1 feito hoje!
+          Já feito hoje!
         </Text>
         <Text style={[styles.successSub, { color: colors.mutedForeground }]}>
-          Voc\u00ea j\u00e1 registrou seu check-in de hoje neste grupo.
+          Você já registrou seu check-in de hoje neste grupo.
         </Text>
         <TouchableOpacity
           style={[styles.backBtn, { borderColor: colors.border }]}
@@ -172,6 +172,7 @@ export default function CheckInScreen() {
         }}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Header */}
         <TouchableOpacity style={styles.backRow} onPress={() => router.back()} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={20} color={colors.foreground} />
           <Text style={[styles.backText, { color: colors.foreground }]}>Cancelar</Text>
@@ -180,13 +181,14 @@ export default function CheckInScreen() {
         <View style={styles.titleBlock}>
           <Text style={styles.groupEmoji}>{group.emoji}</Text>
           <View>
-            <Text style={[styles.pageTitle, { color: colors.foreground }]}>Check-in di\u00e1rio</Text>
+            <Text style={[styles.pageTitle, { color: colors.foreground }]}>Check-in diário</Text>
             <Text style={[styles.groupName, { color: colors.mutedForeground }]}>{group.name}</Text>
           </View>
         </View>
 
+        {/* Páginas */}
         <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
-          Quantas p\u00e1ginas voc\u00ea leu hoje? *
+          Quantas páginas você leu hoje? *
         </Text>
         <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.card }]}>
           <TextInput
@@ -198,9 +200,10 @@ export default function CheckInScreen() {
             keyboardType="number-pad"
             maxLength={4}
           />
-          <Text style={[styles.pagesUnit, { color: colors.mutedForeground }]}>p\u00e1gs</Text>
+          <Text style={[styles.pagesUnit, { color: colors.mutedForeground }]}>págs</Text>
         </View>
 
+        {/* Mood */}
         <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
           Como foi a leitura? *
         </Text>
@@ -237,13 +240,14 @@ export default function CheckInScreen() {
           ))}
         </View>
 
+        {/* Book Title */}
         <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
           Qual livro? (opcional)
         </Text>
         <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.card }]}>
           <TextInput
             style={[styles.input, { color: colors.foreground }]}
-            placeholder="T\u00edtulo do livro..."
+            placeholder="Título do livro..."
             placeholderTextColor={colors.mutedForeground}
             value={bookTitle}
             onChangeText={setBookTitle}
@@ -251,6 +255,7 @@ export default function CheckInScreen() {
           />
         </View>
 
+        {/* Comment */}
         <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
           Deixa uma mensagem pro grupo (opcional)
         </Text>
@@ -270,6 +275,7 @@ export default function CheckInScreen() {
           {comment.length}/140
         </Text>
 
+        {/* Submit */}
         <TouchableOpacity
           style={[styles.submitBtn, { backgroundColor: colors.volt }]}
           onPress={handleSubmit}
