@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Platform,
@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BookStatus } from "@/contexts/AppContext";
+import { bookFileExists } from "@/services/readerFiles";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR", {
@@ -48,6 +49,12 @@ export default function LivroDetailScreen() {
 
   const book = getBookById(id ?? "");
   const [activeTab, setActiveTab] = useState<"sessoes" | "vocab">("sessoes");
+  const [hasBookFile, setHasBookFile] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    bookFileExists(id).then((result) => setHasBookFile(!!result)).catch(() => {});
+  }, [id]);
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = Platform.OS === "web" ? 34 : 0;
@@ -268,6 +275,38 @@ Baixar de graça
           </Text>
         </TouchableOpacity>
       )}
+
+      {/* Open file reader */}
+      <TouchableOpacity
+        style={[
+          styles.primaryAction,
+          {
+            backgroundColor: hasBookFile ? colors.secondary : colors.card,
+            borderWidth: 1.5,
+            borderColor: hasBookFile ? colors.volt : colors.border,
+            marginTop: -8,
+          },
+        ]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push(`/leitor-arquivo/${book.id}`);
+        }}
+        activeOpacity={0.85}
+      >
+        <Ionicons
+          name={hasBookFile ? "document-text" : "document-text-outline"}
+          size={20}
+          color={hasBookFile ? colors.volt : colors.mutedForeground}
+        />
+        <Text
+          style={[
+            styles.primaryActionText,
+            { color: hasBookFile ? colors.foreground : colors.mutedForeground },
+          ]}
+        >
+          {hasBookFile ? "Abrir leitor de arquivo" : "Importar PDF / ePub"}
+        </Text>
+      </TouchableOpacity>
 
       {/* Status Change */}
       <View style={styles.statusSection}>
