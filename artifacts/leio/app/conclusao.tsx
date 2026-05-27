@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBookGroup } from "@/contexts/BookGroupContext";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -61,6 +62,8 @@ export default function ConclusaoScreen() {
     focusExitSeconds: string;
   }>();
   const { getBookById, badges, freeBooks } = useApp();
+  const { groups, myUsername } = useBookGroup();
+  const myGroups = groups.filter((g) => g.memberUsernames.includes(myUsername));
 
   const book = getBookById(params.bookId ?? "");
   const endPage = parseInt(params.endPage ?? "0", 10);
@@ -288,6 +291,28 @@ Próximo livro da fila?
         </Text>
       </TouchableOpacity>
 
+      {myGroups.length > 0 && (
+        <TouchableOpacity
+          style={[styles.groupCheckInBtn, { borderColor: colors.border }]}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push({
+              pathname: "/grupos/checkin",
+              params: {
+                groupId: myGroups[0].id,
+                pages: String(pages > 0 ? pages : ""),
+              },
+            });
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="people-outline" size={18} color={colors.foreground} />
+          <Text style={[styles.groupCheckInBtnText, { color: colors.foreground }]}>
+            Registrar no grupo
+          </Text>
+        </TouchableOpacity>
+      )}
+
       <TouchableOpacity
         style={[styles.homeBtn, { borderColor: colors.border }]}
         onPress={() => {
@@ -411,5 +436,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
   },
+  groupCheckInBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 10,
+  },
+  groupCheckInBtnText: { fontSize: 15, fontWeight: "700" },
   homeBtnText: { fontSize: 15, fontWeight: "700" },
 });

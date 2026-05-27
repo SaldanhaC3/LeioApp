@@ -1,6 +1,10 @@
 import { useApp } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
-import { lookupWord, WordLookup } from "@/services/translation";
+import {
+  lookupWord,
+  SupportedLanguage,
+  WordLookup,
+} from "@/services/translation";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as Speech from "expo-speech";
@@ -31,6 +35,34 @@ type Status =
   | { kind: "not-found" }
   | { kind: "error" };
 
+interface LangOption {
+  code: SupportedLanguage;
+  label: string;
+  speechLang: string;
+  placeholder: string;
+}
+
+const LANG_OPTIONS: LangOption[] = [
+  {
+    code: "en",
+    label: "🇺🇸 EN",
+    speechLang: "en-US",
+    placeholder: "Ex.: ephemeral",
+  },
+  {
+    code: "pt-br",
+    label: "🇧🇷 PT",
+    speechLang: "pt-BR",
+    placeholder: "Ex.: efêmero",
+  },
+  {
+    code: "es",
+    label: "🇪🇸 ES",
+    speechLang: "es-ES",
+    placeholder: "Ex.: efímero",
+  },
+];
+
 export function VocabularyModal({
   visible,
   bookId,
@@ -41,8 +73,12 @@ export function VocabularyModal({
   const [word, setWord] = useState("");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [saved, setSaved] = useState(false);
+  const [selectedLang, setSelectedLang] = useState<SupportedLanguage>("en");
   const requestIdRef = useRef(0);
   const mountedRef = useRef(true);
+
+  const activeLang =
+    LANG_OPTIONS.find((l) => l.code === selectedLang) ?? LANG_OPTIONS[0];
 
   useEffect(() => {
     mountedRef.current = true;
@@ -72,6 +108,15 @@ export function VocabularyModal({
     onClose();
   }
 
+  function handleLangChange(lang: SupportedLanguage) {
+    if (lang === selectedLang) return;
+    setSelectedLang(lang);
+    setStatus({ kind: "idle" });
+    setSaved(false);
+    requestIdRef.current += 1;
+    Speech.stop().catch(() => undefined);
+  }
+
   async function handleSearch() {
     const term = word.trim();
     if (term.length < 2) return;
@@ -81,7 +126,7 @@ export function VocabularyModal({
     setStatus({ kind: "loading" });
     setSaved(false);
     try {
-      const result = await lookupWord(term);
+      const result = await lookupWord(term, selectedLang);
       if (!mountedRef.current || reqId !== requestIdRef.current) return;
       if (result.kind === "not-found") {
         setStatus({ kind: "not-found" });
@@ -105,7 +150,7 @@ export function VocabularyModal({
     );
     Speech.stop().catch(() => undefined);
     Speech.speak(status.lookup.word, {
-      language: "en-US",
+      language: activeLang.speechLang,
       rate: 0.9,
       pitch: 1.0,
     });
@@ -116,17 +161,26 @@ export function VocabularyModal({
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
       () => undefined
     );
+    const definitionToSave =
+      status.lookup.language === "en"
+        ? (status.lookup.portuguese ?? status.lookup.definition)
+        : status.lookup.definition;
     addVocabularyEntry({
       bookId,
       word: status.lookup.word,
-      definition: status.lookup.portuguese,
+      definition: definitionToSave,
       phonetic: status.lookup.phonetic,
     });
     setSaved(true);
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={handleClose}
+    >
       <KeyboardAvoidingView
         style={styles.overlay}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -137,234 +191,362 @@ export function VocabularyModal({
           bounces={false}
           showsVerticalScrollIndicator={false}
         >
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-        >
-          <View style={styles.header}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.title, { color: colors.foreground }]}>
-                Anotar no caderninho
-              </Text>
-              <Text style={[styles.sub, { color: colors.mutedForeground }]}>
-                Palavra em inglês → significado em português
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={handleClose}
-              style={styles.closeBtn}
-              hitSlop={8}
-              accessibilityLabel="Fechar"
-            >
-              <Ionicons name="close" size={22} color={colors.foreground} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.inputRow}>
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: colors.foreground,
-                  borderColor: colors.border,
-                  backgroundColor: colors.background,
-                },
-              ]}
-              value={word}
-              onChangeText={(v) => {
-                setWord(v);
-                if (status.kind !== "idle") {
-                  setStatus({ kind: "idle" });
-                  setSaved(false);
-                }
-              }}
-              placeholder="Ex.: ephemeral"
-              placeholderTextColor={colors.mutedForeground}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-              onSubmitEditing={handleSearch}
-              autoFocus
-            />
-            <TouchableOpacity
-              onPress={handleSearch}
-              disabled={word.trim().length < 2 || status.kind === "loading"}
-              style={[
-                styles.searchBtn,
-                {
-                  backgroundColor:
-                    word.trim().length < 2 ? colors.border : colors.volt,
-                  opacity: status.kind === "loading" ? 0.7 : 1,
-                },
-              ]}
-            >
-              <Ionicons
-                name="search"
-                size={20}
-                color={
-                  word.trim().length < 2
-                    ? colors.mutedForeground
-                    : colors.accentForeground
-                }
-              />
-            </TouchableOpacity>
-          </View>
-
-          {status.kind === "loading" && (
-            <View style={styles.center}>
-              <ActivityIndicator color={colors.accentText} />
-              <Text style={[styles.muted, { color: colors.mutedForeground }]}>
-                Folheando o dicionário...
-              </Text>
-            </View>
-          )}
-
-          {status.kind === "not-found" && (
-            <View style={styles.center}>
-              <Ionicons
-                name="search-outline"
-                size={32}
-                color={colors.mutedForeground}
-              />
-              <Text style={[styles.muted, { color: colors.mutedForeground }]}>
-                Não achei essa palavra. Confere a grafia?
-              </Text>
-            </View>
-          )}
-
-          {status.kind === "error" && (
-            <View style={styles.center}>
-              <Ionicons
-                name="cloud-offline-outline"
-                size={32}
-                color={colors.coral}
-              />
-              <Text style={[styles.muted, { color: colors.mutedForeground }]}>
-                A conexão fugiu. Tenta de novo daqui a pouco.
-              </Text>
-            </View>
-          )}
-
-          {status.kind === "ready" && (
-            <View style={styles.resultBox}>
-              <View style={styles.wordRow}>
-                <Text style={[styles.word, { color: colors.foreground }]}>
-                  {status.lookup.word}
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <View style={styles.header}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.title, { color: colors.foreground }]}>
+                  Anotar no caderninho
                 </Text>
-                <TouchableOpacity
-                  onPress={handleListen}
-                  style={[
-                    styles.listenBtn,
-                    {
-                      backgroundColor: `${colors.volt}22`,
-                      borderColor: colors.accentBorder,
-                    },
-                  ]}
-                  accessibilityLabel="Ouvir pronúncia"
-                >
-                  <Ionicons
-                    name="volume-high"
-                    size={18}
-                    color={colors.accentText}
-                  />
-                  <Text
-                    style={[styles.listenText, { color: colors.accentText }]}
-                  >
-                    Ouvir
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {status.lookup.phonetic && (
                 <Text
-                  style={[styles.phonetic, { color: colors.mutedForeground }]}
+                  style={[styles.sub, { color: colors.mutedForeground }]}
                 >
-                  {status.lookup.phonetic}
+                  Busque uma palavra para guardar no vocabulário
                 </Text>
-              )}
-
-              <View style={styles.divider} />
-
-              <Text style={[styles.label, { color: colors.mutedForeground }]}>
-                Em português
-              </Text>
-              <Text style={[styles.translation, { color: colors.foreground }]}>
-                {status.lookup.portuguese}
-              </Text>
-
-              {status.lookup.englishDefinition && (
-                <>
-                  <Text
-                    style={[
-                      styles.label,
-                      { color: colors.mutedForeground, marginTop: 12 },
-                    ]}
-                  >
-                    Definição em inglês
-                  </Text>
-                  <Text
-                    style={[
-                      styles.englishDef,
-                      { color: colors.foreground },
-                    ]}
-                  >
-                    {status.lookup.englishDefinition}
-                  </Text>
-                </>
-              )}
-
+              </View>
               <TouchableOpacity
-                onPress={handleSave}
-                disabled={saved}
+                onPress={handleClose}
+                style={styles.closeBtn}
+                hitSlop={8}
+                accessibilityLabel="Fechar"
+              >
+                <Ionicons name="close" size={22} color={colors.foreground} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.langRow}>
+              {LANG_OPTIONS.map((opt) => {
+                const active = opt.code === selectedLang;
+                return (
+                  <TouchableOpacity
+                    key={opt.code}
+                    onPress={() => handleLangChange(opt.code)}
+                    style={[
+                      styles.langChip,
+                      {
+                        backgroundColor: active
+                          ? `${colors.volt}22`
+                          : colors.background,
+                        borderColor: active
+                          ? colors.volt
+                          : colors.border,
+                      },
+                    ]}
+                    accessibilityLabel={`Buscar em ${opt.label}`}
+                  >
+                    <Text
+                      style={[
+                        styles.langChipText,
+                        {
+                          color: active
+                            ? colors.accentText
+                            : colors.mutedForeground,
+                          fontWeight: active ? "800" : "600",
+                        },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <View style={styles.inputRow}>
+              <TextInput
                 style={[
-                  styles.saveBtn,
+                  styles.input,
                   {
-                    backgroundColor: saved ? colors.border : colors.volt,
+                    color: colors.foreground,
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                  },
+                ]}
+                value={word}
+                onChangeText={(v) => {
+                  setWord(v);
+                  if (status.kind !== "idle") {
+                    setStatus({ kind: "idle" });
+                    setSaved(false);
+                  }
+                }}
+                placeholder={activeLang.placeholder}
+                placeholderTextColor={colors.mutedForeground}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+                onSubmitEditing={handleSearch}
+                autoFocus
+              />
+              <TouchableOpacity
+                onPress={handleSearch}
+                disabled={word.trim().length < 2 || status.kind === "loading"}
+                style={[
+                  styles.searchBtn,
+                  {
+                    backgroundColor:
+                      word.trim().length < 2 ? colors.border : colors.volt,
+                    opacity: status.kind === "loading" ? 0.7 : 1,
                   },
                 ]}
               >
                 <Ionicons
-                  name={saved ? "checkmark-circle" : "bookmark"}
-                  size={18}
+                  name="search"
+                  size={20}
                   color={
-                    saved ? colors.mutedForeground : colors.accentForeground
+                    word.trim().length < 2
+                      ? colors.mutedForeground
+                      : colors.accentForeground
                   }
                 />
+              </TouchableOpacity>
+            </View>
+
+            {status.kind === "loading" && (
+              <View style={styles.center}>
+                <ActivityIndicator color={colors.accentText} />
                 <Text
+                  style={[styles.muted, { color: colors.mutedForeground }]}
+                >
+                  Folheando o dicionário...
+                </Text>
+              </View>
+            )}
+
+            {status.kind === "not-found" && (
+              <View style={styles.center}>
+                <Ionicons
+                  name="search-outline"
+                  size={32}
+                  color={colors.mutedForeground}
+                />
+                <Text
+                  style={[styles.muted, { color: colors.mutedForeground }]}
+                >
+                  Não achei essa palavra. Confere a grafia?
+                </Text>
+              </View>
+            )}
+
+            {status.kind === "error" && (
+              <View style={styles.center}>
+                <Ionicons
+                  name="cloud-offline-outline"
+                  size={32}
+                  color={colors.coral}
+                />
+                <Text
+                  style={[styles.muted, { color: colors.mutedForeground }]}
+                >
+                  A conexão fugiu. Tenta de novo daqui a pouco.
+                </Text>
+              </View>
+            )}
+
+            {status.kind === "ready" && (
+              <View style={styles.resultBox}>
+                <View style={styles.wordRow}>
+                  <Text style={[styles.word, { color: colors.foreground }]}>
+                    {status.lookup.word}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={handleListen}
+                    style={[
+                      styles.listenBtn,
+                      {
+                        backgroundColor: `${colors.volt}22`,
+                        borderColor: colors.accentBorder,
+                      },
+                    ]}
+                    accessibilityLabel="Ouvir pronúncia"
+                  >
+                    <Ionicons
+                      name="volume-high"
+                      size={18}
+                      color={colors.accentText}
+                    />
+                    <Text
+                      style={[
+                        styles.listenText,
+                        { color: colors.accentText },
+                      ]}
+                    >
+                      Ouvir
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {status.lookup.phonetic && (
+                  <Text
+                    style={[
+                      styles.phonetic,
+                      { color: colors.mutedForeground },
+                    ]}
+                  >
+                    {status.lookup.phonetic}
+                  </Text>
+                )}
+
+                {status.lookup.partOfSpeech && (
+                  <Text
+                    style={[
+                      styles.partOfSpeech,
+                      { color: colors.mutedForeground },
+                    ]}
+                  >
+                    {status.lookup.partOfSpeech}
+                  </Text>
+                )}
+
+                <View style={styles.divider} />
+
+                {status.lookup.language === "en" && status.lookup.portuguese && (
+                  <>
+                    <Text
+                      style={[
+                        styles.label,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      Tradução
+                    </Text>
+                    <Text
+                      style={[
+                        styles.translation,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      {status.lookup.portuguese}
+                    </Text>
+                  </>
+                )}
+
+                {status.lookup.language === "en" ? (
+                  status.lookup.englishDefinition ? (
+                    <>
+                      <Text
+                        style={[
+                          styles.label,
+                          {
+                            color: colors.mutedForeground,
+                            marginTop: status.lookup.portuguese ? 12 : 0,
+                          },
+                        ]}
+                      >
+                        Definição em inglês
+                      </Text>
+                      <Text
+                        style={[
+                          styles.englishDef,
+                          { color: colors.foreground },
+                        ]}
+                      >
+                        {status.lookup.englishDefinition}
+                      </Text>
+                    </>
+                  ) : null
+                ) : (
+                  <>
+                    <Text
+                      style={[
+                        styles.label,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      Significado
+                    </Text>
+                    <Text
+                      style={[
+                        styles.translation,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      {status.lookup.definition}
+                    </Text>
+                  </>
+                )}
+
+                {status.lookup.examples && status.lookup.examples.length > 0 && (
+                  <>
+                    <Text
+                      style={[
+                        styles.label,
+                        {
+                          color: colors.mutedForeground,
+                          marginTop: 12,
+                        },
+                      ]}
+                    >
+                      Exemplos
+                    </Text>
+                    {status.lookup.examples.map((ex, i) => (
+                      <Text
+                        key={i}
+                        style={[
+                          styles.example,
+                          { color: colors.foreground },
+                        ]}
+                      >
+                        • {ex}
+                      </Text>
+                    ))}
+                  </>
+                )}
+
+                <TouchableOpacity
+                  onPress={handleSave}
+                  disabled={saved}
                   style={[
-                    styles.saveBtnText,
+                    styles.saveBtn,
                     {
-                      color: saved
-                        ? colors.mutedForeground
-                        : colors.accentForeground,
+                      backgroundColor: saved ? colors.border : colors.volt,
                     },
                   ]}
                 >
-                  {saved ? "Guardado no caderninho" : "Guardar no vocabulário"}
-                </Text>
-              </TouchableOpacity>
-
-              {saved && (
-                <TouchableOpacity
-                  onPress={() => {
-                    setWord("");
-                    setStatus({ kind: "idle" });
-                    setSaved(false);
-                  }}
-                  style={styles.againBtn}
-                >
+                  <Ionicons
+                    name={saved ? "checkmark-circle" : "bookmark"}
+                    size={18}
+                    color={
+                      saved ? colors.mutedForeground : colors.accentForeground
+                    }
+                  />
                   <Text
-                    style={[styles.againText, { color: colors.accentText }]}
+                    style={[
+                      styles.saveBtnText,
+                      {
+                        color: saved
+                          ? colors.mutedForeground
+                          : colors.accentForeground,
+                      },
+                    ]}
                   >
-                    + Anotar outra palavra
+                    {saved ? "Guardado no caderninho" : "Guardar no vocabulário"}
                   </Text>
                 </TouchableOpacity>
-              )}
-            </View>
-          )}
-        </View>
+
+                {saved && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setWord("");
+                      setStatus({ kind: "idle" });
+                      setSaved(false);
+                    }}
+                    style={styles.againBtn}
+                  >
+                    <Text
+                      style={[styles.againText, { color: colors.accentText }]}
+                    >
+                      + Anotar outra palavra
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
@@ -397,6 +579,19 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: "900" },
   sub: { fontSize: 13, marginTop: 2 },
   closeBtn: { padding: 4 },
+  langRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  langChip: {
+    borderWidth: 1.5,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  langChipText: {
+    fontSize: 13,
+  },
   inputRow: {
     flexDirection: "row",
     gap: 10,
@@ -443,6 +638,7 @@ const styles = StyleSheet.create({
   },
   listenText: { fontSize: 13, fontWeight: "800" },
   phonetic: { fontSize: 14, fontStyle: "italic" },
+  partOfSpeech: { fontSize: 12, fontStyle: "italic", marginTop: -2 },
   divider: {
     height: 1,
     backgroundColor: "rgba(127,127,127,0.2)",
@@ -456,6 +652,7 @@ const styles = StyleSheet.create({
   },
   translation: { fontSize: 22, fontWeight: "800", marginTop: 2 },
   englishDef: { fontSize: 14, lineHeight: 20, marginTop: 2 },
+  example: { fontSize: 13, lineHeight: 18, marginTop: 2, fontStyle: "italic" },
   saveBtn: {
     flexDirection: "row",
     alignItems: "center",
