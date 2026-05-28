@@ -245,6 +245,20 @@ Estante vazia nesse termo
           <Text style={[styles.muted, { color: colors.mutedForeground }]}>
             Nada encontrado. Tenta outro título ou outro autor.
           </Text>
+          <TouchableOpacity
+            style={[styles.manualFallbackBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push("/livro-manual");
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="create-outline" size={18} color={colors.accentText} />
+            <Text style={[styles.manualFallbackText, { color: colors.foreground }]}>
+              Não encontrei — cadastrar na mão
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
         </View>
       )}
 
@@ -255,6 +269,22 @@ Estante vazia nesse termo
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          ListFooterComponent={
+            <TouchableOpacity
+              style={[styles.manualFallbackBtn, { borderColor: colors.border, backgroundColor: colors.card, marginTop: 4 }]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push("/livro-manual");
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="create-outline" size={18} color={colors.accentText} />
+              <Text style={[styles.manualFallbackText, { color: colors.foreground }]}>
+                Não encontrei — cadastrar na mão
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          }
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[
@@ -355,8 +385,8 @@ Estante vazia nesse termo
             >
               {selected?.author}
             </Text>
-            {/* Manual cover fallback */}
-            {selected && !selected.coverUrl && (
+            {/* Manual cover option — always visible */}
+            {selected && (
               <TouchableOpacity
                 style={[styles.addCoverRow, { borderColor: colors.border, backgroundColor: colors.secondary }]}
                 onPress={pickManualCover}
@@ -368,11 +398,17 @@ Estante vazia nesse termo
                     style={styles.manualCoverThumb}
                     contentFit="cover"
                   />
+                ) : selected?.coverUrl ? (
+                  <Image
+                    source={{ uri: selected.coverUrl }}
+                    style={styles.manualCoverThumb}
+                    contentFit="cover"
+                  />
                 ) : (
                   <Ionicons name="camera-outline" size={20} color={colors.accentText} />
                 )}
                 <Text style={[styles.addCoverText, { color: manualCoverUri ? colors.foreground : colors.accentText }]}>
-                  {manualCoverUri ? "Capa adicionada — trocar" : "Sem capa? Adicionar da galeria"}
+                  {manualCoverUri ? "Capa personalizada — trocar" : selected?.coverUrl ? "Usar capa diferente" : "Adicionar capa da galeria"}
                 </Text>
                 {manualCoverUri && (
                   <Ionicons name="checkmark-circle" size={18} color={colors.accentText} />
@@ -541,4 +577,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   addCoverText: { flex: 1, fontSize: 14, fontWeight: "600" },
+  manualFallbackBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginTop: 8,
+  },
+  manualFallbackText: { flex: 1, fontSize: 14, fontWeight: "700" },
 });

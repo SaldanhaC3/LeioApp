@@ -35,7 +35,6 @@ import type { ViewShotRef } from "react-native-view-shot";
 const BOOK_TABS = [
   { id: "lendo", label: "Lendo" },
   { id: "naEstante", label: "Na estante" },
-  { id: "caderno", label: "Caderno" },
 ];
 
 const CADERNO_FILTERS = [
