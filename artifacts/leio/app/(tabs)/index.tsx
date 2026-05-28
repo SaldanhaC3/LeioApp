@@ -15,7 +15,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const CAPI_PROFILE_IMAGES: Record<string, ReturnType<typeof require>> = {
+  "capi://default": require("@/assets/images/capi-default.png"),
+  "capi://erudite": require("@/assets/images/capi-erudite.png"),
+  "capi://vampire": require("@/assets/images/capi-vampire.png"),
+};
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -161,7 +168,7 @@ const spikeStyles = StyleSheet.create({
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { books, sessions, missions, badges, folego, folegoGuardado, xp, getCurrentBook, getAbandoned } = useApp();
+  const { books, sessions, missions, badges, folego, folegoGuardado, xp, getCurrentBook, getAbandoned, settings } = useApp();
 
   const greeting = useMemo(() => getGreeting(), []);
   const currentBook = getCurrentBook();
@@ -269,7 +276,18 @@ export default function HomeScreen() {
               { backgroundColor: `${colors.volt}22`, borderColor: colors.accentBorder },
             ]}
           >
-            <CapiMascot size={28} state="waving" />
+            {settings?.profilePhoto ? (
+              <Image
+                source={
+                  CAPI_PROFILE_IMAGES[settings.profilePhoto] ??
+                  { uri: settings.profilePhoto }
+                }
+                style={{ width: 40, height: 40, borderRadius: 20 }}
+                contentFit="cover"
+              />
+            ) : (
+              <CapiMascot size={28} state="waving" />
+            )}
           </View>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -338,7 +356,7 @@ export default function HomeScreen() {
             onPress={() => router.push(`/livro/${currentBook.id}`)}
             activeOpacity={0.85}
           >
-            <View style={styles.currentBookInfo}>
+            <View style={[styles.currentBookInfo, styles.currentBookOverlay]}>
               <Text style={styles.currentBookTitle} numberOfLines={2}>
                 {currentBook.title}
               </Text>
@@ -348,7 +366,7 @@ export default function HomeScreen() {
               {eta && (
                 <View style={styles.etaWrap}>
                   <Text style={styles.etaLabel}>FALTAM</Text>
-                  <Text style={[styles.etaValue, { color: colors.volt }]}>
+                  <Text style={styles.etaValue}>
                     {eta}
                   </Text>
                   <Text style={styles.etaLabel}>no seu ritmo</Text>
@@ -685,6 +703,12 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   currentBookInfo: { flex: 1, gap: 4, paddingRight: 12 },
+  currentBookOverlay: {
+    backgroundColor: "rgba(0,0,0,0.35)",
+    borderRadius: 10,
+    padding: 10,
+    marginLeft: -10,
+  },
   currentBookCover: {
     width: 80,
     height: 110,
@@ -699,13 +723,14 @@ const styles = StyleSheet.create({
   },
   currentBookAuthor: {
     fontSize: 14,
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(255,255,255,0.85)",
   },
   etaWrap: { marginTop: 12, gap: 2 },
-  etaLabel: { fontSize: 11, color: "rgba(255,255,255,0.6)", letterSpacing: 1 },
+  etaLabel: { fontSize: 11, color: "rgba(255,255,255,0.75)", letterSpacing: 1 },
   etaValue: {
     fontSize: 28,
     fontWeight: "900",
+    color: "#FFFFFF",
     letterSpacing: -1,
     lineHeight: 32,
   },

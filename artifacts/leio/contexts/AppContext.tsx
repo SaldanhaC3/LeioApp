@@ -167,6 +167,7 @@ export interface AppSettings {
   hasCompletedOnboarding: boolean;
   hasCompletedCalibration: boolean;
   calibrationPace: number;
+  profilePhoto?: string;
 }
 
 const GENRE_LABELS: Record<string, string> = {
@@ -788,7 +789,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [vocabulary, setVocabulary] = useState<VocabularyEntry[]>([]);
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
-    theme: "dark",
+    theme: "light",
     soundEffects: true,
     ambientDefault: "cafe",
     notificationTime: "21:00",

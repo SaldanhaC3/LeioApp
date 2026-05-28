@@ -1,14 +1,12 @@
 import colors from "@/constants/colors";
-import { useApp } from "@/contexts/AppContext";
 
-type Palette = typeof colors.dark;
+type Palette = typeof colors.light;
 
 /**
- * Returns the active palette based on user setting (Papel/Couro).
- * Defaults to the dark "Couro" theme until settings are loaded.
+ * Always returns the "Papel" (light) palette.
+ * The dark theme remains in constants/colors.ts as a code-level fallback
+ * but is no longer exposed in the UI.
  */
 export function useColors(): Palette & { radius: number } {
-  const { settings } = useApp();
-  const palette = settings?.theme === "light" ? colors.light : colors.dark;
-  return { ...palette, radius: colors.radius };
+  return { ...colors.light, radius: colors.radius };
 }

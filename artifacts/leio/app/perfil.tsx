@@ -3,10 +3,14 @@ import { CapiMascot } from "@/components/CapiMascot";
 import { useApp, getLevel, Session } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { Image } from "expo-image";
 import { router } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
+  Alert,
   Dimensions,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -15,7 +19,14 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import Svg, { Path, Line as SvgLine, Text as SvgText } from "react-native-svg";
+
+const CAPI_PHOTO_OPTIONS = [
+  { key: "capi://default", label: "Padrão", source: require("@/assets/images/capi-default.png") },
+  { key: "capi://erudite", label: "Erudita", source: require("@/assets/images/capi-erudite.png") },
+  { key: "capi://vampire", label: "Vampira", source: require("@/assets/images/capi-vampire.png") },
+];
 
 const WEEKDAY_LABELS = ["S", "T", "Q", "Q", "S", "S", "D"];
 const MONTH_NAMES = [
@@ -276,7 +287,36 @@ function MonthlyBars({ sessions, year, month, width, height, color, mutedColor }
 export default function PerfilModalScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { books, sessions, badges, xp, folego } = useApp();
+  const { books, sessions, badges, xp, folego, settings, updateSettings } = useApp();
+  const [cropPreview, setCropPreview] = useState<string | null>(null);
+
+  async function handlePickPhoto() {
+    if (Platform.OS === "web") {
+      Alert.alert("Só no celular", "O envio de foto funciona no app instalado.");
+      return;
+    }
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permissão negada", "Libera o acesso à galeria nas configurações do celular.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setCropPreview(result.assets[0].uri);
+    }
+  }
+
+  function confirmCropPreview() {
+    if (cropPreview) {
+      updateSettings({ profilePhoto: cropPreview });
+      setCropPreview(null);
+    }
+  }
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = insets.bottom + (Platform.OS === "web" ? 34 : 0);
@@ -374,7 +414,24 @@ export default function PerfilModalScreen() {
 
       {/* Profile header */}
       <View style={styles.profileHeader}>
-        <CapiMascot state="waving" size={72} />
+        <TouchableOpacity
+          onPress={() => {}}
+          activeOpacity={1}
+          style={styles.avatarWrap}
+        >
+          {settings?.profilePhoto ? (
+            <Image
+              source={
+                CAPI_PHOTO_OPTIONS.find((o) => o.key === settings.profilePhoto)?.source ??
+                { uri: settings.profilePhoto }
+              }
+              style={styles.avatarImage}
+              contentFit="cover"
+            />
+          ) : (
+            <CapiMascot state="waving" size={72} />
+          )}
+        </TouchableOpacity>
         <View style={styles.profileInfo}>
           <Text style={[styles.levelName, { color: colors.accentText }]}>
             {levelInfo.name}
@@ -392,6 +449,102 @@ export default function PerfilModalScreen() {
           </Text>
         </View>
       </View>
+
+      {/* Profile photo selector */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Sua foto</Text>
+        <View style={[styles.photoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.photoRow}>
+            {CAPI_PHOTO_OPTIONS.map((opt) => {
+              const active = settings?.profilePhoto === opt.key;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  onPress={() => updateSettings({ profilePhoto: opt.key })}
+                  activeOpacity={0.8}
+                  style={[
+                    styles.photoOption,
+                    {
+                      borderColor: active ? colors.accentBorder : colors.border,
+                      backgroundColor: active ? `${colors.volt}18` : colors.secondary,
+                    },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Foto Capi ${opt.label}${active ? ", selecionada" : ""}`}
+                >
+                  <Image source={opt.source} style={styles.photoOptionImg} contentFit="cover" />
+                  <Text style={[styles.photoOptionLabel, { color: active ? colors.accentText : colors.mutedForeground }]}>
+                    {opt.label}
+                  </Text>
+                  {active && (
+                    <View style={[styles.photoCheck, { backgroundColor: colors.volt }]}>
+                      <Ionicons name="checkmark" size={10} color={colors.accentForeground} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity
+              onPress={handlePickPhoto}
+              activeOpacity={0.8}
+              style={[
+                styles.photoOption,
+                styles.photoUploadOption,
+                {
+                  borderColor: settings?.profilePhoto && !settings.profilePhoto.startsWith("capi://")
+                    ? colors.accentBorder
+                    : colors.border,
+                  backgroundColor: settings?.profilePhoto && !settings.profilePhoto.startsWith("capi://")
+                    ? `${colors.volt}18`
+                    : colors.secondary,
+                },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Enviar foto própria da galeria"
+            >
+              {settings?.profilePhoto && !settings.profilePhoto.startsWith("capi://") ? (
+                <Image source={{ uri: settings.profilePhoto }} style={styles.photoOptionImg} contentFit="cover" />
+              ) : (
+                <Ionicons name="camera-outline" size={28} color={colors.mutedForeground} />
+              )}
+              <Text style={[styles.photoOptionLabel, { color: colors.mutedForeground }]}>
+                Sua foto
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {/* Crop preview modal */}
+      <Modal visible={!!cropPreview} transparent animationType="fade" onRequestClose={() => setCropPreview(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.cropModal, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.cropTitle, { color: colors.foreground }]}>Confirmar foto</Text>
+            {cropPreview && (
+              <View style={styles.cropCircleWrap}>
+                <Image source={{ uri: cropPreview }} style={styles.cropCircleImg} contentFit="cover" />
+              </View>
+            )}
+            <Text style={[styles.cropHint, { color: colors.mutedForeground }]}>
+              A imagem será recortada em círculo.
+            </Text>
+            <View style={styles.cropBtns}>
+              <TouchableOpacity
+                style={[styles.cropBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+                onPress={() => setCropPreview(null)}
+              >
+                <Text style={[styles.cropBtnText, { color: colors.foreground }]}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.cropBtn, { backgroundColor: colors.volt }]}
+                onPress={confirmCropPreview}
+              >
+                <Text style={[styles.cropBtnText, { color: colors.accentForeground }]}>Usar esta foto</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* This week */}
       <View style={styles.section}>
@@ -599,6 +752,111 @@ export default function PerfilModalScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingHorizontal: 20 },
+  avatarWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  photoCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+  },
+  photoRow: {
+    flexDirection: "row",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  photoOption: {
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    padding: 10,
+    width: "22%",
+    position: "relative",
+  },
+  photoUploadOption: {
+    justifyContent: "center",
+  },
+  photoOptionImg: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+  },
+  photoOptionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  photoCheck: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+  },
+  cropModal: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: "center",
+    gap: 16,
+    width: "100%",
+  },
+  cropTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+  },
+  cropCircleWrap: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    overflow: "hidden",
+  },
+  cropCircleImg: {
+    width: 140,
+    height: 140,
+  },
+  cropHint: {
+    fontSize: 13,
+    textAlign: "center",
+  },
+  cropBtns: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
+  cropBtn: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    alignItems: "center",
+  },
+  cropBtnText: {
+    fontSize: 14,
+    fontWeight: "800",
+  },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

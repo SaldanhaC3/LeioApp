@@ -276,47 +276,18 @@ export default function SettingsScreen() {
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
           Tema
         </Text>
-        <View style={styles.themeRow}>
-          {([
-            { id: "light", label: "Papel", desc: "Claro feito manhã de Drummond", bg: "#F6EFE0", fg: "#2A2118", border: "#DCCFB1" },
-            { id: "dark", label: "Couro", desc: "Escuro como capa de clássico", bg: "#14110D", fg: "#F2EBDA", border: "#3A2F22" },
-          ] as const).map((opt) => {
-            const active = settings.theme === opt.id;
-            return (
-              <TouchableOpacity
-                key={opt.id}
-                style={[
-                  styles.themeCard,
-                  {
-                    borderColor: active ? colors.accentBorder : colors.border,
-                    backgroundColor: colors.card,
-                  },
-                ]}
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  updateSettings({ theme: opt.id });
-                }}
-                activeOpacity={0.85}
-              >
-                <View
-                  style={[
-                    styles.themeSwatch,
-                    { backgroundColor: opt.bg, borderColor: opt.border },
-                  ]}
-                >
-                  <Text style={[styles.themeSwatchA, { color: opt.fg }]}>Aa</Text>
-                  <View style={[styles.themeSwatchDot, { backgroundColor: colors.volt }]} />
-                </View>
-                <Text style={[styles.themeLabel, { color: colors.foreground }]}>{opt.label}</Text>
-                <Text style={[styles.themeDesc, { color: colors.mutedForeground }]}>{opt.desc}</Text>
-                {active && (
-                  <View style={[styles.themeCheck, { backgroundColor: colors.volt }]}>
-                    <Ionicons name="checkmark" size={14} color={colors.accentForeground} />
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
+        <View style={[styles.themeOnlyCard, { backgroundColor: colors.card, borderColor: colors.accentBorder }]}>
+          <View style={[styles.themeSwatch, { backgroundColor: "#F6EFE0", borderColor: "#DCCFB1" }]}>
+            <Text style={[styles.themeSwatchA, { color: "#2A2118" }]}>Aa</Text>
+            <View style={[styles.themeSwatchDot, { backgroundColor: colors.volt }]} />
+          </View>
+          <View style={styles.themeOnlyInfo}>
+            <Text style={[styles.themeLabel, { color: colors.foreground }]}>Papel</Text>
+            <Text style={[styles.themeDesc, { color: colors.mutedForeground }]}>Claro feito manhã de Drummond</Text>
+          </View>
+          <View style={[styles.themeCheck, { backgroundColor: colors.volt }]}>
+            <Ionicons name="checkmark" size={14} color={colors.accentForeground} />
+          </View>
         </View>
       </View>
 
@@ -592,25 +563,25 @@ const styles = StyleSheet.create({
   spotifyBtnText: { fontSize: 13, fontWeight: "800" },
   about: { alignItems: "center", paddingTop: 20 },
   aboutText: { fontSize: 12, textAlign: "center" },
-  themeRow: { flexDirection: "row", gap: 12 },
-  themeCard: {
-    flex: 1,
+  themeOnlyCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     borderRadius: 16,
     borderWidth: 1.5,
     padding: 12,
-    alignItems: "flex-start",
-    gap: 8,
-    position: "relative",
   },
+  themeOnlyInfo: { flex: 1 },
   themeSwatch: {
-    width: "100%",
-    height: 64,
+    width: 80,
+    height: 52,
     borderRadius: 10,
     borderWidth: 1,
     paddingHorizontal: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    flexShrink: 0,
   },
   themeSwatchA: { fontSize: 22, fontWeight: "900", letterSpacing: -0.5 },
   themeSwatchDot: { width: 12, height: 12, borderRadius: 6 },
