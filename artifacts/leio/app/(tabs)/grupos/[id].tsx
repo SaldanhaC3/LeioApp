@@ -1,6 +1,6 @@
 import { CapiMascot } from "@/components/CapiMascot";
 import { useBookGroup, type ChallengeType, type Challenge, type ChallengeScore } from "@/contexts/BookGroupContext";
-import { useApp } from "@/contexts/AppContext";
+import { useApp, type BookClub } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
@@ -110,7 +110,14 @@ export default function GroupDetailScreen() {
     getPastChallenges,
     dismissChallenge,
   } = useBookGroup();
-  const { earnXP } = useApp();
+  const {
+    earnXP,
+    books,
+    getActiveClub,
+    activateClub,
+    closeClub,
+    getClubHistory: getClubHistoryApp,
+  } = useApp();
 
   const group = getGroupById(id ?? "");
   const today = todayString();
@@ -122,6 +129,13 @@ export default function GroupDetailScreen() {
   const [createDesc, setCreateDesc] = useState("");
   const [podiumDismissed, setPodiumDismissed] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+
+  const [showActivateClub, setShowActivateClub] = useState(false);
+  const [clubBookSearch, setClubBookSearch] = useState("");
+  const [clubSelectedBook, setClubSelectedBook] = useState<any>(null);
+  const [clubDurationDays, setClubDurationDays] = useState<7 | 14 | 21 | 30>(14);
+  const [showClubHighlights, setShowClubHighlights] = useState(false);
+  const [showClubPastHistory, setShowClubPastHistory] = useState(false);
 
   const todayCheckIns = getCheckInsForGroup(id ?? "", today);
   const myCheckInToday = todayCheckIns.find((c) => c.username === myUsername);
@@ -162,6 +176,99 @@ export default function GroupDetailScreen() {
       dismissChallenge(finishedChallenge.id);
     }
     setPodiumDismissed(true);
+  }
+
+  const activeClub = getActiveClub(id ?? "");
+  const clubHistory = getClubHistoryApp(id ?? "");
+  const filteredClubBooks = clubBookSearch.trim()
+    ? books.filter(
+        (b) =>
+          b.title.toLowerCase().includes(clubBookSearch.toLowerCase()) ||
+          b.author.toLowerCase().includes(clubBookSearch.toLowerCase())
+      )
+    : books.filter((b) => b.status !== "abandoned").slice(0, 12);
+
+  function getMeetingDate(days: number): string {
+    const d = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+    return d.toISOString().split("T")[0];
+  }
+
+  function getDaysToMeeting(meetingDate: string): string {
+    const remaining = new Date(meetingDate).getTime() - Date.now();
+    const days = Math.ceil(remaining / (1000 * 60 * 60 * 24));
+    if (days < 0) return "Encontro passou";
+    if (days === 0) return "Encontro hoje!";
+    if (days === 1) return "Amanhã!";
+    return `${days} dias`;
+  }
+
+  function getMeetingTint(meetingDate: string): string {
+    const remaining = new Date(meetingDate).getTime() - Date.now();
+    const days = Math.ceil(remaining / (1000 * 60 * 60 * 24));
+    if (days <= 1) return "#EF4444";
+    if (days <= 7) return "#F59E0B";
+    return colors.accentText;
+  }
+
+  function getClubCapiMsg(club: BookClub, username: string): string {
+    const me = club.memberProgress.find((p) => p.memberName === username);
+    if (!me || me.currentPage === 0) return "Ainda não abriu o livro? O clube começa sem você!";
+    const pct = me.totalPages > 0 ? me.currentPage / me.totalPages : 0;
+    if (pct >= 1) return "Você terminou o livro! Prepare suas anotações para o encontro.";
+    const leader = [...club.memberProgress].sort((a, b) => {
+      const pa = a.totalPages > 0 ? a.currentPage / a.totalPages : 0;
+      const pb = b.totalPages > 0 ? b.currentPage / b.totalPages : 0;
+      return pb - pa;
+    })[0];
+    const daysLeft = Math.ceil((new Date(club.meetingDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (leader && leader.memberName !== username && leader.currentPage > me.currentPage) {
+      return `${daysLeft > 0 ? `${daysLeft} dias para o encontro —` : "Encontro chegou —"} ${leader.memberName} está na pág ${leader.currentPage} e você está na ${me.currentPage}. Apresse!`;
+    }
+    if (pct > 0.75) return "Quase lá! Você vai terminar antes do encontro.";
+    return daysLeft > 0
+      ? `${daysLeft} dias para o encontro. Continue lendo!`
+      : "Hora do encontro! Como foi sua leitura?";
+  }
+
+  function handleActivateClub() {
+    if (!clubSelectedBook) return;
+    activateClub(
+      id ?? "",
+      {
+        bookId: clubSelectedBook.id,
+        bookTitle: clubSelectedBook.title,
+        bookAuthor: clubSelectedBook.author,
+        bookCoverImage: clubSelectedBook.coverImage,
+        bookCoverColor: clubSelectedBook.coverColor,
+      },
+      getMeetingDate(clubDurationDays),
+      group!.memberUsernames
+    );
+    setShowActivateClub(false);
+    setClubBookSearch("");
+    setClubSelectedBook(null);
+    setClubDurationDays(14);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }
+
+  function handleCloseClub() {
+    Alert.alert(
+      "Encerrar clube?",
+      activeClub
+        ? `O clube de "${activeClub.bookTitle}" será encerrado e o progresso ficará salvo no histórico.`
+        : "O clube será encerrado.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Encerrar",
+          style: "destructive",
+          onPress: () => {
+            closeClub(id ?? "");
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
+    );
   }
 
   if (!group) {
@@ -378,6 +485,99 @@ export default function GroupDetailScreen() {
           ) : null}
         </TouchableOpacity>
       </Modal>
+
+      {/* ── Activate Club Modal ── */}
+      <Modal
+        visible={showActivateClub}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowActivateClub(false)}
+      >
+        <Pressable style={styles.modalBg} onPress={() => setShowActivateClub(false)}>
+          <Pressable
+            style={[styles.createSheet, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.createTitle, { color: colors.foreground }]}>Iniciar clube do livro</Text>
+
+            <Text style={[styles.createLabel, { color: colors.mutedForeground }]}>ESCOLHA O LIVRO</Text>
+            <TextInput
+              style={[styles.createInput, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
+              placeholder="Buscar pelo título ou autor..."
+              placeholderTextColor={colors.mutedForeground}
+              value={clubBookSearch}
+              onChangeText={setClubBookSearch}
+            />
+
+            <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+              {filteredClubBooks.map((b) => (
+                <TouchableOpacity
+                  key={b.id}
+                  style={[
+                    styles.bookPickRow,
+                    { borderColor: colors.border },
+                    clubSelectedBook?.id === b.id && { backgroundColor: `${colors.volt}20`, borderColor: colors.accentBorder },
+                  ]}
+                  onPress={() => setClubSelectedBook(b)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.bookPickColor, { backgroundColor: b.coverColor ?? colors.muted }]} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.bookPickTitle, { color: colors.foreground }]} numberOfLines={1}>{b.title}</Text>
+                    <Text style={[styles.bookPickAuthor, { color: colors.mutedForeground }]}>{b.author}</Text>
+                  </View>
+                  {clubSelectedBook?.id === b.id && (
+                    <Ionicons name="checkmark-circle" size={18} color={colors.accentText} />
+                  )}
+                </TouchableOpacity>
+              ))}
+              {filteredClubBooks.length === 0 && (
+                <Text style={[styles.createLabel, { color: colors.mutedForeground, textAlign: "center", paddingVertical: 12 }]}>
+                  Nenhum livro encontrado
+                </Text>
+              )}
+            </ScrollView>
+
+            <Text style={[styles.createLabel, { color: colors.mutedForeground }]}>DATA DO ENCONTRO</Text>
+            <View style={styles.createDurRow}>
+              {([7, 14, 21, 30] as const).map((d) => (
+                <TouchableOpacity
+                  key={d}
+                  style={[
+                    styles.durChip,
+                    { borderColor: clubDurationDays === d ? colors.accentBorder : colors.border },
+                    clubDurationDays === d && { backgroundColor: `${colors.volt}20` },
+                  ]}
+                  onPress={() => setClubDurationDays(d)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.durChipText, { color: clubDurationDays === d ? colors.accentText : colors.mutedForeground }]}>
+                    {d === 7 ? "1 sem" : d === 14 ? "2 sem" : d === 21 ? "3 sem" : "1 mês"}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.createBtn,
+                { backgroundColor: clubSelectedBook ? colors.volt : colors.muted },
+                !clubSelectedBook && { opacity: 0.5 },
+              ]}
+              onPress={handleActivateClub}
+              disabled={!clubSelectedBook}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="book-outline" size={18} color={clubSelectedBook ? colors.accentForeground : colors.mutedForeground} />
+              <Text style={[styles.createBtnText, { color: clubSelectedBook ? colors.accentForeground : colors.mutedForeground }]}>
+                Começar clube
+              </Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* Back */}
       <TouchableOpacity style={styles.backRow} onPress={() => router.back()} activeOpacity={0.7}>
         <Ionicons name="chevron-back" size={20} color={colors.foreground} />
@@ -419,6 +619,193 @@ export default function GroupDetailScreen() {
           <Text style={[styles.copyBtnText, { color: colors.accentText }]}>Copiar</Text>
         </View>
       </TouchableOpacity>
+
+      {/* ── Clube do Livro ── */}
+      <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>CLUBE DO LIVRO</Text>
+
+      {activeClub ? (
+        <View style={[styles.clubCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {/* Book row */}
+          <View style={styles.clubBookRow}>
+            {activeClub.bookCoverImage ? (
+              <Image source={{ uri: activeClub.bookCoverImage }} style={styles.clubCoverImg} contentFit="cover" />
+            ) : (
+              <View style={[styles.clubCoverImg, { backgroundColor: activeClub.bookCoverColor ?? colors.muted }]} />
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.clubBookTitle, { color: colors.foreground }]} numberOfLines={2}>
+                {activeClub.bookTitle}
+              </Text>
+              <Text style={[styles.clubBookAuthor, { color: colors.mutedForeground }]} numberOfLines={1}>
+                {activeClub.bookAuthor}
+              </Text>
+            </View>
+            <View style={styles.meetingBadge}>
+              <Ionicons name="calendar-outline" size={12} color={getMeetingTint(activeClub.meetingDate)} />
+              <Text style={[styles.meetingBadgeTxt, { color: getMeetingTint(activeClub.meetingDate) }]}>
+                {getDaysToMeeting(activeClub.meetingDate)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Member progress */}
+          <Text style={[styles.clubProgressLabel, { color: colors.mutedForeground }]}>PROGRESSO DOS MEMBROS</Text>
+          {activeClub.memberProgress.map((p) => {
+            const pct = p.totalPages > 0 ? p.currentPage / p.totalPages : 0;
+            const isMe = p.memberName === myUsername;
+            return (
+              <View key={p.memberName} style={styles.clubProgressRow}>
+                <Text
+                  style={[styles.clubProgressName, { color: isMe ? colors.accentText : colors.foreground }]}
+                  numberOfLines={1}
+                >
+                  {p.memberName}{isMe ? " ★" : ""}
+                </Text>
+                <View style={[styles.clubBarBg, { backgroundColor: colors.muted }]}>
+                  <View
+                    style={[
+                      styles.clubBarFill,
+                      {
+                        width: `${Math.round(pct * 100)}%` as any,
+                        backgroundColor: isMe ? colors.volt : `${colors.volt}55`,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.clubBarPct, { color: colors.mutedForeground }]}>
+                  {Math.round(pct * 100)}%
+                </Text>
+              </View>
+            );
+          })}
+
+          {/* Capi message */}
+          <View style={styles.clubCapiRow}>
+            <CapiMascot state="reading" size={52} />
+            <View style={[styles.clubCapiBubble, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+              <Text style={[styles.clubCapiTxt, { color: colors.foreground }]}>
+                {getClubCapiMsg(activeClub, myUsername)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Highlights toggle */}
+          <TouchableOpacity
+            style={styles.clubToggleRow}
+            onPress={() => setShowClubHighlights((v) => !v)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.clubToggleTxt, { color: colors.mutedForeground }]}>
+              TRECHOS DO CLUBE ({activeClub.highlights.length})
+            </Text>
+            <Ionicons
+              name={showClubHighlights ? "chevron-up" : "chevron-down"}
+              size={14}
+              color={colors.mutedForeground}
+            />
+          </TouchableOpacity>
+
+          {showClubHighlights && (
+            <View style={styles.hlFeed}>
+              {activeClub.highlights.length === 0 ? (
+                <Text style={[styles.hlEmpty, { color: colors.mutedForeground }]}>
+                  Nenhum trecho ainda. Durante a leitura, toque ⭐ para marcar seus favoritos!
+                </Text>
+              ) : (
+                [...activeClub.highlights].reverse().map((hl) => (
+                  <View key={hl.id} style={[styles.hlCard, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                    <View style={styles.hlHeader}>
+                      <Text style={[styles.hlMember, { color: colors.accentText }]}>{hl.memberName}</Text>
+                      <Text style={[styles.hlPage, { color: colors.mutedForeground }]}>p. {hl.page}</Text>
+                      <Text style={[styles.hlDate, { color: colors.mutedForeground }]}>
+                        {new Date(hl.addedAt).toLocaleDateString("pt-BR")}
+                      </Text>
+                    </View>
+                    {hl.quote ? (
+                      <Text style={[styles.hlQuote, { color: colors.foreground }]}>"{hl.quote}"</Text>
+                    ) : null}
+                  </View>
+                ))
+              )}
+            </View>
+          )}
+
+          {/* Close club */}
+          <TouchableOpacity
+            style={[styles.closeClubBtn, { borderColor: colors.border }]}
+            onPress={handleCloseClub}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="flag-outline" size={14} color={colors.mutedForeground} />
+            <Text style={[styles.closeClubTxt, { color: colors.mutedForeground }]}>Encerrar clube</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={[styles.activateClubBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => setShowActivateClub(true)}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.activateClubIcon, { backgroundColor: `${colors.volt}20` }]}>
+            <Ionicons name="book-outline" size={20} color={colors.accentText} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.activateClubTitle, { color: colors.foreground }]}>Iniciar clube do livro</Text>
+            <Text style={[styles.activateClubSub, { color: colors.mutedForeground }]}>
+              Leiam juntos e discutam no encontro
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+        </TouchableOpacity>
+      )}
+
+      {/* Club past history */}
+      {clubHistory.length > 0 && (
+        <>
+          <TouchableOpacity
+            style={styles.historyToggle}
+            onPress={() => setShowClubPastHistory((v) => !v)}
+          >
+            <Text style={[styles.sectionTitle, { color: colors.mutedForeground, marginBottom: 0 }]}>
+              CLUBES ANTERIORES ({clubHistory.length})
+            </Text>
+            <Ionicons
+              name={showClubPastHistory ? "chevron-up" : "chevron-down"}
+              size={16}
+              color={colors.mutedForeground}
+            />
+          </TouchableOpacity>
+          {showClubPastHistory && (
+            <View style={[styles.historyList, { marginBottom: 8 }]}>
+              {clubHistory.map((club) => {
+                const completed = club.memberProgress.filter(
+                  (p) => p.totalPages > 0 && p.currentPage >= p.totalPages
+                );
+                const totalPgs = club.memberProgress.reduce((s, p) => s + (p.currentPage ?? 0), 0);
+                return (
+                  <View
+                    key={club.id}
+                    style={[styles.historyCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  >
+                    <View style={styles.historyCardHeader}>
+                      <Text style={[styles.clubBookTitle, { color: colors.foreground, flex: 1 }]} numberOfLines={1}>
+                        {club.bookTitle}
+                      </Text>
+                      <Text style={[styles.historyDates, { color: colors.mutedForeground }]}>
+                        {new Date(club.closedAt ?? "").toLocaleDateString("pt-BR")}
+                      </Text>
+                    </View>
+                    <Text style={[styles.clubBookAuthor, { color: colors.mutedForeground }]}>{club.bookAuthor}</Text>
+                    <Text style={[styles.historyDates, { color: colors.mutedForeground }]}>
+                      {completed.length}/{club.memberProgress.length} terminaram · {totalPgs} págs lidas · {club.highlights.length} trechos
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </>
+      )}
 
       {/* ── Desafio ── */}
       <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>DESAFIO DO GRUPO</Text>
@@ -1094,4 +1481,96 @@ const styles = StyleSheet.create({
   },
   historyPodiumName: { flex: 1, fontSize: 13, fontWeight: "600" },
   historyPodiumScore: { fontSize: 12, fontWeight: "700" },
+
+  /* ── Book club ── */
+  clubCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 12,
+    marginBottom: 28,
+  },
+  clubBookRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  clubCoverImg: { width: 52, height: 72, borderRadius: 8 },
+  clubBookTitle: { fontSize: 15, fontWeight: "800" },
+  clubBookAuthor: { fontSize: 13 },
+  meetingBadge: { alignItems: "flex-end", gap: 3 },
+  meetingBadgeTxt: { fontSize: 12, fontWeight: "700" },
+  clubProgressLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.8 },
+  clubProgressRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  clubProgressName: { width: 72, fontSize: 12, fontWeight: "600" },
+  clubBarBg: { flex: 1, height: 6, borderRadius: 3, overflow: "hidden" },
+  clubBarFill: { height: "100%" as any, borderRadius: 3 },
+  clubBarPct: { width: 30, fontSize: 11, fontWeight: "700", textAlign: "right" },
+  clubCapiRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 4,
+  },
+  clubCapiBubble: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  clubCapiTxt: { fontSize: 13, lineHeight: 18 },
+  clubToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+  },
+  clubToggleTxt: { fontSize: 11, fontWeight: "700", letterSpacing: 0.8 },
+  hlFeed: { gap: 8 },
+  hlCard: { borderRadius: 10, borderWidth: 1, padding: 10, gap: 4 },
+  hlHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  hlMember: { fontSize: 13, fontWeight: "700", flex: 1 },
+  hlPage: { fontSize: 12, fontWeight: "600" },
+  hlDate: { fontSize: 11 },
+  hlQuote: { fontSize: 13, fontStyle: "italic", lineHeight: 18 },
+  hlEmpty: { fontSize: 13, textAlign: "center", paddingVertical: 8 },
+  closeClubBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-end",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  closeClubTxt: { fontSize: 12, fontWeight: "600" },
+  activateClubBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    padding: 14,
+    marginBottom: 28,
+  },
+  activateClubIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activateClubTitle: { fontSize: 15, fontWeight: "700" },
+  activateClubSub: { fontSize: 12, marginTop: 2 },
+  bookPickRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    marginBottom: 6,
+  },
+  bookPickColor: { width: 32, height: 44, borderRadius: 5 },
+  bookPickTitle: { fontSize: 14, fontWeight: "700" },
+  bookPickAuthor: { fontSize: 12 },
 });

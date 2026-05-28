@@ -22,6 +22,7 @@ import {
 } from "@/services/spotify";
 
 const NOTIF_ENABLED_KEY = "leio:notifications-enabled";
+const CLUBS_KEY = "leio:book-clubs";
 
 export type BookStatus = "reading" | "read" | "want" | "abandoned";
 export type CapiVariant = "default" | "vampire" | "erudite" | "terror" | "classico" | "romance" | "scifi";
@@ -110,6 +111,35 @@ export interface VocabularyEntry {
   definition: string;
   phonetic?: string;
   savedAt: string;
+}
+
+export interface ClubMemberProgress {
+  memberName: string;
+  currentPage: number;
+  totalPages: number;
+  lastUpdated: string;
+}
+
+export interface ClubHighlight {
+  id: string;
+  memberName: string;
+  page: number;
+  quote?: string;
+  addedAt: string;
+}
+
+export interface BookClub {
+  id: string;
+  groupId: string;
+  bookId?: string;
+  bookTitle: string;
+  bookAuthor: string;
+  bookCoverImage?: string;
+  bookCoverColor?: string;
+  meetingDate: string;
+  memberProgress: ClubMemberProgress[];
+  highlights: ClubHighlight[];
+  closedAt?: string;
 }
 
 export type SharedCardTemplateId = "storiesPhoto" | "framed" | "classic";
@@ -736,6 +766,14 @@ interface AppContextType {
   connectSpotify: () => Promise<boolean>;
   disconnectSpotify: () => Promise<void>;
   setReadingSessionActive: (active: boolean) => void;
+  clubs: BookClub[];
+  activateClub(groupId: string, bookInfo: Pick<BookClub, "bookId" | "bookTitle" | "bookAuthor" | "bookCoverImage" | "bookCoverColor">, meetingDate: string, memberNames: string[]): void;
+  updateClubProgress(bookId: string, newPage: number, totalPages: number, memberName: string): void;
+  addClubHighlight(groupId: string, memberName: string, page: number, quote?: string): void;
+  closeClub(groupId: string): void;
+  getActiveClub(groupId: string): BookClub | null;
+  getActiveClubForBook(bookId: string): BookClub | null;
+  getClubHistory(groupId: string): BookClub[];
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -765,6 +803,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [cardsSharedCount, setCardsSharedCount] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const [sharedCards, setSharedCards] = useState<SharedCard[]>([]);
+  const [clubs, setClubs] = useState<BookClub[]>([]);
   const [capiState, setCapiState] = useState<CapiState>("waving");
   const [spotifyConnected, setSpotifyConnected] = useState(false);
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
@@ -843,7 +882,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   async function loadData() {
     try {
-      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      const [raw, clubsRaw] = await Promise.all([
+        AsyncStorage.getItem(STORAGE_KEY),
+        AsyncStorage.getItem(CLUBS_KEY),
+      ]);
+      if (clubsRaw) setClubs(JSON.parse(clubsRaw));
       if (raw) {
         const data = JSON.parse(raw);
         setBooks(data.books ?? SEED_BOOKS);
@@ -914,6 +957,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     } catch (e) {
+      // silent
+    }
+  }
+
+  async function persistClubs(updated: BookClub[]) {
+    setClubs(updated);
+    try {
+      await AsyncStorage.setItem(CLUBS_KEY, JSON.stringify(updated));
+    } catch {
       // silent
     }
   }
@@ -1309,6 +1361,106 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [highlights]
   );
 
+  const activateClub = useCallback(
+    (
+      groupId: string,
+      bookInfo: Pick<BookClub, "bookId" | "bookTitle" | "bookAuthor" | "bookCoverImage" | "bookCoverColor">,
+      meetingDate: string,
+      memberNames: string[]
+    ) => {
+      if (clubs.some((c) => c.groupId === groupId && !c.closedAt)) return;
+      const newClub: BookClub = {
+        id: `club-${Date.now()}`,
+        groupId,
+        bookId: bookInfo.bookId,
+        bookTitle: bookInfo.bookTitle,
+        bookAuthor: bookInfo.bookAuthor,
+        bookCoverImage: bookInfo.bookCoverImage,
+        bookCoverColor: bookInfo.bookCoverColor,
+        meetingDate,
+        memberProgress: memberNames.map((name) => ({
+          memberName: name,
+          currentPage: 0,
+          totalPages: 0,
+          lastUpdated: new Date().toISOString(),
+        })),
+        highlights: [],
+      };
+      persistClubs([...clubs, newClub]);
+    },
+    [clubs]
+  );
+
+  const updateClubProgress = useCallback(
+    (bookId: string, newPage: number, totalPages: number, memberName: string) => {
+      const updated = clubs.map((c) => {
+        if (c.bookId !== bookId || c.closedAt) return c;
+        const exists = c.memberProgress.some((p) => p.memberName === memberName);
+        const newProgress: ClubMemberProgress[] = exists
+          ? c.memberProgress.map((p) =>
+              p.memberName === memberName
+                ? { ...p, currentPage: newPage, totalPages, lastUpdated: new Date().toISOString() }
+                : p
+            )
+          : [
+              ...c.memberProgress,
+              { memberName, currentPage: newPage, totalPages, lastUpdated: new Date().toISOString() },
+            ];
+        return { ...c, memberProgress: newProgress };
+      });
+      persistClubs(updated);
+    },
+    [clubs]
+  );
+
+  const addClubHighlight = useCallback(
+    (groupId: string, memberName: string, page: number, quote?: string) => {
+      const updated = clubs.map((c) => {
+        if (c.groupId !== groupId || c.closedAt) return c;
+        const newHighlight: ClubHighlight = {
+          id: `chl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          memberName,
+          page,
+          quote,
+          addedAt: new Date().toISOString(),
+        };
+        return { ...c, highlights: [...c.highlights, newHighlight] };
+      });
+      persistClubs(updated);
+    },
+    [clubs]
+  );
+
+  const closeClub = useCallback(
+    (groupId: string) => {
+      const updated = clubs.map((c) =>
+        c.groupId === groupId && !c.closedAt ? { ...c, closedAt: new Date().toISOString() } : c
+      );
+      persistClubs(updated);
+    },
+    [clubs]
+  );
+
+  const getActiveClub = useCallback(
+    (groupId: string): BookClub | null =>
+      clubs.find((c) => c.groupId === groupId && !c.closedAt) ?? null,
+    [clubs]
+  );
+
+  const getActiveClubForBook = useCallback(
+    (bookId: string): BookClub | null =>
+      clubs.find((c) => c.bookId === bookId && !c.closedAt) ?? null,
+    [clubs]
+  );
+
+  const getClubHistory = useCallback(
+    (groupId: string): BookClub[] =>
+      clubs
+        .filter((c) => c.groupId === groupId && !!c.closedAt)
+        .sort((a, b) => (b.closedAt ?? "").localeCompare(a.closedAt ?? "")),
+    [clubs]
+  );
+
   const removeVocabularyEntry = useCallback(
     (id: string) => {
       const updated = vocabulary.filter((v) => v.id !== id);
@@ -1361,6 +1513,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         connectSpotify,
         disconnectSpotify,
         setReadingSessionActive,
+        clubs,
+        activateClub,
+        updateClubProgress,
+        addClubHighlight,
+        closeClub,
+        getActiveClub,
+        getActiveClubForBook,
+        getClubHistory,
       }}
     >
       {children}

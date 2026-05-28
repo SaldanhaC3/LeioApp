@@ -130,15 +130,22 @@ export default function SessaoAtivaScreen() {
     nowPlaying,
     spotifyConnected,
     setReadingSessionActive,
+    getActiveClubForBook,
+    addClubHighlight,
+    updateClubProgress,
   } = useApp();
-  const { updateChallengeScore } = useBookGroup();
+  const { updateChallengeScore, myUsername } = useBookGroup();
 
   const book = getBookById(params.bookId ?? "");
   const startPage = parseInt(params.startPage ?? "0", 10);
   const isFocusMode = params.focusMode === "1";
   const focusDuration = parseInt(params.focusDuration ?? "30", 10);
+  const activeClubForBook = params.bookId ? getActiveClubForBook(params.bookId) : null;
 
   const [elapsed, setElapsed] = useState(0);
+  const [showHighlightModal, setShowHighlightModal] = useState(false);
+  const [hlPage, setHlPage] = useState("");
+  const [hlQuote, setHlQuote] = useState("");
   const [isRunning, setIsRunning] = useState(true);
   const [focusExitSeconds, setFocusExitSeconds] = useState(0);
   const [showFocusReturn, setShowFocusReturn] = useState(false);
@@ -343,6 +350,9 @@ export default function SessaoAtivaScreen() {
 
     addSession(session);
     updateChallengeScore(pages, elapsed);
+    if (activeClubForBook && book) {
+      updateClubProgress(params.bookId ?? "", endPage, book.totalPages, myUsername);
+    }
     checkAndUnlockBadges(session as never);
     setReadingSessionActive(false);
 
@@ -787,6 +797,125 @@ export default function SessaoAtivaScreen() {
         </View>
       </View>
 
+      {/* Floating highlight button — only visible when book belongs to a club */}
+      {activeClubForBook && !showEndModal && !showFocusReturn && (
+        <TouchableOpacity
+          style={[styles.hlFloatBtn, { bottom: bottomInset + 106 }]}
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => undefined);
+            setHlPage(String(startPage));
+            setHlQuote("");
+            setShowHighlightModal(true);
+          }}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.hlFloatIcon}>⭐</Text>
+          <Text style={styles.hlFloatTxt}>Marcar trecho</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Highlight modal */}
+      <Modal
+        visible={showHighlightModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowHighlightModal(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={0}
+        >
+          <View
+            style={[
+              styles.hlModalSheet,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <View style={[styles.hlSheetHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.hlModalTitle, { color: colors.foreground }]}>
+              Marcar trecho favorito
+            </Text>
+            <Text style={[styles.endModalSub, { color: colors.mutedForeground }]}>
+              Clube: {activeClubForBook?.bookTitle}
+            </Text>
+
+            <Text style={[styles.startPageHint, { color: colors.mutedForeground }]}>PÁGINA</Text>
+            <TextInput
+              style={[
+                styles.hlModalInput,
+                {
+                  color: colors.foreground,
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                },
+              ]}
+              value={hlPage}
+              onChangeText={setHlPage}
+              keyboardType="numeric"
+              placeholder={String(startPage)}
+              placeholderTextColor={colors.mutedForeground}
+              maxLength={5}
+            />
+
+            <Text style={[styles.startPageHint, { color: colors.mutedForeground }]}>
+              TRECHO (opcional)
+            </Text>
+            <TextInput
+              style={[
+                styles.hlModalInput,
+                styles.hlModalInputMulti,
+                {
+                  color: colors.foreground,
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                },
+              ]}
+              value={hlQuote}
+              onChangeText={setHlQuote}
+              placeholder="Digite a frase que te marcou..."
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              maxLength={300}
+              textAlignVertical="top"
+            />
+
+            <TouchableOpacity
+              style={[styles.hlModalConfirmBtn, { backgroundColor: colors.volt }]}
+              onPress={() => {
+                if (activeClubForBook) {
+                  addClubHighlight(
+                    activeClubForBook.groupId,
+                    myUsername,
+                    parseInt(hlPage, 10) || startPage,
+                    hlQuote.trim() || undefined
+                  );
+                  Haptics.notificationAsync(
+                    Haptics.NotificationFeedbackType.Success
+                  ).catch(() => undefined);
+                }
+                setShowHighlightModal(false);
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="star" size={16} color={colors.accentForeground} />
+              <Text style={[styles.hlModalConfirmTxt, { color: colors.accentForeground }]}>
+                Salvar trecho
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setShowHighlightModal(false)}
+              style={styles.endModalCancel}
+            >
+              <Text style={[styles.endModalCancelText, { color: colors.mutedForeground }]}>
+                Cancelar
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       <VocabularyModal
         visible={showVocabModal}
         bookId={params.bookId ?? ""}
@@ -978,4 +1107,51 @@ const styles = StyleSheet.create({
   endModalCancelText: { fontSize: 13 },
   errorText: { fontSize: 16, marginBottom: 12 },
   backLink: { fontSize: 15, fontWeight: "700" },
+  hlFloatBtn: {
+    position: "absolute",
+    right: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(0,0,0,0.72)",
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+  },
+  hlFloatIcon: { fontSize: 16 },
+  hlFloatTxt: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  hlSheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 4,
+  },
+  hlModalSheet: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 20,
+    gap: 10,
+    width: "100%",
+  },
+  hlModalTitle: { fontSize: 18, fontWeight: "900" },
+  hlModalInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+  },
+  hlModalInputMulti: { minHeight: 80 },
+  hlModalConfirmBtn: {
+    borderRadius: 12,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 4,
+  },
+  hlModalConfirmTxt: { fontSize: 15, fontWeight: "800" },
 });
