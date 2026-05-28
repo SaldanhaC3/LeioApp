@@ -107,6 +107,7 @@ export default function GroupDetailScreen() {
     createChallenge,
     getActiveChallenge,
     getFinishedChallenge,
+    getPastChallenges,
     dismissChallenge,
   } = useBookGroup();
   const { earnXP } = useApp();
@@ -120,6 +121,7 @@ export default function GroupDetailScreen() {
   const [createDuration, setCreateDuration] = useState<3 | 5 | 7>(7);
   const [createDesc, setCreateDesc] = useState("");
   const [podiumDismissed, setPodiumDismissed] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   const todayCheckIns = getCheckInsForGroup(id ?? "", today);
   const myCheckInToday = todayCheckIns.find((c) => c.username === myUsername);
@@ -142,7 +144,11 @@ export default function GroupDetailScreen() {
   const isWinner = finishedChallenge && finishedSorted[0]?.memberName === myUsername;
 
   function handleCreateChallenge() {
-    createChallenge(id ?? "", createType, createDuration, createDesc.trim() || undefined);
+    const ok = createChallenge(id ?? "", createType, createDuration, createDesc.trim() || undefined);
+    if (!ok) {
+      Alert.alert("Já existe um desafio ativo", "Encerre o desafio atual antes de criar um novo.");
+      return;
+    }
     setShowCreateModal(false);
     setCreateDesc("");
     setCreateType("pages");
@@ -660,6 +666,71 @@ export default function GroupDetailScreen() {
           );
         })}
       </View>
+
+      {/* ── Histórico de desafios ── */}
+      {(() => {
+        const pastChallenges = getPastChallenges(id ?? "");
+        if (pastChallenges.length === 0) return null;
+        return (
+          <>
+            <TouchableOpacity
+              style={styles.historyToggle}
+              onPress={() => setShowHistory((v) => !v)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.sectionTitle, { color: colors.mutedForeground, marginBottom: 0 }]}>
+                DESAFIOS ANTERIORES ({pastChallenges.length})
+              </Text>
+              <Ionicons
+                name={showHistory ? "chevron-up" : "chevron-down"}
+                size={16}
+                color={colors.mutedForeground}
+              />
+            </TouchableOpacity>
+            {showHistory && (
+              <View style={styles.historyList}>
+                {pastChallenges.slice(0, 5).map((ch) => {
+                  const sorted = [...ch.scores].sort((a, b) => b.value - a.value);
+                  const start = ch.startDate.split("T")[0];
+                  const end = ch.endDate.split("T")[0];
+                  return (
+                    <View
+                      key={ch.id}
+                      style={[styles.historyCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    >
+                      <View style={styles.historyCardHeader}>
+                        <View style={[styles.challengeTypeBadge, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                          <Ionicons name={CHALLENGE_ICONS[ch.type] as any} size={11} color={colors.mutedForeground} />
+                          <Text style={[styles.challengeTypeTxt, { color: colors.mutedForeground }]}>
+                            {CHALLENGE_TYPE_LABELS[ch.type].toUpperCase()}
+                          </Text>
+                        </View>
+                        <Text style={[styles.historyDates, { color: colors.mutedForeground }]}>{start} → {end}</Text>
+                      </View>
+                      {ch.description ? (
+                        <Text style={[styles.challengeDesc, { color: colors.mutedForeground }]}>{ch.description}</Text>
+                      ) : null}
+                      <View style={styles.historyPodium}>
+                        {sorted.slice(0, 3).map((entry, idx) => (
+                          <View key={entry.memberName} style={styles.historyPodiumEntry}>
+                            <Text style={styles.lbMedal}>{["🥇", "🥈", "🥉"][idx]}</Text>
+                            <Text style={[styles.historyPodiumName, { color: colors.foreground }]} numberOfLines={1}>
+                              {entry.memberName}
+                            </Text>
+                            <Text style={[styles.historyPodiumScore, { color: colors.mutedForeground }]}>
+                              {entry.value} {CHALLENGE_UNIT[ch.type]}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </>
+        );
+      })()}
     </ScrollView>
   );
 }
@@ -991,4 +1062,36 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   podiumBtnText: { fontSize: 16, fontWeight: "900" },
+
+  /* ── Challenge history ── */
+  historyToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+    marginBottom: 10,
+    paddingVertical: 4,
+  },
+  historyList: { gap: 10, marginBottom: 16 },
+  historyCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+    gap: 10,
+  },
+  historyCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  historyDates: { fontSize: 11, fontWeight: "600" },
+  historyPodium: { gap: 6 },
+  historyPodiumEntry: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  historyPodiumName: { flex: 1, fontSize: 13, fontWeight: "600" },
+  historyPodiumScore: { fontSize: 12, fontWeight: "700" },
 });

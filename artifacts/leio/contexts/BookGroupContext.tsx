@@ -68,10 +68,11 @@ interface BookGroupContextValue {
   hasCheckedInToday(groupId: string): boolean;
   getStreak(groupId: string, username: string): number;
 
-  createChallenge(groupId: string, type: ChallengeType, durationDays: number, description?: string): void;
+  createChallenge(groupId: string, type: ChallengeType, durationDays: number, description?: string): boolean;
   updateChallengeScore(pages: number, durationSeconds: number): void;
   getActiveChallenge(groupId: string): Challenge | null;
   getFinishedChallenge(groupId: string): Challenge | null;
+  getPastChallenges(groupId: string): Challenge[];
   dismissChallenge(challengeId: string): void;
 
   setMyUsername(name: string): void;
@@ -262,10 +263,19 @@ export function BookGroupProvider({ children }: { children: React.ReactNode }) {
   );
 
   const createChallenge = useCallback(
-    (groupId: string, type: ChallengeType, durationDays: number, description?: string) => {
+    (groupId: string, type: ChallengeType, durationDays: number, description?: string): boolean => {
       const group = groups.find((g) => g.id === groupId);
-      if (!group) return;
-      const startDate = new Date().toISOString();
+      if (!group) return false;
+      const now = new Date().toISOString();
+      const alreadyActive = challenges.some(
+        (ch) =>
+          ch.groupId === groupId &&
+          !ch.dismissed &&
+          ch.startDate <= now &&
+          ch.endDate > now
+      );
+      if (alreadyActive) return false;
+      const startDate = now;
       const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
       const scores: ChallengeScore[] = group.memberUsernames.map((m) => ({ memberName: m, value: 0 }));
       const newChallenge: Challenge = {
@@ -279,6 +289,7 @@ export function BookGroupProvider({ children }: { children: React.ReactNode }) {
         dismissed: false,
       };
       persistChallenges([...challenges, newChallenge]);
+      return true;
     },
     [challenges, groups]
   );
@@ -335,6 +346,20 @@ export function BookGroupProvider({ children }: { children: React.ReactNode }) {
             ch.endDate <= now
         ) ?? null
       );
+    },
+    [challenges]
+  );
+
+  const getPastChallenges = useCallback(
+    (groupId: string): Challenge[] => {
+      const now = new Date().toISOString();
+      return challenges
+        .filter(
+          (ch) =>
+            ch.groupId === groupId &&
+            (ch.dismissed || ch.endDate <= now)
+        )
+        .sort((a, b) => b.endDate.localeCompare(a.endDate));
     },
     [challenges]
   );
@@ -412,6 +437,7 @@ export function BookGroupProvider({ children }: { children: React.ReactNode }) {
         updateChallengeScore,
         getActiveChallenge,
         getFinishedChallenge,
+        getPastChallenges,
         dismissChallenge,
         setMyUsername,
       }}
