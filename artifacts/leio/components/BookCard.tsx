@@ -56,7 +56,7 @@ export function BookCard({ book, onPress, onEdit, compact }: BookCardProps) {
             transition={150}
           />
         ) : (
-          <Ionicons name="book" size={24} color="rgba(255,255,255,0.4)" />
+          <Ionicons name="camera-outline" size={22} color="rgba(255,255,255,0.55)" />
         )}
       </View>
 

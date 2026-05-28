@@ -13,6 +13,7 @@ import { sendFocusBreakNotification } from "@/services/notifications";
 import { deriveGradient } from "@/services/spotify";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -633,9 +634,16 @@ export default function SessaoAtivaScreen() {
 
         {/* Book Info */}
         <View style={styles.bookInfo}>
-          <View
-            style={[styles.coverDot, { backgroundColor: book.coverColor }]}
-          />
+          <View style={[styles.coverThumb, { backgroundColor: book.coverColor }]}>
+            {book.coverImage ? (
+              <Image
+                source={{ uri: book.coverImage }}
+                style={styles.coverThumbImage}
+                contentFit="cover"
+                transition={150}
+              />
+            ) : null}
+          </View>
           <View style={styles.bookText}>
             <Text
               style={[styles.bookTitle, { color: colors.foreground }]}
@@ -796,6 +804,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   coverDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
+  coverThumb: {
+    width: 28,
+    height: 38,
+    borderRadius: 4,
+    flexShrink: 0,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  coverThumbImage: { width: "100%", height: "100%" },
   bookText: { flex: 1 },
   bookTitle: { fontSize: 15, fontWeight: "700" },
   bookAuthor: { fontSize: 12 },

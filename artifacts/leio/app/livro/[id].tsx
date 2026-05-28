@@ -19,6 +19,23 @@ import type { BookStatus } from "@/contexts/AppContext";
 import { bookFileExists } from "@/services/readerFiles";
 import { useEffect } from "react";
 
+function relativeLuminance(hex: string): number {
+  const clean = hex.replace("#", "");
+  if (clean.length < 6) return 0;
+  const r = parseInt(clean.slice(0, 2), 16) / 255;
+  const g = parseInt(clean.slice(2, 4), 16) / 255;
+  const b = parseInt(clean.slice(4, 6), 16) / 255;
+  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+function getCoverOverlay(hex: string): number {
+  const L = relativeLuminance(hex);
+  if (L <= 0.18) return 0;
+  const needed = 1 - 0.18 / L;
+  return Math.min(needed + 0.05, 0.7);
+}
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR", {
     day: "2-digit",
@@ -140,6 +157,19 @@ export default function LivroDetailScreen() {
 
       {/* Cover Header */}
       <View style={[styles.coverSection, { backgroundColor: book.coverColor }]}>
+        {/* WCAG AA overlay: darken light covers so white text passes 4.5:1 */}
+        {getCoverOverlay(book.coverColor) > 0 && (
+          <View
+            style={[
+              StyleSheet.absoluteFillObject,
+              {
+                backgroundColor: `rgba(0,0,0,${getCoverOverlay(book.coverColor)})`,
+                borderRadius: 16,
+              },
+            ]}
+            pointerEvents="none"
+          />
+        )}
         <View style={styles.coverIcon}>
           {book.coverImage ? (
             <Image
@@ -149,7 +179,7 @@ export default function LivroDetailScreen() {
               transition={200}
             />
           ) : (
-            <Ionicons name="book" size={40} color="rgba(255,255,255,0.3)" />
+            <Ionicons name="camera-outline" size={32} color="rgba(255,255,255,0.4)" />
           )}
         </View>
         <View style={styles.coverInfo}>

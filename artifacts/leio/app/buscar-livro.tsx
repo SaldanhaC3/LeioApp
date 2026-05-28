@@ -6,10 +6,12 @@ import { searchBooks, type BookSearchResult } from "@/services/bookSearch";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Modal,
   Platform,
@@ -63,6 +65,7 @@ export default function BuscarLivroScreen() {
   const [query, setQuery] = useState("");
   const [state, setState] = useState<SearchState>({ kind: "idle" });
   const [selected, setSelected] = useState<BookSearchResult | null>(null);
+  const [manualCoverUri, setManualCoverUri] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reqIdRef = useRef(0);
 
@@ -107,11 +110,34 @@ export default function BuscarLivroScreen() {
       status,
       coverColor: pickCoverColor(selected.title + selected.author),
       isbn: selected.isbn,
-      coverImage: selected.coverUrl,
+      coverImage: manualCoverUri || selected.coverUrl,
       finishedAt: status === "read" ? new Date().toISOString() : undefined,
     });
     setSelected(null);
+    setManualCoverUri(null);
     router.back();
+  }
+
+  async function pickManualCover() {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert("Permissão necessária", "Autorize o acesso à galeria para adicionar uma capa.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [3, 4],
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setManualCoverUri(result.assets[0].uri);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch {
+      Alert.alert("Erro", "Não foi possível acessar a galeria.");
+    }
   }
 
   return (
@@ -329,6 +355,31 @@ Estante vazia nesse termo
             >
               {selected?.author}
             </Text>
+            {/* Manual cover fallback */}
+            {selected && !selected.coverUrl && (
+              <TouchableOpacity
+                style={[styles.addCoverRow, { borderColor: colors.border, backgroundColor: colors.secondary }]}
+                onPress={pickManualCover}
+                activeOpacity={0.8}
+              >
+                {manualCoverUri ? (
+                  <Image
+                    source={{ uri: manualCoverUri }}
+                    style={styles.manualCoverThumb}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Ionicons name="camera-outline" size={20} color={colors.accentText} />
+                )}
+                <Text style={[styles.addCoverText, { color: manualCoverUri ? colors.foreground : colors.accentText }]}>
+                  {manualCoverUri ? "Capa adicionada — trocar" : "Sem capa? Adicionar da galeria"}
+                </Text>
+                {manualCoverUri && (
+                  <Ionicons name="checkmark-circle" size={18} color={colors.accentText} />
+                )}
+              </TouchableOpacity>
+            )}
+
             <Text style={[styles.modalQuestion, { color: colors.foreground }]}>
 Vai entrar em qual prateleira?
             </Text>
@@ -357,7 +408,7 @@ Vai entrar em qual prateleira?
             ))}
             <TouchableOpacity
               style={styles.cancelBtn}
-              onPress={() => setSelected(null)}
+              onPress={() => { setSelected(null); setManualCoverUri(null); }}
             >
               <Text style={[styles.cancelText, { color: colors.mutedForeground }]}>
                 Deixa pra lá
@@ -474,4 +525,20 @@ const styles = StyleSheet.create({
   statusLabel: { flex: 1, fontSize: 15, fontWeight: "700" },
   cancelBtn: { alignItems: "center", paddingVertical: 12, marginTop: 4 },
   cancelText: { fontSize: 14, fontWeight: "600" },
+  addCoverRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  manualCoverThumb: {
+    width: 30,
+    height: 40,
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  addCoverText: { flex: 1, fontSize: 14, fontWeight: "600" },
 });
