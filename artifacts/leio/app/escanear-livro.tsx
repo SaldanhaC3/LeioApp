@@ -137,7 +137,7 @@ export default function EscanearLivroScreen() {
 
       {state.kind === "manual" || cameraUnavailable ? (
         <View style={styles.manualPane}>
-          <Text style={[styles.helper, { color: colors.muted }]}>
+          <Text style={[styles.helper, { color: colors.mutedForeground }]}>
             {cameraUnavailable
               ? "A câmera não funciona aqui no navegador. Digita o ISBN abaixo."
               : "Digita o ISBN que tá na contracapa."}
@@ -148,7 +148,7 @@ export default function EscanearLivroScreen() {
             keyboardType="default"
             autoCapitalize="characters"
             placeholder="978..."
-            placeholderTextColor={colors.muted}
+            placeholderTextColor={colors.mutedForeground}
             style={[
               styles.input,
               { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border },
@@ -167,8 +167,8 @@ export default function EscanearLivroScreen() {
         </View>
       ) : !permission.granted ? (
         <View style={styles.center}>
-          <Ionicons name="camera-outline" size={48} color={colors.muted} />
-          <Text style={[styles.helper, { color: colors.muted, marginTop: 12 }]}>
+          <Ionicons name="camera-outline" size={48} color={colors.mutedForeground} />
+          <Text style={[styles.helper, { color: colors.mutedForeground, marginTop: 12 }]}>
 Sem câmera, sem leitura. Libera o acesso aí.
           </Text>
           <TouchableOpacity
@@ -202,7 +202,7 @@ Mira no código de barras
           {state.kind === "looking-up" && (
             <View style={styles.lookingRow}>
               <ActivityIndicator color={colors.accentText} />
-              <Text style={[styles.helper, { color: colors.muted }]}>
+              <Text style={[styles.helper, { color: colors.mutedForeground }]}>
 Caçando o ISBN {state.isbn}...
               </Text>
             </View>
@@ -212,7 +212,7 @@ Caçando o ISBN {state.isbn}...
               <Text style={[styles.cardTitle, { color: colors.foreground }]}>
 Esse ISBN sumiu do catálogo
               </Text>
-              <Text style={[styles.helper, { color: colors.muted, marginTop: 4 }]}>
+              <Text style={[styles.helper, { color: colors.mutedForeground, marginTop: 4 }]}>
                 ISBN {state.isbn}. Tenta de novo ou cadastra na mão.
               </Text>
               <View style={styles.actionsRow}>
@@ -249,11 +249,11 @@ Esse ISBN sumiu do catálogo
                   <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={2}>
                     {state.result.title}
                   </Text>
-                  <Text style={[styles.helper, { color: colors.muted, marginTop: 4 }]} numberOfLines={1}>
+                  <Text style={[styles.helper, { color: colors.mutedForeground, marginTop: 4 }]} numberOfLines={1}>
                     {state.result.author}
                   </Text>
                   {state.result.pages > 0 && (
-                    <Text style={[styles.helper, { color: colors.muted, marginTop: 2 }]}>
+                    <Text style={[styles.helper, { color: colors.mutedForeground, marginTop: 2 }]}>
                       {state.result.pages} páginas
                     </Text>
                   )}
@@ -274,7 +274,7 @@ Esse ISBN sumiu do catálogo
                 </TouchableOpacity>
               </View>
               <TouchableOpacity onPress={rescan} style={styles.linkBtn}>
-                <Text style={[styles.linkText, { color: colors.muted }]}>Próximo da pilha</Text>
+                <Text style={[styles.linkText, { color: colors.mutedForeground }]}>Próximo da pilha</Text>
               </TouchableOpacity>
             </>
           )}
