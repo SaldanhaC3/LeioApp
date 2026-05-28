@@ -28,6 +28,7 @@ export interface GroupCheckIn {
   comment?: string;
   date: string; // YYYY-MM-DD
   bookTitle?: string;
+  photoUri?: string;
 }
 
 interface BookGroupContextValue {

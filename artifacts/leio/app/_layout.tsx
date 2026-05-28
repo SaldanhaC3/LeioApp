@@ -9,12 +9,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider, useApp } from "@/contexts/AppContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { BookGroupProvider } from "@/contexts/BookGroupContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -23,16 +25,54 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { settings, isLoaded } = useApp();
+  const { user, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (isLoaded && !settings.hasCompletedOnboarding) {
+    if (!isLoaded || authLoading) return;
+
+    if (!user) {
+      router.replace("/login");
+    } else if (!user.username) {
+      router.replace("/profile-setup");
+    } else if (!settings.hasCompletedOnboarding) {
       router.replace("/onboarding");
     }
-  }, [isLoaded, settings.hasCompletedOnboarding]);
+  }, [isLoaded, authLoading, user, settings.hasCompletedOnboarding]);
+
+  if (authLoading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#0f0e0b",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color="#CDFF00" />
+      </View>
+    );
+  }
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="login"
+        options={{ headerShown: false, gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="profile-setup"
+        options={{ headerShown: false, gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="ranking"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="auth-callback"
+        options={{ headerShown: false }}
+      />
       <Stack.Screen
         name="onboarding"
         options={{ headerShown: false, gestureEnabled: false }}
@@ -61,18 +101,12 @@ function RootLayoutNav() {
           gestureEnabled: true,
         }}
       />
-      <Stack.Screen
-        name="livro"
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="livro" options={{ headerShown: false }} />
       <Stack.Screen
         name="leitor-arquivo/[bookId]"
         options={{ headerShown: false, presentation: "fullScreenModal" }}
       />
-      <Stack.Screen
-        name="settings"
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen
         name="buscar-livro"
         options={{ headerShown: false, presentation: "modal" }}
@@ -89,10 +123,7 @@ function RootLayoutNav() {
         name="livro-manual"
         options={{ headerShown: false, presentation: "modal" }}
       />
-      <Stack.Screen
-        name="grupos"
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="grupos" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
@@ -116,19 +147,21 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <KeyboardProvider>
-              <AppProvider>
-                <BookGroupProvider>
-                  <RootLayoutNav />
-                </BookGroupProvider>
-              </AppProvider>
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
-      </ErrorBoundary>
+      <AuthProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <KeyboardProvider>
+                <AppProvider>
+                  <BookGroupProvider>
+                    <RootLayoutNav />
+                  </BookGroupProvider>
+                </AppProvider>
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

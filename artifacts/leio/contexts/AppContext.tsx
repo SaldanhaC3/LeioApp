@@ -694,6 +694,7 @@ interface AppContextType {
   getBookById: (id: string) => Book | undefined;
   getAbandoned: () => Book[];
   getCurrentBook: () => Book | undefined;
+  getFavoriteGenres: () => { genre: string; label: string; count: number }[];
   capiState: CapiState;
   setCapiState: (state: CapiState) => void;
   spotifyEnabled: boolean;
@@ -1246,6 +1247,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [books]
   );
 
+  const getFavoriteGenres = useCallback((): { genre: string; label: string; count: number }[] => {
+    const counts: Record<string, number> = {};
+    for (const b of books) {
+      if ((b.status === "read" || b.status === "reading") && b.genre) {
+        counts[b.genre] = (counts[b.genre] || 0) + 1;
+      }
+    }
+    return Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([genre, count]) => ({
+        genre,
+        label: GENRE_LABELS[genre] ?? genre,
+        count,
+      }));
+  }, [books]);
+
   const addHighlight = useCallback(
     (h: Omit<Highlight, "id" | "createdAt">) => {
       const newHighlight: Highlight = {
@@ -1309,6 +1327,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         getBookById,
         getAbandoned,
         getCurrentBook,
+        getFavoriteGenres,
         capiState,
         setCapiState,
         spotifyEnabled: SPOTIFY_ENABLED,

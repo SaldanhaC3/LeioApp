@@ -2,10 +2,12 @@ import { useBookGroup } from "@/contexts/BookGroupContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -42,11 +44,42 @@ export default function CheckInScreen() {
   const [bookTitle, setBookTitle] = useState(group?.currentBook ?? "");
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = insets.bottom + (Platform.OS === "web" ? 34 : 0);
 
   const alreadyCheckedIn = hasCheckedInToday(groupId ?? "");
+
+  async function handlePickPhoto() {
+    Alert.alert("Foto do check-in", "Mostre onde você está lendo!", [
+      {
+        text: "Tirar foto",
+        onPress: async () => {
+          const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ["images"],
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.8,
+          });
+          if (!result.canceled && result.assets[0]) setPhotoUri(result.assets[0].uri);
+        },
+      },
+      {
+        text: "Escolher da galeria",
+        onPress: async () => {
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ["images"],
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.8,
+          });
+          if (!result.canceled && result.assets[0]) setPhotoUri(result.assets[0].uri);
+        },
+      },
+      { text: "Cancelar", style: "cancel" },
+    ]);
+  }
 
   function handleSubmit() {
     const pagesNum = parseInt(pages, 10);
@@ -65,7 +98,24 @@ export default function CheckInScreen() {
       comment: comment.trim() || undefined,
       bookTitle: bookTitle.trim() || undefined,
       groupId: groupId ?? "",
+      photoUri: photoUri ?? undefined,
     });
+
+    // Fire-and-forget photo upload
+    if (photoUri) {
+      (async () => {
+        try {
+          const { supabase } = await import("@/lib/supabase");
+          const response = await fetch(photoUri);
+          const blob = await response.blob();
+          const filename = `${groupId}_${Date.now()}.jpg`;
+          await supabase.storage.from("checkin-photos").upload(filename, blob, {
+            contentType: "image/jpeg",
+            upsert: false,
+          });
+        } catch { /* silent fail */ }
+      })();
+    }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSubmitted(true);
@@ -275,6 +325,33 @@ export default function CheckInScreen() {
           {comment.length}/140
         </Text>
 
+        {/* Photo section */}
+        <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
+          FOTO DO CHECK-IN (OPCIONAL)
+        </Text>
+        {photoUri ? (
+          <View style={styles.photoPreviewWrap}>
+            <Image source={{ uri: photoUri }} style={styles.photoPreview} />
+            <TouchableOpacity
+              style={[styles.photoRemove, { backgroundColor: colors.destructive }]}
+              onPress={() => setPhotoUri(null)}
+            >
+              <Text style={styles.photoRemoveText}>×</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.photoPlaceholder, { borderColor: colors.border }]}
+            onPress={handlePickPhoto}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="camera-outline" size={28} color={colors.mutedForeground} />
+            <Text style={[styles.photoPlaceholderText, { color: colors.mutedForeground }]}>
+              Adicionar foto
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {/* Submit */}
         <TouchableOpacity
           style={[styles.submitBtn, { backgroundColor: colors.volt }]}
@@ -351,4 +428,19 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   backBtnText: { fontSize: 16, fontWeight: "700" },
+  photoPreviewWrap: { position: "relative", alignSelf: "flex-start", marginBottom: 16 },
+  photoPreview: { width: 120, height: 90, borderRadius: 12 },
+  photoRemove: {
+    position: "absolute", top: -8, right: -8,
+    width: 24, height: 24, borderRadius: 12,
+    justifyContent: "center", alignItems: "center",
+  },
+  photoRemoveText: { color: "#fff", fontSize: 16, fontWeight: "900", lineHeight: 18 },
+  photoPlaceholder: {
+    width: 120, height: 90, borderRadius: 12,
+    borderWidth: 1.5, borderStyle: "dashed",
+    justifyContent: "center", alignItems: "center",
+    gap: 6, marginBottom: 16,
+  },
+  photoPlaceholderText: { fontSize: 12 },
 });

@@ -69,6 +69,7 @@
     "expo-secure-store": "^15.0.8",
     "expo-sharing": "^56.0.12",
     "expo-speech": "^56.0.3",
-    "react-native-view-shot": "^5.1.0"
+    "react-native-view-shot": "^5.1.0",
+    "@supabase/supabase-js": "^2.49.0"
   }
 }

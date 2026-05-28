@@ -17,7 +17,9 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.leio.app",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       }
     },
     "android": {
@@ -44,7 +46,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "A Capi precisa da câmera pra escanear o código de barras dos seus livros ou tirar a foto que vai virar fundo do card de leitura.",
+          "cameraPermission": "A Capi precisa da c\u00e2mera pra escanear o c\u00f3digo de barras dos seus livros ou tirar a foto que vai virar fundo do card de leitura.",
           "recordAudioAndroid": false
         }
       ],
@@ -60,7 +62,7 @@
         "expo-image-picker",
         {
           "photosPermission": "A Capi precisa acessar suas fotos pra usar como capa do livro ou fundo do card de leitura.",
-          "cameraPermission": "A Capi precisa da câmera pra fotografar a capa do livro ou tirar a foto do card de leitura."
+          "cameraPermission": "A Capi precisa da c\u00e2mera pra fotografar a capa do livro ou tirar a foto do card de leitura."
         }
       ]
     ],
