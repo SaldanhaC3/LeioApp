@@ -17,6 +17,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider, useApp } from "@/contexts/AppContext";
 import { BookGroupProvider } from "@/contexts/BookGroupContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SyncBridge } from "@/components/SyncBridge";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -139,6 +140,7 @@ export default function RootLayout() {
               <AuthProvider>
               <AppProvider>
                 <BookGroupProvider>
+                  <SyncBridge />
                   <RootLayoutNav />
                 </BookGroupProvider>
               </AppProvider>

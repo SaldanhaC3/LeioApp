@@ -15,10 +15,13 @@ WebBrowser.maybeCompleteAuthSession();
 
 export interface Profile {
   id: string;
-  username: string;
-  handle: string;
+  username: string | null;
+  handle: string | null;
   avatar_url: string | null;
-  bio: string | null;
+  xp: number;
+  folego: number;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuthContextValue {

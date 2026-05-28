@@ -67,11 +67,14 @@ export default function ProfileSetupScreen() {
     setSaving(true);
     try {
       const avatarUrl = await uploadAvatar(user.id);
-      const { error } = await supabase.from("profiles").insert({
+      const { error } = await supabase.from("profiles").upsert({
         id: user.id,
         username: username.trim(),
         handle: handle.trim(),
         avatar_url: avatarUrl,
+        xp: 0,
+        folego: 0,
+        updated_at: new Date().toISOString(),
       });
 
       if (error) {
