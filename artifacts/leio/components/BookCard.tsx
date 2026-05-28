@@ -21,10 +21,11 @@ interface BookCardProps {
   book: Book;
   onPress: () => void;
   onEdit?: () => void;
+  onAddCover?: () => void;
   compact?: boolean;
 }
 
-export function BookCard({ book, onPress, onEdit, compact }: BookCardProps) {
+export function BookCard({ book, onPress, onEdit, onAddCover, compact }: BookCardProps) {
   const colors = useColors();
   const progress =
     book.totalPages > 0 ? book.currentPage / book.totalPages : 0;
@@ -47,18 +48,29 @@ export function BookCard({ book, onPress, onEdit, compact }: BookCardProps) {
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <View style={[styles.cover, { backgroundColor: book.coverColor }]}>
-        {book.coverImage ? (
+      {book.coverImage ? (
+        <View style={[styles.cover, { backgroundColor: book.coverColor }]}>
           <Image
             source={{ uri: book.coverImage }}
             style={styles.coverImage}
             contentFit="cover"
             transition={150}
           />
-        ) : (
-          <Ionicons name="camera-outline" size={22} color="rgba(255,255,255,0.55)" />
-        )}
-      </View>
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={[styles.cover, { backgroundColor: book.coverColor }]}
+          onPress={(e) => {
+            e.stopPropagation();
+            if (onAddCover) onAddCover();
+            else if (onEdit) onEdit();
+          }}
+          activeOpacity={0.75}
+          disabled={!onAddCover && !onEdit}
+        >
+          <Ionicons name="camera-outline" size={22} color="rgba(255,255,255,0.7)" />
+        </TouchableOpacity>
+      )}
 
       <View style={styles.info}>
         <View style={styles.titleRow}>

@@ -66,6 +66,10 @@ export default function BuscarLivroScreen() {
   const [state, setState] = useState<SearchState>({ kind: "idle" });
   const [selected, setSelected] = useState<BookSearchResult | null>(null);
   const [manualCoverUri, setManualCoverUri] = useState<string | null>(null);
+  const [manualAddMode, setManualAddMode] = useState(false);
+  const [manualAddTitle, setManualAddTitle] = useState("");
+  const [manualAddAuthor, setManualAddAuthor] = useState("");
+  const [manualAddCover, setManualAddCover] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reqIdRef = useRef(0);
 
@@ -138,6 +142,48 @@ export default function BuscarLivroScreen() {
     } catch {
       Alert.alert("Erro", "Não foi possível acessar a galeria.");
     }
+  }
+
+  async function openManualAddFlow() {
+    Haptics.selectionAsync();
+    setManualAddTitle(query.trim());
+    setManualAddAuthor("");
+    setManualAddCover(null);
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (perm.granted) {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [3, 4],
+          quality: 0.7,
+        });
+        if (!result.canceled && result.assets[0]) {
+          setManualAddCover(result.assets[0].uri);
+        }
+      }
+    } catch {
+    }
+    setManualAddMode(true);
+  }
+
+  function handleManualAdd(status: BookStatus) {
+    if (!manualAddTitle.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    addBook({
+      title: manualAddTitle.trim(),
+      author: manualAddAuthor.trim() || "Autor desconhecido",
+      genre: "outros",
+      totalPages: 200,
+      currentPage: status === "read" ? 200 : 0,
+      status,
+      coverColor: pickCoverColor(manualAddTitle + manualAddAuthor),
+      coverImage: manualAddCover ?? undefined,
+      finishedAt: status === "read" ? new Date().toISOString() : undefined,
+    });
+    setManualAddMode(false);
+    setManualAddCover(null);
+    router.back();
   }
 
   return (
@@ -247,15 +293,12 @@ Estante vazia nesse termo
           </Text>
           <TouchableOpacity
             style={[styles.manualFallbackBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
-            onPress={() => {
-              Haptics.selectionAsync();
-              router.push("/livro-manual");
-            }}
+            onPress={openManualAddFlow}
             activeOpacity={0.8}
           >
-            <Ionicons name="create-outline" size={18} color={colors.accentText} />
+            <Ionicons name="camera-outline" size={18} color={colors.accentText} />
             <Text style={[styles.manualFallbackText, { color: colors.foreground }]}>
-              Não encontrei — cadastrar na mão
+              Não encontrei — adicionar com foto
             </Text>
             <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
           </TouchableOpacity>
@@ -272,15 +315,12 @@ Estante vazia nesse termo
           ListFooterComponent={
             <TouchableOpacity
               style={[styles.manualFallbackBtn, { borderColor: colors.border, backgroundColor: colors.card, marginTop: 4 }]}
-              onPress={() => {
-                Haptics.selectionAsync();
-                router.push("/livro-manual");
-              }}
+              onPress={openManualAddFlow}
               activeOpacity={0.8}
             >
-              <Ionicons name="create-outline" size={18} color={colors.accentText} />
+              <Ionicons name="camera-outline" size={18} color={colors.accentText} />
               <Text style={[styles.manualFallbackText, { color: colors.foreground }]}>
-                Não encontrei — cadastrar na mão
+                Não encontrei — adicionar com foto
               </Text>
               <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
             </TouchableOpacity>
@@ -355,11 +395,11 @@ Estante vazia nesse termo
         visible={!!selected}
         transparent
         animationType="fade"
-        onRequestClose={() => setSelected(null)}
+        onRequestClose={() => { setSelected(null); setManualCoverUri(null); }}
       >
         <Pressable
           style={styles.modalBackdrop}
-          onPress={() => setSelected(null)}
+          onPress={() => { setSelected(null); setManualCoverUri(null); }}
         >
           <Pressable
             style={[
@@ -448,6 +488,114 @@ Vai entrar em qual prateleira?
             >
               <Text style={[styles.cancelText, { color: colors.mutedForeground }]}>
                 Deixa pra lá
+              </Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Manual add modal (when user picks cover and enters title/author) */}
+      <Modal
+        visible={manualAddMode}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setManualAddMode(false)}
+      >
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setManualAddMode(false)}
+        >
+          <Pressable
+            style={[
+              styles.modalSheet,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                paddingBottom: Math.max(insets.bottom, 16) + 8,
+                gap: 10,
+              },
+            ]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHandle} />
+            <View style={styles.manualAddHeader}>
+              {manualAddCover ? (
+                <TouchableOpacity
+                  style={[styles.manualAddCoverThumb, { backgroundColor: colors.secondary }]}
+                  onPress={async () => {
+                    try {
+                      const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [3, 4], quality: 0.7 });
+                      if (!r.canceled && r.assets[0]) setManualAddCover(r.assets[0].uri);
+                    } catch {}
+                  }}
+                >
+                  <Image source={{ uri: manualAddCover }} style={styles.manualAddCoverImg} contentFit="cover" />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.manualAddCoverThumb, { backgroundColor: colors.secondary, borderColor: colors.border, borderWidth: 1, borderStyle: "dashed" }]}
+                  onPress={async () => {
+                    try {
+                      const p = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                      if (!p.granted) return;
+                      const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [3, 4], quality: 0.7 });
+                      if (!r.canceled && r.assets[0]) setManualAddCover(r.assets[0].uri);
+                    } catch {}
+                  }}
+                >
+                  <Ionicons name="camera-outline" size={22} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              )}
+              <View style={{ flex: 1, gap: 8 }}>
+                <View style={[styles.searchBar, { backgroundColor: colors.background, borderColor: colors.border, paddingVertical: 8, marginHorizontal: 0 }]}>
+                  <TextInput
+                    style={[styles.searchInput, { color: colors.foreground }]}
+                    placeholder="Título do livro"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={manualAddTitle}
+                    onChangeText={setManualAddTitle}
+                    returnKeyType="next"
+                    autoFocus
+                  />
+                </View>
+                <View style={[styles.searchBar, { backgroundColor: colors.background, borderColor: colors.border, paddingVertical: 8, marginHorizontal: 0 }]}>
+                  <TextInput
+                    style={[styles.searchInput, { color: colors.foreground }]}
+                    placeholder="Autor"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={manualAddAuthor}
+                    onChangeText={setManualAddAuthor}
+                    returnKeyType="done"
+                  />
+                </View>
+              </View>
+            </View>
+            <Text style={[styles.modalQuestion, { color: colors.foreground }]}>
+              Vai entrar em qual prateleira?
+            </Text>
+            {STATUS_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                style={[
+                  styles.statusBtn,
+                  { backgroundColor: colors.secondary, borderColor: colors.border },
+                  !manualAddTitle.trim() && { opacity: 0.4 },
+                ]}
+                onPress={() => handleManualAdd(opt.value)}
+                disabled={!manualAddTitle.trim()}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={opt.icon} size={20} color={colors.accentText} />
+                <Text style={[styles.statusLabel, { color: colors.foreground }]}>{opt.label}</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={() => setManualAddMode(false)}
+            >
+              <Text style={[styles.cancelText, { color: colors.mutedForeground }]}>
+                Cancelar
               </Text>
             </TouchableOpacity>
           </Pressable>
@@ -588,4 +736,22 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   manualFallbackText: { flex: 1, fontSize: 14, fontWeight: "700" },
+  manualAddHeader: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "flex-start",
+  },
+  manualAddCoverThumb: {
+    width: 60,
+    height: 80,
+    borderRadius: 8,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  manualAddCoverImg: {
+    width: "100%",
+    height: "100%",
+  },
 });

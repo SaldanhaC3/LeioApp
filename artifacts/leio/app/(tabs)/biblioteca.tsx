@@ -566,6 +566,7 @@ export default function BibliotecaScreen() {
               book={item}
               onPress={() => router.push(`/livro/${item.id}`)}
               onEdit={() => openEdit(item)}
+              onAddCover={() => pickCoverForBook(item)}
             />
           )}
         />
