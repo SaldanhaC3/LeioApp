@@ -1,5 +1,6 @@
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { Book } from "@/contexts/AppContext";
@@ -19,10 +20,11 @@ function getETA(book: Book): string {
 interface BookCardProps {
   book: Book;
   onPress: () => void;
+  onEdit?: () => void;
   compact?: boolean;
 }
 
-export function BookCard({ book, onPress, compact }: BookCardProps) {
+export function BookCard({ book, onPress, onEdit, compact }: BookCardProps) {
   const colors = useColors();
   const progress =
     book.totalPages > 0 ? book.currentPage / book.totalPages : 0;
@@ -45,24 +47,40 @@ export function BookCard({ book, onPress, compact }: BookCardProps) {
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <View
-        style={[styles.cover, { backgroundColor: book.coverColor }]}
-      >
-        {book.isFree && (
-          <View style={[styles.freeBadge, { backgroundColor: colors.volt }]}>
-            <Text style={styles.freeText}>GRÁTIS</Text>
-          </View>
+      <View style={[styles.cover, { backgroundColor: book.coverColor }]}>
+        {book.coverImage ? (
+          <Image
+            source={{ uri: book.coverImage }}
+            style={styles.coverImage}
+            contentFit="cover"
+            transition={150}
+          />
+        ) : (
+          <Ionicons name="book" size={24} color="rgba(255,255,255,0.4)" />
         )}
-        <Ionicons name="book" size={24} color="rgba(255,255,255,0.4)" />
       </View>
 
       <View style={styles.info}>
-        <Text
-          style={[styles.title, { color: colors.foreground }]}
-          numberOfLines={2}
-        >
-          {book.title}
-        </Text>
+        <View style={styles.titleRow}>
+          <Text
+            style={[styles.title, { color: colors.foreground }]}
+            numberOfLines={2}
+          >
+            {book.title}
+          </Text>
+          {onEdit && (
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.editBtn}
+            >
+              <Ionicons name="pencil-outline" size={14} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          )}
+        </View>
         <Text
           style={[styles.author, { color: colors.mutedForeground }]}
           numberOfLines={1}
@@ -117,6 +135,12 @@ export function BookCard({ book, onPress, compact }: BookCardProps) {
             {book.totalPages} páginas
           </Text>
         )}
+
+        {book.status === "abandoned" && (
+          <Text style={[styles.metaText, { color: colors.coral }]}>
+            Abandonado
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -144,24 +168,25 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     overflow: "hidden",
   },
-  freeBadge: {
-    position: "absolute",
-    top: 4,
-    left: 0,
-    right: 0,
-    alignItems: "center",
+  coverImage: {
+    width: "100%",
+    height: "100%",
   },
-  freeText: {
-    fontSize: 7,
-    fontWeight: "800",
-    color: "#0A0A0A",
-    letterSpacing: 0.5,
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+  },
+  editBtn: {
+    marginTop: 1,
+    flexShrink: 0,
   },
   info: {
     flex: 1,
     gap: 3,
   },
   title: {
+    flex: 1,
     fontSize: 14,
     fontWeight: "700",
     letterSpacing: -0.2,

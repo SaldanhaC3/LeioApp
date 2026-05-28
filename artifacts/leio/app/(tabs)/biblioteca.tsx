@@ -1,17 +1,20 @@
 import { BookCard } from "@/components/BookCard";
 import { CapiMascot } from "@/components/CapiMascot";
 import { TrechoShareCard } from "@/components/TrechoShareCard";
-import { useApp, type Highlight, type VocabularyEntry } from "@/contexts/AppContext";
+import { useApp, type Highlight, type VocabularyEntry, GENRE_LABELS } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import * as Sharing from "expo-sharing";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -28,11 +31,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Book } from "@/contexts/AppContext";
 import type { ViewShotRef } from "react-native-view-shot";
 
+
 const BOOK_TABS = [
-  { id: "reading", label: "Lendo" },
-  { id: "read", label: "Lidos" },
-  { id: "want", label: "Quero Ler" },
-  { id: "free", label: "Grátis" },
+  { id: "lendo", label: "Lendo" },
+  { id: "naEstante", label: "Na estante" },
   { id: "caderno", label: "Caderno" },
 ];
 
@@ -48,24 +50,31 @@ const VARIANT_COLORS: Record<Highlight["bgVariant"], string> = {
   coral: "#FF6B5B",
 };
 
+const GENRE_KEYS = Object.keys(GENRE_LABELS) as string[];
+
 export default function BibliotecaScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const {
     books,
-    freeBooks,
     highlights,
     vocabulary,
     getBookById,
     removeHighlight,
     removeVocabularyEntry,
+    updateBook,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState("reading");
+  const [activeTab, setActiveTab] = useState("lendo");
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [cadernoFilter, setCadernoFilter] = useState<"trechos" | "vocabulario">("trechos");
   const searchInputRef = useRef<TextInput>(null);
+
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editAuthor, setEditAuthor] = useState("");
+  const [editGenre, setEditGenre] = useState("");
 
   const searchHeight = useSharedValue(0);
   const searchOpacity = useSharedValue(0);
@@ -86,6 +95,47 @@ export default function BibliotecaScreen() {
       setSearch("");
     } else {
       setTimeout(() => searchInputRef.current?.focus(), 240);
+    }
+  }
+
+  function openEdit(book: Book) {
+    setEditTitle(book.title);
+    setEditAuthor(book.author);
+    setEditGenre(book.genre);
+    setEditingBook(book);
+    Haptics.selectionAsync();
+  }
+
+  function saveEdit() {
+    if (!editingBook) return;
+    updateBook(editingBook.id, {
+      title: editTitle.trim() || editingBook.title,
+      author: editAuthor.trim() || editingBook.author,
+      genre: editGenre,
+    });
+    setEditingBook(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }
+
+  async function pickCoverForBook(book: Book) {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert("Permissão necessária", "Autorize o acesso à galeria para adicionar uma capa.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [3, 4],
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets[0]) {
+        updateBook(book.id, { coverImage: result.assets[0].uri });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch {
+      Alert.alert("Erro", "Não foi possível acessar a galeria.");
     }
   }
 
@@ -119,27 +169,23 @@ export default function BibliotecaScreen() {
 
   function getBooks(): Book[] {
     if (activeTab === "caderno") return [];
-    if (activeTab === "free") {
-      return freeBooks.filter(
-        (b) =>
-          search === "" ||
-          b.title.toLowerCase().includes(search.toLowerCase()) ||
-          b.author.toLowerCase().includes(search.toLowerCase())
-      );
-    }
     return books.filter((b) => {
       const matchTab =
-        activeTab === "reading"
+        activeTab === "lendo"
           ? b.status === "reading" || b.status === "abandoned"
-          : activeTab === "want"
-          ? b.status === "want"
-          : b.status === activeTab;
+          : b.status === "read" || b.status === "want";
       const matchSearch =
         search === "" ||
         b.title.toLowerCase().includes(search.toLowerCase()) ||
         b.author.toLowerCase().includes(search.toLowerCase());
       return matchTab && matchSearch;
     });
+  }
+
+  function getTabCount(tabId: string): number {
+    if (tabId === "caderno") return highlights.length + vocabulary.length;
+    if (tabId === "lendo") return books.filter(b => b.status === "reading" || b.status === "abandoned").length;
+    return books.filter(b => b.status === "read" || b.status === "want").length;
   }
 
   const filteredHighlights = highlights.filter((h) =>
@@ -312,6 +358,7 @@ export default function BibliotecaScreen() {
   const isCaderno = activeTab === "caderno";
   const cadernoData =
     cadernoFilter === "trechos" ? filteredHighlights : filteredVocabulary;
+
   return (
     <View
       style={[
@@ -387,16 +434,7 @@ export default function BibliotecaScreen() {
         contentContainerStyle={styles.tabsContent}
       >
         {BOOK_TABS.map((tab) => {
-          const count =
-            tab.id === "caderno"
-              ? highlights.length + vocabulary.length
-              : tab.id === "free"
-              ? freeBooks.length
-              : books.filter((b) =>
-                  tab.id === "reading"
-                    ? b.status === "reading" || b.status === "abandoned"
-                    : b.status === tab.id
-                ).length;
+          const count = getTabCount(tab.id);
           const isActive = activeTab === tab.id;
           return (
             <TouchableOpacity
@@ -513,23 +551,23 @@ export default function BibliotecaScreen() {
             <View style={styles.empty}>
               <CapiMascot state="waving" size={80} />
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-                {activeTab === "reading"
+                {activeTab === "lendo"
                   ? "Nenhum livro em curso"
-                  : activeTab === "read"
-                  ? "Nenhum livro fechado ainda"
-                  : activeTab === "want"
-                  ? "Lista de desejo silenciosa feito noite de Drummond"
-                  : "Carregando os clássicos do domínio público..."}
+                  : "Sua estante está esperando"}
               </Text>
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                {activeTab === "free"
-                  ? "Machado, Lima, Eça e companhia — grátis e sem ressalva."
-                  : "Toque em + e plante o próximo livro aqui"}
+                {activeTab === "lendo"
+                  ? "Toque em + e comece um novo livro"
+                  : "Adicione livros lidos ou que quer ler"}
               </Text>
             </View>
           }
           renderItem={({ item }) => (
-            <BookCard book={item} onPress={() => router.push(`/livro/${item.id}`)} />
+            <BookCard
+              book={item}
+              onPress={() => router.push(`/livro/${item.id}`)}
+              onEdit={() => openEdit(item)}
+            />
           )}
         />
       )}
@@ -574,6 +612,123 @@ export default function BibliotecaScreen() {
           />
         </View>
       )}
+
+      {/* Edit Book Modal */}
+      <Modal
+        visible={!!editingBook}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setEditingBook(null)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setEditingBook(null)}>
+          <Pressable
+            style={[
+              styles.editModal,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                paddingBottom: Math.max(insets.bottom, 20),
+              },
+            ]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHandle} />
+            <Text style={[styles.editModalTitle, { color: colors.foreground }]}>
+              Editar livro
+            </Text>
+
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Título</Text>
+            <View style={[styles.inputWrap, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.input, { color: colors.foreground }]}
+                value={editTitle}
+                onChangeText={setEditTitle}
+                placeholderTextColor={colors.mutedForeground}
+                placeholder="Título do livro"
+                returnKeyType="next"
+              />
+            </View>
+
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Autor</Text>
+            <View style={[styles.inputWrap, { backgroundColor: colors.background, borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.input, { color: colors.foreground }]}
+                value={editAuthor}
+                onChangeText={setEditAuthor}
+                placeholderTextColor={colors.mutedForeground}
+                placeholder="Nome do autor"
+                returnKeyType="done"
+              />
+            </View>
+
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Gênero</Text>
+            <View style={styles.genreGrid}>
+              {GENRE_KEYS.map((key) => {
+                const isSelected = editGenre === key;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={[
+                      styles.genrePill,
+                      {
+                        backgroundColor: isSelected ? colors.volt : colors.secondary,
+                        borderColor: isSelected ? colors.accentBorder : colors.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      setEditGenre(key);
+                      Haptics.selectionAsync();
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.genrePillText,
+                        { color: isSelected ? colors.accentForeground : colors.mutedForeground },
+                      ]}
+                    >
+                      {GENRE_LABELS[key]}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {editingBook && (
+              <TouchableOpacity
+                style={[styles.addCoverBtn, { borderColor: colors.border }]}
+                onPress={() => {
+                  setEditingBook(null);
+                  setTimeout(() => pickCoverForBook(editingBook!), 300);
+                }}
+              >
+                <Ionicons name="camera-outline" size={16} color={colors.accentText} />
+                <Text style={[styles.addCoverText, { color: colors.accentText }]}>
+                  {editingBook.coverImage ? "Trocar capa" : "Adicionar capa"}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.editActions}>
+              <TouchableOpacity
+                style={[styles.cancelBtn, { borderColor: colors.border }]}
+                onPress={() => setEditingBook(null)}
+              >
+                <Text style={[styles.cancelBtnText, { color: colors.mutedForeground }]}>
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: colors.volt }]}
+                onPress={saveEdit}
+              >
+                <Text style={[styles.saveBtnText, { color: colors.accentForeground }]}>
+                  Salvar
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -690,4 +845,76 @@ const styles = StyleSheet.create({
     top: -2000,
     opacity: 0,
   },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  editModal: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    gap: 10,
+  },
+  modalHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#3A3A3A",
+    marginBottom: 6,
+  },
+  editModalTitle: { fontSize: 20, fontWeight: "900", letterSpacing: -0.5, marginBottom: 4 },
+  fieldLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.8, marginTop: 4 },
+  inputWrap: {
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === "ios" ? 12 : 8,
+  },
+  input: { fontSize: 15 },
+  genreGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
+  },
+  genrePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  genrePillText: { fontSize: 12, fontWeight: "600" },
+  addCoverBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginTop: 4,
+  },
+  addCoverText: { fontSize: 14, fontWeight: "600" },
+  editActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 8,
+  },
+  cancelBtn: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  cancelBtnText: { fontSize: 15, fontWeight: "700" },
+  saveBtn: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  saveBtnText: { fontSize: 15, fontWeight: "900" },
 });

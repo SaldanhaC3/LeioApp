@@ -1,6 +1,7 @@
 import { useApp, GENRE_LABELS } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
@@ -140,7 +141,16 @@ export default function LivroDetailScreen() {
       {/* Cover Header */}
       <View style={[styles.coverSection, { backgroundColor: book.coverColor }]}>
         <View style={styles.coverIcon}>
-          <Ionicons name="book" size={40} color="rgba(255,255,255,0.3)" />
+          {book.coverImage ? (
+            <Image
+              source={{ uri: book.coverImage }}
+              style={styles.coverImageFull}
+              contentFit="cover"
+              transition={200}
+            />
+          ) : (
+            <Ionicons name="book" size={40} color="rgba(255,255,255,0.3)" />
+          )}
         </View>
         <View style={styles.coverInfo}>
           <Text style={styles.coverTitle} numberOfLines={3}>
@@ -153,13 +163,6 @@ export default function LivroDetailScreen() {
                 {STATUS_LABELS[book.status]}
               </Text>
             </View>
-            {book.isFree && (
-              <View style={[styles.freePill, { backgroundColor: colors.volt }]}>
-                <Text style={[styles.freePillText, { color: colors.accentForeground }]}>
-                  GRÁTIS
-                </Text>
-              </View>
-            )}
           </View>
         </View>
       </View>
@@ -402,6 +405,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.2)",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  coverImageFull: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 8,
   },
   coverInfo: { flex: 1, gap: 6 },
   coverTitle: {
