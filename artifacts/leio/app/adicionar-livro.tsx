@@ -61,7 +61,7 @@ export default function AdicionarLivroScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <Text style={[styles.subtitle, { color: colors.muted }]}>Por qual caminho vamos?</Text>
+      <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Por qual caminho vamos?</Text>
 
       <View style={styles.list}>
         {OPTIONS.map((opt) => (
@@ -79,15 +79,15 @@ export default function AdicionarLivroScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cardTitle, { color: colors.foreground }]}>{opt.title}</Text>
-              <Text style={[styles.cardDesc, { color: colors.muted }]}>{opt.description}</Text>
+              <Text style={[styles.cardDesc, { color: colors.mutedForeground }]}>{opt.description}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.muted} />
+            <Ionicons name="chevron-forward" size={20} color={colors.mutedForeground} />
           </Pressable>
         ))}
       </View>
 
       {Platform.OS === "web" && (
-        <Text style={[styles.webNote, { color: colors.muted }]}>
+        <Text style={[styles.webNote, { color: colors.mutedForeground }]}>
 O escâner e a câmera funcionam direito mesmo é no app instalado no celular.
         </Text>
       )}

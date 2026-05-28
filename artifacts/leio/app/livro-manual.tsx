@@ -201,8 +201,8 @@ export default function LivroManualScreen() {
             <Image source={{ uri: coverUri }} style={styles.coverImage} contentFit="cover" />
           ) : (
             <View style={styles.coverPlaceholder}>
-              <Ionicons name="camera-outline" size={36} color={colors.muted} />
-              <Text style={[styles.coverHint, { color: colors.muted }]}>
+              <Ionicons name="camera-outline" size={36} color={colors.mutedForeground} />
+              <Text style={[styles.coverHint, { color: colors.mutedForeground }]}>
 Bater foto da capa
               </Text>
             </View>
@@ -214,7 +214,7 @@ Bater foto da capa
             value={title}
             onChangeText={setTitle}
             placeholder="Ex: Dom Casmurro"
-            placeholderTextColor={colors.muted}
+            placeholderTextColor={colors.mutedForeground}
             style={[styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border }]}
           />
         </Field>
@@ -224,7 +224,7 @@ Bater foto da capa
             value={author}
             onChangeText={setAuthor}
             placeholder="Ex: Machado de Assis"
-            placeholderTextColor={colors.muted}
+            placeholderTextColor={colors.mutedForeground}
             style={[styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border }]}
           />
         </Field>
@@ -234,7 +234,7 @@ Bater foto da capa
             value={pages}
             onChangeText={(v) => setPages(v.replace(/\D/g, "").slice(0, 5))}
             placeholder="Ex: 256"
-            placeholderTextColor={colors.muted}
+            placeholderTextColor={colors.mutedForeground}
             keyboardType="number-pad"
             style={[styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border }]}
           />
@@ -245,13 +245,13 @@ Bater foto da capa
             value={purchasedAt}
             onChangeText={handlePurchasedDateChange}
             placeholder="DD/MM/AAAA"
-            placeholderTextColor={colors.muted}
+            placeholderTextColor={colors.mutedForeground}
             keyboardType="number-pad"
             maxLength={10}
             style={[styles.input, { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border }]}
           />
           {purchasedAt.length === 10 && parseDateBR(purchasedAt) && (
-            <Text style={[styles.helper, { color: colors.muted }]}>
+            <Text style={[styles.helper, { color: colors.mutedForeground }]}>
 Entrou na estante em {formatDateBR(parseDateBR(purchasedAt)!)}
             </Text>
           )}
@@ -279,12 +279,12 @@ Entrou na estante em {formatDateBR(parseDateBR(purchasedAt)!)}
                   <Ionicons
                     name={opt.icon}
                     size={16}
-                    color={active ? colors.accentText : colors.muted}
+                    color={active ? colors.accentText : colors.mutedForeground}
                   />
                   <Text
                     style={[
                       styles.statusChipText,
-                      { color: active ? colors.foreground : colors.muted },
+                      { color: active ? colors.foreground : colors.mutedForeground },
                     ]}
                   >
                     {opt.label}
@@ -330,7 +330,7 @@ function Field({
 }) {
   return (
     <View style={styles.field}>
-      <Text style={[styles.label, { color: colors.muted }]}>{label}</Text>
+      <Text style={[styles.label, { color: colors.mutedForeground }]}>{label}</Text>
       {children}
     </View>
   );

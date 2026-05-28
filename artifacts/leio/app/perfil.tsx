@@ -8,6 +8,7 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
+  ActionSheetIOS,
   Alert,
   Dimensions,
   Modal,
@@ -290,13 +291,26 @@ export default function PerfilModalScreen() {
   const { books, sessions, badges, xp, folego, settings, updateSettings } = useApp();
   const [cropPreview, setCropPreview] = useState<string | null>(null);
 
-  async function handlePickPhoto() {
-    if (Platform.OS === "web") {
-      Alert.alert("Só no celular", "O envio de foto funciona no app instalado.");
+  async function pickFromCamera() {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permissão negada", "Libera o acesso à câmera nas configurações do celular.");
       return;
     }
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setCropPreview(result.assets[0].uri);
+    }
+  }
+
+  async function pickFromGallery() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
       Alert.alert("Permissão negada", "Libera o acesso à galeria nas configurações do celular.");
       return;
     }
@@ -308,6 +322,31 @@ export default function PerfilModalScreen() {
     });
     if (!result.canceled && result.assets[0]) {
       setCropPreview(result.assets[0].uri);
+    }
+  }
+
+  function handlePickPhoto() {
+    if (Platform.OS === "web") {
+      Alert.alert("Só no celular", "O envio de foto funciona no app instalado.");
+      return;
+    }
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ["Cancelar", "Tirar foto", "Escolher da galeria"],
+          cancelButtonIndex: 0,
+        },
+        (idx) => {
+          if (idx === 1) pickFromCamera();
+          if (idx === 2) pickFromGallery();
+        }
+      );
+    } else {
+      Alert.alert("Foto de perfil", "Câmera ou galeria?", [
+        { text: "Tirar foto", onPress: pickFromCamera },
+        { text: "Escolher da galeria", onPress: pickFromGallery },
+        { text: "Cancelar", style: "cancel" },
+      ]);
     }
   }
 
