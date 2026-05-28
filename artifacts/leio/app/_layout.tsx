@@ -16,6 +16,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider, useApp } from "@/contexts/AppContext";
 import { BookGroupProvider } from "@/contexts/BookGroupContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { SyncBridge } from "@/components/SyncBridge";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -23,16 +25,31 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const { settings, isLoaded } = useApp();
+  const { session, profile, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (isLoaded && !settings.hasCompletedOnboarding) {
+    if (authLoading || !isLoaded) return;
+
+    if (!session) {
+      router.replace("/login");
+    } else if (!profile) {
+      router.replace("/profile-setup");
+    } else if (!settings.hasCompletedOnboarding) {
       router.replace("/onboarding");
     }
-  }, [isLoaded, settings.hasCompletedOnboarding]);
+  }, [authLoading, isLoaded, session, profile, settings.hasCompletedOnboarding]);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="login"
+        options={{ headerShown: false, gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="profile-setup"
+        options={{ headerShown: false, gestureEnabled: false }}
+      />
       <Stack.Screen
         name="onboarding"
         options={{ headerShown: false, gestureEnabled: false }}
@@ -120,11 +137,14 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
+              <AuthProvider>
               <AppProvider>
                 <BookGroupProvider>
+                  <SyncBridge />
                   <RootLayoutNav />
                 </BookGroupProvider>
               </AppProvider>
+            </AuthProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
