@@ -7,7 +7,6 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { Platform } from "react-native";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
@@ -34,6 +33,8 @@ interface AuthContextValue {
   refreshProfile: () => Promise<void>;
 }
 
+// isLoading covers: initial session check + profile fetch in progress
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function useAuth() {
@@ -48,25 +49,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
+    setIsLoading(true);
     const { data } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", userId)
       .single();
     setProfile(data ?? null);
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session?.user) fetchProfile(session.user.id).finally(() => setIsLoading(false));
+      if (session?.user) fetchProfile(session.user.id);
       else setIsLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) fetchProfile(session.user.id);
-      else setProfile(null);
+      else { setProfile(null); setIsLoading(false); }
     });
 
     return () => subscription.unsubscribe();
