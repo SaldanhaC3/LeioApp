@@ -7,6 +7,24 @@ import React, {
   useState,
 } from "react";
 
+export interface ChallengeScore {
+  memberName: string;
+  value: number;
+}
+
+export type ChallengeType = "pages" | "sessions" | "minutes";
+
+export interface Challenge {
+  id: string;
+  groupId: string;
+  type: ChallengeType;
+  startDate: string;
+  endDate: string;
+  description?: string;
+  scores: ChallengeScore[];
+  dismissed?: boolean;
+}
+
 export interface ReadingGroup {
   id: string;
   name: string;
@@ -34,6 +52,7 @@ export interface GroupCheckIn {
 interface BookGroupContextValue {
   groups: ReadingGroup[];
   checkIns: GroupCheckIn[];
+  challenges: Challenge[];
   myUsername: string;
 
   createGroup(name: string, description: string, emoji: string): ReadingGroup;
@@ -49,6 +68,12 @@ interface BookGroupContextValue {
   hasCheckedInToday(groupId: string): boolean;
   getStreak(groupId: string, username: string): number;
 
+  createChallenge(groupId: string, type: ChallengeType, durationDays: number, description?: string): void;
+  updateChallengeScore(pages: number, durationSeconds: number): void;
+  getActiveChallenge(groupId: string): Challenge | null;
+  getFinishedChallenge(groupId: string): Challenge | null;
+  dismissChallenge(challengeId: string): void;
+
   setMyUsername(name: string): void;
 }
 
@@ -57,6 +82,7 @@ const BookGroupContext = createContext<BookGroupContextValue | null>(null);
 const GROUPS_KEY = "leio:book-groups";
 const CHECKINS_KEY = "leio:group-checkins";
 const USERNAME_KEY = "leio:my-username";
+const CHALLENGES_KEY = "leio:group-challenges";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -78,6 +104,7 @@ function todayString(): string {
 export function BookGroupProvider({ children }: { children: React.ReactNode }) {
   const [groups, setGroups] = useState<ReadingGroup[]>([]);
   const [checkIns, setCheckIns] = useState<GroupCheckIn[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [myUsername, setMyUsernameState] = useState<string>("");
 
   useEffect(() => {
@@ -86,14 +113,16 @@ export function BookGroupProvider({ children }: { children: React.ReactNode }) {
 
   async function loadData() {
     try {
-      const [groupsRaw, checkInsRaw, usernameRaw] = await Promise.all([
+      const [groupsRaw, checkInsRaw, usernameRaw, challengesRaw] = await Promise.all([
         AsyncStorage.getItem(GROUPS_KEY),
         AsyncStorage.getItem(CHECKINS_KEY),
         AsyncStorage.getItem(USERNAME_KEY),
+        AsyncStorage.getItem(CHALLENGES_KEY),
       ]);
       if (groupsRaw) setGroups(JSON.parse(groupsRaw));
       if (checkInsRaw) setCheckIns(JSON.parse(checkInsRaw));
       if (usernameRaw) setMyUsernameState(usernameRaw);
+      if (challengesRaw) setChallenges(JSON.parse(challengesRaw));
     } catch {
       // silent
     }
@@ -112,6 +141,15 @@ export function BookGroupProvider({ children }: { children: React.ReactNode }) {
     setCheckIns(updated);
     try {
       await AsyncStorage.setItem(CHECKINS_KEY, JSON.stringify(updated));
+    } catch {
+      // silent
+    }
+  }
+
+  async function persistChallenges(updated: Challenge[]) {
+    setChallenges(updated);
+    try {
+      await AsyncStorage.setItem(CHALLENGES_KEY, JSON.stringify(updated));
     } catch {
       // silent
     }
@@ -223,6 +261,94 @@ export function BookGroupProvider({ children }: { children: React.ReactNode }) {
     [checkIns, myUsername]
   );
 
+  const createChallenge = useCallback(
+    (groupId: string, type: ChallengeType, durationDays: number, description?: string) => {
+      const group = groups.find((g) => g.id === groupId);
+      if (!group) return;
+      const startDate = new Date().toISOString();
+      const endDate = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+      const scores: ChallengeScore[] = group.memberUsernames.map((m) => ({ memberName: m, value: 0 }));
+      const newChallenge: Challenge = {
+        id: generateId(),
+        groupId,
+        type,
+        startDate,
+        endDate,
+        description,
+        scores,
+        dismissed: false,
+      };
+      persistChallenges([...challenges, newChallenge]);
+    },
+    [challenges, groups]
+  );
+
+  const updateChallengeScore = useCallback(
+    (pages: number, durationSeconds: number) => {
+      if (!myUsername) return;
+      const now = new Date().toISOString();
+      const updated = challenges.map((ch) => {
+        if (ch.dismissed) return ch;
+        if (ch.startDate > now || ch.endDate < now) return ch;
+        const group = groups.find((g) => g.id === ch.groupId);
+        if (!group?.memberUsernames.includes(myUsername)) return ch;
+        const delta =
+          ch.type === "pages" ? pages
+          : ch.type === "minutes" ? Math.floor(durationSeconds / 60)
+          : 1;
+        return {
+          ...ch,
+          scores: ch.scores.map((s) =>
+            s.memberName === myUsername ? { ...s, value: s.value + delta } : s
+          ),
+        };
+      });
+      persistChallenges(updated);
+    },
+    [challenges, groups, myUsername]
+  );
+
+  const getActiveChallenge = useCallback(
+    (groupId: string): Challenge | null => {
+      const now = new Date().toISOString();
+      return (
+        challenges.find(
+          (ch) =>
+            ch.groupId === groupId &&
+            !ch.dismissed &&
+            ch.startDate <= now &&
+            ch.endDate > now
+        ) ?? null
+      );
+    },
+    [challenges]
+  );
+
+  const getFinishedChallenge = useCallback(
+    (groupId: string): Challenge | null => {
+      const now = new Date().toISOString();
+      return (
+        challenges.find(
+          (ch) =>
+            ch.groupId === groupId &&
+            !ch.dismissed &&
+            ch.endDate <= now
+        ) ?? null
+      );
+    },
+    [challenges]
+  );
+
+  const dismissChallenge = useCallback(
+    (challengeId: string) => {
+      const updated = challenges.map((ch) =>
+        ch.id === challengeId ? { ...ch, dismissed: true } : ch
+      );
+      persistChallenges(updated);
+    },
+    [challenges]
+  );
+
   const getStreak = useCallback(
     (groupId: string, username: string): number => {
       const groupCheckIns = checkIns
@@ -272,6 +398,7 @@ export function BookGroupProvider({ children }: { children: React.ReactNode }) {
       value={{
         groups,
         checkIns,
+        challenges,
         myUsername,
         createGroup,
         joinGroup,
@@ -281,6 +408,11 @@ export function BookGroupProvider({ children }: { children: React.ReactNode }) {
         getCheckInsForGroup,
         hasCheckedInToday,
         getStreak,
+        createChallenge,
+        updateChallengeScore,
+        getActiveChallenge,
+        getFinishedChallenge,
+        dismissChallenge,
         setMyUsername,
       }}
     >

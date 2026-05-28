@@ -1,6 +1,7 @@
 import { CapiMascot, type ReadingAnimation } from "@/components/CapiMascot";
 import { VocabularyModal } from "@/components/VocabularyModal";
 import { useApp, type CapiVariant } from "@/contexts/AppContext";
+import { useBookGroup } from "@/contexts/BookGroupContext";
 import { useColors } from "@/hooks/useColors";
 import {
   startAmbient,
@@ -130,6 +131,7 @@ export default function SessaoAtivaScreen() {
     spotifyConnected,
     setReadingSessionActive,
   } = useApp();
+  const { updateChallengeScore } = useBookGroup();
 
   const book = getBookById(params.bookId ?? "");
   const startPage = parseInt(params.startPage ?? "0", 10);
@@ -340,6 +342,7 @@ export default function SessaoAtivaScreen() {
     };
 
     addSession(session);
+    updateChallengeScore(pages, elapsed);
     checkAndUnlockBadges(session as never);
     setReadingSessionActive(false);
 
