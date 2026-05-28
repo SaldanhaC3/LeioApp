@@ -136,6 +136,7 @@ export default function GroupDetailScreen() {
   const [clubDurationDays, setClubDurationDays] = useState<7 | 14 | 21 | 30>(14);
   const [showClubHighlights, setShowClubHighlights] = useState(false);
   const [showClubPastHistory, setShowClubPastHistory] = useState(false);
+  const [showClubSummary, setShowClubSummary] = useState(false);
 
   const todayCheckIns = getCheckInsForGroup(id ?? "", today);
   const myCheckInToday = todayCheckIns.find((c) => c.username === myUsername);
@@ -252,23 +253,7 @@ export default function GroupDetailScreen() {
   }
 
   function handleCloseClub() {
-    Alert.alert(
-      "Encerrar clube?",
-      activeClub
-        ? `O clube de "${activeClub.bookTitle}" será encerrado e o progresso ficará salvo no histórico.`
-        : "O clube será encerrado.",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Encerrar",
-          style: "destructive",
-          onPress: () => {
-            closeClub(id ?? "");
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          },
-        },
-      ]
-    );
+    setShowClubSummary(true);
   }
 
   if (!group) {
@@ -573,6 +558,101 @@ export default function GroupDetailScreen() {
               <Text style={[styles.createBtnText, { color: clubSelectedBook ? colors.accentForeground : colors.mutedForeground }]}>
                 Começar clube
               </Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Close Club Summary Modal ── */}
+      <Modal
+        visible={showClubSummary}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowClubSummary(false)}
+      >
+        <Pressable style={styles.modalBg} onPress={() => setShowClubSummary(false)}>
+          <Pressable
+            style={[styles.createSheet, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.createTitle, { color: colors.foreground }]}>Resumo do Clube</Text>
+            {activeClub && (
+              <Text style={[styles.clubBookAuthor, { color: colors.mutedForeground, marginBottom: 16 }]}>
+                {activeClub.bookTitle} · {activeClub.bookAuthor}
+              </Text>
+            )}
+
+            {activeClub && activeClub.memberProgress.length > 0 && (
+              <>
+                <Text style={[styles.createLabel, { color: colors.mutedForeground }]}>MEMBROS</Text>
+                {activeClub.memberProgress.map((p) => {
+                  const pct = p.totalPages > 0 ? p.currentPage / p.totalPages : 0;
+                  const finished = pct >= 1;
+                  return (
+                    <View key={p.memberName} style={styles.summaryMemberRow}>
+                      <Ionicons
+                        name={finished ? "checkmark-circle" : "ellipse-outline"}
+                        size={18}
+                        color={finished ? colors.accentText : colors.mutedForeground}
+                      />
+                      <Text style={[styles.summaryMemberName, { color: colors.foreground }]}>
+                        {p.memberName}
+                      </Text>
+                      <Text style={[styles.summaryMemberPct, { color: finished ? colors.accentText : colors.mutedForeground }]}>
+                        {Math.round(pct * 100)}%{finished ? " — terminou!" : ""}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </>
+            )}
+
+            {activeClub && (
+              <View style={[styles.summaryStat, { backgroundColor: colors.muted, borderColor: colors.border, marginTop: 16 }]}>
+                <Text style={[styles.summaryStatLabel, { color: colors.mutedForeground }]}>
+                  PÁGINAS LIDAS PELO GRUPO
+                </Text>
+                <Text style={[styles.summaryStatValue, { color: colors.foreground }]}>
+                  {activeClub.memberProgress.reduce((s, p) => s + (p.currentPage ?? 0), 0)}
+                </Text>
+              </View>
+            )}
+
+            {activeClub && activeClub.highlights.length > 0 && (() => {
+              const latest = activeClub.highlights[activeClub.highlights.length - 1];
+              return (
+                <View style={[styles.summaryHl, { backgroundColor: colors.muted, borderColor: colors.border, marginTop: 12 }]}>
+                  <Text style={[styles.createLabel, { color: colors.mutedForeground }]}>TRECHO MAIS RECENTE</Text>
+                  <Text style={[styles.summaryHlMember, { color: colors.accentText }]}>
+                    {latest.memberName} · p. {latest.page}
+                  </Text>
+                  {latest.quote ? (
+                    <Text style={[styles.hlQuote, { color: colors.foreground }]}>"{latest.quote}"</Text>
+                  ) : null}
+                </View>
+              );
+            })()}
+
+            <TouchableOpacity
+              style={[styles.createBtn, { backgroundColor: "#EF4444", marginTop: 20 }]}
+              onPress={() => {
+                closeClub(id ?? "");
+                setShowClubSummary(false);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="flag" size={16} color="#fff" />
+              <Text style={[styles.createBtnText, { color: "#fff" }]}>Encerrar clube</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setShowClubSummary(false)}
+              style={{ alignItems: "center", paddingVertical: 12 }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.durChipText, { color: colors.mutedForeground }]}>Cancelar</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -1573,4 +1653,12 @@ const styles = StyleSheet.create({
   bookPickColor: { width: 32, height: 44, borderRadius: 5 },
   bookPickTitle: { fontSize: 14, fontWeight: "700" },
   bookPickAuthor: { fontSize: 12 },
+  summaryMemberRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 5 },
+  summaryMemberName: { flex: 1, fontSize: 14, fontWeight: "600" },
+  summaryMemberPct: { fontSize: 12, fontWeight: "700" },
+  summaryStat: { borderRadius: 12, borderWidth: 1, padding: 12, gap: 2 },
+  summaryStatLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 0.8 },
+  summaryStatValue: { fontSize: 28, fontWeight: "900" },
+  summaryHl: { borderRadius: 12, borderWidth: 1, padding: 12, gap: 6 },
+  summaryHlMember: { fontSize: 13, fontWeight: "700" },
 });

@@ -768,11 +768,11 @@ interface AppContextType {
   setReadingSessionActive: (active: boolean) => void;
   clubs: BookClub[];
   activateClub(groupId: string, bookInfo: Pick<BookClub, "bookId" | "bookTitle" | "bookAuthor" | "bookCoverImage" | "bookCoverColor">, meetingDate: string, memberNames: string[]): void;
-  updateClubProgress(bookId: string, newPage: number, totalPages: number, memberName: string): void;
-  addClubHighlight(groupId: string, memberName: string, page: number, quote?: string): void;
+  updateClubProgress(clubId: string, newPage: number, totalPages: number, memberName: string): void;
+  addClubHighlight(clubId: string, memberName: string, page: number, quote?: string): void;
   closeClub(groupId: string): void;
   getActiveClub(groupId: string): BookClub | null;
-  getActiveClubForBook(bookId: string): BookClub | null;
+  getActiveClubsForBook(bookId: string): BookClub[];
   getClubHistory(groupId: string): BookClub[];
 }
 
@@ -1392,9 +1392,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const updateClubProgress = useCallback(
-    (bookId: string, newPage: number, totalPages: number, memberName: string) => {
+    (clubId: string, newPage: number, totalPages: number, memberName: string) => {
       const updated = clubs.map((c) => {
-        if (c.bookId !== bookId || c.closedAt) return c;
+        if (c.id !== clubId || c.closedAt) return c;
         const exists = c.memberProgress.some((p) => p.memberName === memberName);
         const newProgress: ClubMemberProgress[] = exists
           ? c.memberProgress.map((p) =>
@@ -1414,9 +1414,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const addClubHighlight = useCallback(
-    (groupId: string, memberName: string, page: number, quote?: string) => {
+    (clubId: string, memberName: string, page: number, quote?: string) => {
       const updated = clubs.map((c) => {
-        if (c.groupId !== groupId || c.closedAt) return c;
+        if (c.id !== clubId || c.closedAt) return c;
         const newHighlight: ClubHighlight = {
           id: `chl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
           memberName,
@@ -1447,9 +1447,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [clubs]
   );
 
-  const getActiveClubForBook = useCallback(
-    (bookId: string): BookClub | null =>
-      clubs.find((c) => c.bookId === bookId && !c.closedAt) ?? null,
+  const getActiveClubsForBook = useCallback(
+    (bookId: string): BookClub[] =>
+      clubs.filter((c) => c.bookId === bookId && !c.closedAt),
     [clubs]
   );
 
@@ -1519,7 +1519,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         addClubHighlight,
         closeClub,
         getActiveClub,
-        getActiveClubForBook,
+        getActiveClubsForBook,
         getClubHistory,
       }}
     >

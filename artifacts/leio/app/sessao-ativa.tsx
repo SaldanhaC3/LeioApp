@@ -130,17 +130,20 @@ export default function SessaoAtivaScreen() {
     nowPlaying,
     spotifyConnected,
     setReadingSessionActive,
-    getActiveClubForBook,
+    getActiveClubsForBook,
     addClubHighlight,
     updateClubProgress,
   } = useApp();
-  const { updateChallengeScore, myUsername } = useBookGroup();
+  const { updateChallengeScore, myUsername, groups } = useBookGroup();
 
   const book = getBookById(params.bookId ?? "");
   const startPage = parseInt(params.startPage ?? "0", 10);
   const isFocusMode = params.focusMode === "1";
   const focusDuration = parseInt(params.focusDuration ?? "30", 10);
-  const activeClubForBook = params.bookId ? getActiveClubForBook(params.bookId) : null;
+  const myGroupIdsSet = new Set(groups.map((g) => g.id));
+  const bookClubs = params.bookId
+    ? getActiveClubsForBook(params.bookId).filter((c) => myGroupIdsSet.has(c.groupId))
+    : [];
 
   const [elapsed, setElapsed] = useState(0);
   const [showHighlightModal, setShowHighlightModal] = useState(false);
@@ -350,8 +353,10 @@ export default function SessaoAtivaScreen() {
 
     addSession(session);
     updateChallengeScore(pages, elapsed);
-    if (activeClubForBook && book) {
-      updateClubProgress(params.bookId ?? "", endPage, book.totalPages, myUsername);
+    if (bookClubs.length > 0 && book) {
+      bookClubs.forEach((club) => {
+        updateClubProgress(club.id, endPage, book.totalPages, myUsername);
+      });
     }
     checkAndUnlockBadges(session as never);
     setReadingSessionActive(false);
@@ -798,7 +803,7 @@ export default function SessaoAtivaScreen() {
       </View>
 
       {/* Floating highlight button — only visible when book belongs to a club */}
-      {activeClubForBook && !showEndModal && !showFocusReturn && (
+      {bookClubs.length > 0 && !showEndModal && !showFocusReturn && (
         <TouchableOpacity
           style={[styles.hlFloatBtn, { bottom: bottomInset + 106 }]}
           onPress={() => {
@@ -837,7 +842,7 @@ export default function SessaoAtivaScreen() {
               Marcar trecho favorito
             </Text>
             <Text style={[styles.endModalSub, { color: colors.mutedForeground }]}>
-              Clube: {activeClubForBook?.bookTitle}
+              Clube: {bookClubs[0]?.bookTitle}
             </Text>
 
             <Text style={[styles.startPageHint, { color: colors.mutedForeground }]}>PÁGINA</Text>
@@ -883,13 +888,15 @@ export default function SessaoAtivaScreen() {
             <TouchableOpacity
               style={[styles.hlModalConfirmBtn, { backgroundColor: colors.volt }]}
               onPress={() => {
-                if (activeClubForBook) {
-                  addClubHighlight(
-                    activeClubForBook.groupId,
-                    myUsername,
-                    parseInt(hlPage, 10) || startPage,
-                    hlQuote.trim() || undefined
-                  );
+                if (bookClubs.length > 0) {
+                  bookClubs.forEach((club) => {
+                    addClubHighlight(
+                      club.id,
+                      myUsername,
+                      parseInt(hlPage, 10) || startPage,
+                      hlQuote.trim() || undefined
+                    );
+                  });
                   Haptics.notificationAsync(
                     Haptics.NotificationFeedbackType.Success
                   ).catch(() => undefined);
