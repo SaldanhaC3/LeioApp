@@ -497,8 +497,18 @@ export default function PerfilModalScreen() {
             {monthCalendar.map((day, i) => {
               const read = day.pages > 0;
               const muted = !day.inMonth || day.isFuture;
+              const monthLabel = MONTH_NAMES[day.date.getMonth()];
+              const a11yLabel = read
+                ? `Dia ${day.day} de ${monthLabel}, ${day.pages} ${day.pages === 1 ? "página lida" : "páginas lidas"}`
+                : `Dia ${day.day} de ${monthLabel}${day.isToday ? ", hoje" : ""}${day.isFuture ? ", futuro" : ", sem leitura"}`;
               return (
-                <View key={i} style={[styles.calendarCell, muted && styles.calendarCellMuted]}>
+                <View
+                  key={i}
+                  style={[styles.calendarCell, muted && styles.calendarCellMuted]}
+                  accessible
+                  accessibilityRole="text"
+                  accessibilityLabel={a11yLabel}
+                >
                   <View
                     style={[
                       styles.calendarDay,
