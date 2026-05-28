@@ -38,8 +38,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const AnimatedGradient = Animated.createAnimatedComponent(LinearGradient);
-
 const BG_DIA = require("@/assets/images/bg-sessao-dia.png");
 const BG_NOITE = require("@/assets/images/bg-sessao-noite.png");
 
@@ -464,12 +462,14 @@ export default function SessaoAtivaScreen() {
 
       {/* Unified gradient: genre theme OR Spotify replacement (smooth transition between them) */}
       {(genreTheme !== null || nowPlaying !== null) && (
-        <AnimatedGradient
-          colors={gradient}
-          style={[StyleSheet.absoluteFillObject, gradientAnimStyle]}
-          start={{ x: 0.3, y: 0 }}
-          end={{ x: 0.7, y: 1 }}
-        />
+        <Animated.View style={[StyleSheet.absoluteFillObject, gradientAnimStyle]} pointerEvents="none">
+          <LinearGradient
+            colors={gradient}
+            style={StyleSheet.absoluteFillObject}
+            start={{ x: 0.3, y: 0 }}
+            end={{ x: 0.7, y: 1 }}
+          />
+        </Animated.View>
       )}
 
       <View
