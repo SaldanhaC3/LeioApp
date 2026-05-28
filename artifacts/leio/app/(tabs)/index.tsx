@@ -1,14 +1,13 @@
-import { BookCard } from "@/components/BookCard";
 import { CapiMascot } from "@/components/CapiMascot";
 import { MissionCard } from "@/components/MissionCard";
-import { useApp, getLevel, GENRE_LABELS } from "@/contexts/AppContext";
+import { useApp, getLevel, GENRE_LABELS, type Session } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import React, { useMemo } from "react";
 import {
-  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -66,6 +65,98 @@ function formatETA(book: { totalPages: number; currentPage: number; pace?: numbe
   if (mins === 0) return `${hours}H`;
   return `${hours}H ${mins}MIN`;
 }
+
+const MAIS_LIDOS: Array<{
+  title: string;
+  author: string;
+  coverImage?: string;
+  coverColor: string;
+}> = [
+  { title: "Torto Arado", author: "Itamar Vieira Jr.", coverColor: "#5C3A1E", coverImage: "https://covers.openlibrary.org/b/isbn/9788563560520-M.jpg" },
+  { title: "O Alquimista", author: "Paulo Coelho", coverColor: "#8B4513", coverImage: "https://covers.openlibrary.org/b/isbn/9788532530783-M.jpg" },
+  { title: "Sapiens", author: "Yuval Noah Harari", coverColor: "#1A3A5C", coverImage: "https://covers.openlibrary.org/b/isbn/9780062316097-M.jpg" },
+  { title: "O Pequeno Príncipe", author: "Antoine de Saint-Exupéry", coverColor: "#1A5C8A", coverImage: "https://covers.openlibrary.org/b/isbn/9788573261080-M.jpg" },
+  { title: "Cem Anos de Solidão", author: "García Márquez", coverColor: "#2C6E49", coverImage: "https://covers.openlibrary.org/b/isbn/9788535914849-M.jpg" },
+  { title: "A Menina que Roubava Livros", author: "Markus Zusak", coverColor: "#3B3B3B", coverImage: "https://covers.openlibrary.org/b/isbn/9788501083807-M.jpg" },
+  { title: "Dom Casmurro", author: "Machado de Assis", coverColor: "#1A5C2A", coverImage: "https://covers.openlibrary.org/b/isbn/9788583862093-M.jpg" },
+  { title: "Duna", author: "Frank Herbert", coverColor: "#7A5C28", coverImage: "https://covers.openlibrary.org/b/isbn/9788576573104-M.jpg" },
+  { title: "Orgulho e Preconceito", author: "Jane Austen", coverColor: "#6B2D5E", coverImage: "https://covers.openlibrary.org/b/isbn/9788535930290-M.jpg" },
+  { title: "O Hobbit", author: "J.R.R. Tolkien", coverColor: "#2C4A1E", coverImage: "https://covers.openlibrary.org/b/isbn/9788578810801-M.jpg" },
+];
+
+const SPIKE_DAYS = 14;
+const SPIKE_MAX_H = 44;
+const SPIKE_MIN_H = 4;
+
+function SpikesChart({ sessions, colors }: { sessions: Session[]; colors: ReturnType<typeof useColors> }) {
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString().slice(0, 10);
+  }, []);
+
+  const bars = useMemo(() => {
+    const todayDate = new Date(todayStr);
+    return Array.from({ length: SPIKE_DAYS }, (_, i) => {
+      const d = new Date(todayDate);
+      d.setDate(todayDate.getDate() - (SPIKE_DAYS - 1 - i));
+      const dateStr = d.toISOString().slice(0, 10);
+      const pages = sessions
+        .filter((s) => s.date?.slice(0, 10) === dateStr)
+        .reduce((acc, s) => acc + Math.max(0, s.endPage - s.startPage), 0);
+      const isToday = dateStr === todayStr;
+      return { pages, isToday, dateStr };
+    });
+  }, [sessions, todayStr]);
+
+  const maxPages = Math.max(...bars.map((b) => b.pages), 1);
+
+  return (
+    <View style={spikeStyles.chart}>
+      {bars.map((bar, i) => {
+        const ratio = bar.pages > 0 ? Math.max(0.12, bar.pages / maxPages) : 0;
+        const height = bar.pages > 0
+          ? SPIKE_MIN_H + ratio * (SPIKE_MAX_H - SPIKE_MIN_H)
+          : SPIKE_MIN_H;
+        const hasRead = bar.pages > 0;
+        return (
+          <View key={i} style={spikeStyles.barCol}>
+            <View
+              style={[
+                spikeStyles.bar,
+                {
+                  height,
+                  backgroundColor: hasRead
+                    ? bar.isToday ? colors.volt : `${colors.volt}99`
+                    : colors.border,
+                  borderRadius: 3,
+                  borderWidth: bar.isToday ? 1.5 : 0,
+                  borderColor: bar.isToday ? colors.volt : "transparent",
+                },
+              ]}
+            />
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const spikeStyles = StyleSheet.create({
+  chart: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 3,
+    height: SPIKE_MAX_H + 4,
+  },
+  barCol: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    height: SPIKE_MAX_H + 4,
+  },
+  bar: { width: "100%" },
+});
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -197,40 +288,43 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Folego Widget */}
+      {/* Folego Widget — spike chart */}
       <View style={[styles.folegoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={styles.folegoLeft}>
-          <View style={[styles.folegoIconWrap, { backgroundColor: `${colors.volt}22` }]}>
-            <Ionicons name="flame" size={22} color={colors.accentText} />
+        <View style={styles.folegoTopRow}>
+          <View style={styles.folegoLeft}>
+            <View style={[styles.folegoIconWrap, { backgroundColor: `${colors.volt}22` }]}>
+              <Ionicons name="flame" size={20} color={colors.accentText} />
+            </View>
+            <View>
+              <Text style={[styles.folegoCount, { color: colors.foreground }]}>
+                {folego} dias
+              </Text>
+              <Text style={[styles.folegoLabel, { color: colors.mutedForeground }]}>
+                de fôlego
+              </Text>
+            </View>
           </View>
-          <View>
-            <Text style={[styles.folegoCount, { color: colors.foreground }]}>
-              {folego} dias
+          <View style={styles.folegoRight}>
+            <Text style={[styles.guardadoLabel, { color: colors.mutedForeground }]}>
+              Guardado
             </Text>
-            <Text style={[styles.folegoLabel, { color: colors.mutedForeground }]}>
-              de fôlego
-            </Text>
+            <View style={styles.tokens}>
+              {[0, 1, 2].map((i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.token,
+                    { backgroundColor: i < folegoGuardado ? colors.volt : colors.border },
+                  ]}
+                />
+              ))}
+            </View>
           </View>
         </View>
-        <View style={styles.folegoRight}>
-          <Text style={[styles.guardadoLabel, { color: colors.mutedForeground }]}>
-            Guardado
-          </Text>
-          <View style={styles.tokens}>
-            {[0, 1, 2].map((i) => (
-              <View
-                key={i}
-                style={[
-                  styles.token,
-                  {
-                    backgroundColor:
-                      i < folegoGuardado ? colors.volt : colors.border,
-                  },
-                ]}
-              />
-            ))}
-          </View>
-        </View>
+        <SpikesChart sessions={sessions} colors={colors} />
+        <Text style={[styles.spikesHint, { color: colors.mutedForeground }]}>
+          Últimos 14 dias · hoje destacado
+        </Text>
       </View>
 
       {/* Current Book */}
@@ -265,13 +359,13 @@ export default function HomeScreen() {
               <Image
                 source={{ uri: currentBook.coverImage }}
                 style={styles.currentBookCover}
-                resizeMode="cover"
+                contentFit="cover"
               />
             ) : currentBook.authorImage ? (
               <Image
                 source={{ uri: currentBook.authorImage }}
                 style={styles.currentBookCover}
-                resizeMode="cover"
+                contentFit="cover"
               />
             ) : (
               <CapiMascot state="reading" size={80} />
@@ -480,34 +574,39 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Free Book of the Week */}
+      {/* Mais lidos esta semana */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          O grátis da semana
+          Mais lidos esta semana
         </Text>
-        <TouchableOpacity
-          style={[styles.freeCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => router.push("/(tabs)/biblioteca")}
-          activeOpacity={0.8}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.maisLidosRow}
         >
-          <View style={[styles.freeCover, { backgroundColor: "#1A5C2A" }]}>
-            <Ionicons name="book" size={20} color="rgba(255,255,255,0.5)" />
-          </View>
-          <View style={styles.freeInfo}>
-            <View style={[styles.freeBadge, { backgroundColor: colors.volt }]}>
-              <Text style={[styles.freeBadgeText, { color: colors.accentForeground }]}>
-                GRÁTIS
+          {MAIS_LIDOS.map((book, i) => (
+            <View
+              key={i}
+              style={[styles.maisLidosCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            >
+              {book.coverImage ? (
+                <Image
+                  source={{ uri: book.coverImage }}
+                  style={[styles.maisLidosCover, { backgroundColor: book.coverColor }]}
+                  contentFit="cover"
+                />
+              ) : (
+                <View style={[styles.maisLidosCover, { backgroundColor: book.coverColor }]} />
+              )}
+              <Text style={[styles.maisLidosTitle, { color: colors.foreground }]} numberOfLines={2}>
+                {book.title}
+              </Text>
+              <Text style={[styles.maisLidosAuthor, { color: colors.mutedForeground }]} numberOfLines={1}>
+                {book.author}
               </Text>
             </View>
-            <Text style={[styles.freeTitle, { color: colors.foreground }]}>
-              Dom Casmurro
-            </Text>
-            <Text style={[styles.freeAuthor, { color: colors.mutedForeground }]}>
-              Machado de Assis
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
-        </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
     </ScrollView>
   );
@@ -535,28 +634,32 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 13, fontWeight: "500", marginBottom: 1 },
   level: { fontSize: 17, fontWeight: "900", letterSpacing: -0.5 },
   folegoCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     borderRadius: 16,
     borderWidth: 1,
     padding: 16,
     marginBottom: 24,
+    gap: 12,
+  },
+  folegoTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   folegoLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   folegoIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },
-  folegoCount: { fontSize: 24, fontWeight: "900", letterSpacing: -1 },
+  folegoCount: { fontSize: 22, fontWeight: "900", letterSpacing: -1 },
   folegoLabel: { fontSize: 12 },
   folegoRight: { alignItems: "flex-end", gap: 4 },
   guardadoLabel: { fontSize: 11 },
   tokens: { flexDirection: "row", gap: 4 },
   token: { width: 10, height: 10, borderRadius: 5 },
+  spikesHint: { fontSize: 10, textAlign: "center", marginTop: -4 },
   section: { marginBottom: 24 },
   sectionHeader: {
     flexDirection: "row",
@@ -659,31 +762,23 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   badgePillText: { fontSize: 12, fontWeight: "700" },
-  freeCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    borderRadius: 14,
+  maisLidosRow: { gap: 10, paddingRight: 4, paddingBottom: 2 },
+  maisLidosCard: {
+    width: 100,
+    borderRadius: 12,
     borderWidth: 1,
-    padding: 14,
+    padding: 8,
+    gap: 6,
+    alignItems: "flex-start",
   },
-  freeCover: {
-    width: 48,
-    height: 64,
+  maisLidosCover: {
+    width: "100%",
+    height: 90,
     borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
+    overflow: "hidden",
   },
-  freeInfo: { flex: 1, gap: 4 },
-  freeBadge: {
-    alignSelf: "flex-start",
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  freeBadgeText: { fontSize: 9, fontWeight: "900", letterSpacing: 0.5 },
-  freeTitle: { fontSize: 15, fontWeight: "700" },
-  freeAuthor: { fontSize: 12 },
+  maisLidosTitle: { fontSize: 12, fontWeight: "700", lineHeight: 15 },
+  maisLidosAuthor: { fontSize: 10 },
   genresCard: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 10 },
   genreRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   genreName: { fontSize: 13, fontWeight: "700", width: 110 },
