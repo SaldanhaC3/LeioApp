@@ -102,6 +102,8 @@ export interface Mission {
   completed: boolean;
   type: "pages" | "session" | "share" | "vocabulary" | "pace";
   date: string;
+  /** Carimbo de quando a missão foi concluída — usado para celebrar na conclusão. */
+  completedAt?: string;
 }
 
 export interface VocabularyEntry {
@@ -1070,24 +1072,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setFolego(newFolego);
 
       let missionXpBonus = 0;
+      const nowIso = new Date().toISOString();
       const updatedMissions = missions.map((m) => {
         if (m.completed) return m;
         if (m.type === "session") {
           const newProgress = m.progress + 1;
           const completed = newProgress >= m.target;
           if (completed) missionXpBonus += m.xpReward;
-          return { ...m, progress: newProgress, completed };
+          return { ...m, progress: newProgress, completed, completedAt: completed ? nowIso : m.completedAt };
         }
         if (m.type === "pages") {
           const pages = sessionData.endPage - sessionData.startPage;
           const newProgress = m.progress + pages;
           const completed = newProgress >= m.target;
           if (completed) missionXpBonus += m.xpReward;
-          return { ...m, progress: newProgress, completed };
+          return { ...m, progress: newProgress, completed, completedAt: completed ? nowIso : m.completedAt };
         }
         if (m.type === "pace" && sessionData.pace >= m.target) {
           missionXpBonus += m.xpReward;
-          return { ...m, progress: m.target, completed: true };
+          return { ...m, progress: m.target, completed: true, completedAt: nowIso };
         }
         return m;
       });
@@ -1110,7 +1113,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const completeMission = useCallback(
     (missionId: string) => {
       const updated = missions.map((m) =>
-        m.id === missionId ? { ...m, completed: true, progress: m.target } : m
+        m.id === missionId
+          ? { ...m, completed: true, progress: m.target, completedAt: new Date().toISOString() }
+          : m
       );
       setMissions(updated);
       const mission = missions.find((m) => m.id === missionId);
@@ -1217,7 +1222,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const newProgress = m.progress + 1;
         const completed = newProgress >= m.target;
         if (completed) missionXpBonus += m.xpReward;
-        return { ...m, progress: newProgress, completed };
+        return { ...m, progress: newProgress, completed, completedAt: completed ? new Date().toISOString() : m.completedAt };
       });
       setMissions(updatedMissions);
       const newXp = xp + missionXpBonus;
@@ -1269,7 +1274,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const newProgress = m.progress + 1;
       const completed = newProgress >= m.target;
       if (completed) bonus += m.xpReward;
-      return { ...m, progress: newProgress, completed };
+      return { ...m, progress: newProgress, completed, completedAt: completed ? new Date().toISOString() : m.completedAt };
     });
     setMissions(updatedMissions);
 
