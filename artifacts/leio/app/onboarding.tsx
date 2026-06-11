@@ -35,6 +35,13 @@ const SLIDES = [
   },
   {
     id: "3",
+    title: "Tarefas do dia,\nmeta do ano.",
+    subtitle:
+      "Pequenas missões diárias rendem XP e sobem seu nível. E uma meta anual de livros dá norte pra estante — de 12 a 52, você escolhe o ritmo.",
+    capiState: "motivating" as const,
+  },
+  {
+    id: "4",
     title: "Cada sessão\nvira um card.",
     subtitle:
       "Trechos, números, conquistas — tudo vira card bonito pro Stories. Fourth Wing, O Problema dos 3 Corpos, Intermezzo — o feed agradece o nível.",

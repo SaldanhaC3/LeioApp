@@ -100,6 +100,8 @@ function getGenreReadingAnimation(genre: string): ReadingAnimation {
   }
 }
 
+type Overlay = "none" | "focus" | "end" | "highlight" | "vocab";
+
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -144,16 +146,15 @@ export default function SessaoAtivaScreen() {
     : [];
 
   const [elapsed, setElapsed] = useState(0);
-  const [showHighlightModal, setShowHighlightModal] = useState(false);
   const [hlPage, setHlPage] = useState("");
   const [hlQuote, setHlQuote] = useState("");
   const [isRunning, setIsRunning] = useState(true);
   const [focusExitSeconds, setFocusExitSeconds] = useState(0);
-  const [showFocusReturn, setShowFocusReturn] = useState(false);
-  const [showEndModal, setShowEndModal] = useState(false);
+  // Um único controlador de sobreposição garante exclusividade mútua: nunca há
+  // dois modais empilhados, e o fechamento sempre volta a um estado previsível.
+  const [overlay, setOverlay] = useState<Overlay>("none");
   const [endPageInput, setEndPageInput] = useState("");
   const [endError, setEndError] = useState("");
-  const [showVocabModal, setShowVocabModal] = useState(false);
   const wasRunningBeforeVocabRef = useRef(false);
   const wasRunningBeforeEndRef = useRef(false);
 
@@ -255,7 +256,7 @@ export default function SessaoAtivaScreen() {
 
           if (outsideSeconds > 5) {
             setCapiState("sad");
-            setShowFocusReturn(true);
+            setOverlay("focus");
           } else {
             startTimer();
           }
@@ -299,7 +300,7 @@ export default function SessaoAtivaScreen() {
   }
 
   function resumeAfterFocus() {
-    setShowFocusReturn(false);
+    setOverlay("none");
     setCapiState("reading");
     startTimer();
   }
@@ -313,7 +314,7 @@ export default function SessaoAtivaScreen() {
     );
     setEndPageInput("");
     setEndError("");
-    setShowEndModal(true);
+    setOverlay("end");
   }
 
   function confirmEnd(useStartPage: boolean) {
@@ -363,7 +364,7 @@ export default function SessaoAtivaScreen() {
       setCapiState("celebrating");
     }
 
-    setShowEndModal(false);
+    setOverlay("none");
 
     router.replace({
       pathname: "/conclusao",
@@ -380,7 +381,7 @@ export default function SessaoAtivaScreen() {
   }
 
   async function cancelEndModal() {
-    setShowEndModal(false);
+    setOverlay("none");
     if (wasRunningBeforeEndRef.current) {
       startTimer();
       await resumeAmbient().catch((err) =>
@@ -398,13 +399,12 @@ export default function SessaoAtivaScreen() {
         console.error("[sessao-ativa] pauseAmbient error:", err)
       );
     }
-    setShowVocabModal(true);
+    setOverlay("vocab");
   }
 
   async function closeVocabModal() {
-    setShowVocabModal(false);
-    // Don't auto-resume if another blocking modal is up
-    if (wasRunningBeforeVocabRef.current && !showFocusReturn && !showEndModal) {
+    setOverlay("none");
+    if (wasRunningBeforeVocabRef.current) {
       startTimer();
       await resumeAmbient().catch((err) =>
         console.error("[sessao-ativa] resumeAmbient error:", err)
@@ -482,7 +482,7 @@ export default function SessaoAtivaScreen() {
         ]}
       >
         {/* Focus Return Modal */}
-        <Modal visible={showFocusReturn} transparent animationType="fade">
+        <Modal visible={overlay === "focus"} transparent animationType="fade">
           <View style={styles.modalOverlay}>
             <View
               style={[
@@ -540,7 +540,7 @@ export default function SessaoAtivaScreen() {
 
         {/* End Session Modal */}
         <Modal
-          visible={showEndModal}
+          visible={overlay === "end"}
           transparent
           animationType="slide"
           onRequestClose={cancelEndModal}
@@ -803,14 +803,14 @@ export default function SessaoAtivaScreen() {
       </View>
 
       {/* Floating highlight button — only visible when book belongs to a club */}
-      {bookClubs.length > 0 && !showEndModal && !showFocusReturn && (
+      {bookClubs.length > 0 && overlay === "none" && (
         <TouchableOpacity
           style={[styles.hlFloatBtn, { bottom: bottomInset + 106 }]}
           onPress={() => {
             Haptics.selectionAsync().catch(() => undefined);
             setHlPage(String(startPage));
             setHlQuote("");
-            setShowHighlightModal(true);
+            setOverlay("highlight");
           }}
           activeOpacity={0.85}
         >
@@ -821,10 +821,10 @@ export default function SessaoAtivaScreen() {
 
       {/* Highlight modal */}
       <Modal
-        visible={showHighlightModal}
+        visible={overlay === "highlight"}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowHighlightModal(false)}
+        onRequestClose={() => setOverlay("none")}
       >
         <KeyboardAvoidingView
           style={styles.modalOverlay}
@@ -901,7 +901,7 @@ export default function SessaoAtivaScreen() {
                     Haptics.NotificationFeedbackType.Success
                   ).catch(() => undefined);
                 }
-                setShowHighlightModal(false);
+                setOverlay("none");
               }}
               activeOpacity={0.85}
             >
@@ -912,7 +912,7 @@ export default function SessaoAtivaScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => setShowHighlightModal(false)}
+              onPress={() => setOverlay("none")}
               style={styles.endModalCancel}
             >
               <Text style={[styles.endModalCancelText, { color: colors.mutedForeground }]}>
@@ -924,7 +924,7 @@ export default function SessaoAtivaScreen() {
       </Modal>
 
       <VocabularyModal
-        visible={showVocabModal}
+        visible={overlay === "vocab"}
         bookId={params.bookId ?? ""}
         onClose={closeVocabModal}
       />
