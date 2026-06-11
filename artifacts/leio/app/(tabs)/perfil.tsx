@@ -383,6 +383,7 @@ export default function PerfilScreen() {
     0
   );
 
+  const unlockedCount = badges.filter((b) => b.unlocked).length;
   const featuredBadges = badges.filter((b) => b.unlocked).slice(0, 3);
 
   // This week metrics
@@ -471,7 +472,10 @@ export default function PerfilScreen() {
             />
           </View>
           <Text style={[styles.xpText, { color: colors.mutedForeground }]}>
-            {xp} XP · faltam {nextLevelInfo.minXP - xp} pro próximo nível
+            {xp} XP · faltam {Math.max(0, nextLevelInfo.minXP - xp)} pro próximo nível
+          </Text>
+          <Text style={[styles.xpSources, { color: colors.mutedForeground }]}>
+            Ganhe XP lendo, completando tarefas do dia e desbloqueando medalhas.
           </Text>
         </View>
         <TouchableOpacity onPress={() => router.push("/settings")}>
@@ -811,19 +815,37 @@ export default function PerfilScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Featured Badges */}
-      {featuredBadges.length > 0 && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Medalhas em destaque
+      {/* Conquistas */}
+      <View style={styles.section}>
+        <View style={styles.monthHeaderRow}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground, marginBottom: 0 }]}>
+            Conquistas
           </Text>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/badges")}>
+            <Text style={[styles.seeAllLink, { color: colors.accentText }]}>
+              Ver todas ({unlockedCount}/{badges.length})
+            </Text>
+          </TouchableOpacity>
+        </View>
+        {featuredBadges.length > 0 ? (
           <View style={styles.featuredBadges}>
             {featuredBadges.map((badge) => (
               <BadgeItem key={badge.id} badge={badge} />
             ))}
           </View>
-        </View>
-      )}
+        ) : (
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/badges")}
+            activeOpacity={0.8}
+            style={[styles.emptyBadges, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            <Ionicons name="trophy-outline" size={22} color={colors.accentText} />
+            <Text style={[styles.emptyBadgesText, { color: colors.mutedForeground }]}>
+              Nenhuma medalha ainda. Toque para ver tudo que dá pra conquistar.
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -842,6 +864,17 @@ const styles = StyleSheet.create({
   xpBar: { height: 6, borderRadius: 3, overflow: "hidden" },
   xpFill: { height: "100%", borderRadius: 3 },
   xpText: { fontSize: 11 },
+  xpSources: { fontSize: 11, lineHeight: 15, marginTop: 2 },
+  seeAllLink: { fontSize: 13, fontWeight: "700" },
+  emptyBadges: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+  },
+  emptyBadgesText: { flex: 1, fontSize: 13, lineHeight: 18 },
   section: { marginBottom: 28 },
   sectionTitle: {
     fontSize: 18,

@@ -19,8 +19,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Book } from "@/contexts/AppContext";
-
-const AMBIENT_STORAGE_KEY = "leio:session:last-ambient";
+import { AMBIENT_STORAGE_KEY, startQuickSession } from "@/utils/startSession";
 
 const AMBIENT_OPTIONS = [
   { id: "cafe", label: "Café", icon: "cafe-outline" },
@@ -34,7 +33,8 @@ const AMBIENT_OPTIONS = [
 export default function SessaoScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { books, settings } = useApp();
+  const { books, settings, getCurrentBook } = useApp();
+  const currentBook = getCurrentBook();
 
   const [step, setStep] = useState<"book" | "config">("book");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
@@ -394,6 +394,28 @@ export default function SessaoScreen() {
           paddingTop: 8,
         }}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          currentBook && search === "" ? (
+            <TouchableOpacity
+              style={[styles.continueHero, { backgroundColor: currentBook.coverColor }]}
+              onPress={() => startQuickSession(currentBook, settings.ambientDefault)}
+              activeOpacity={0.9}
+            >
+              <View style={styles.continueHeroText}>
+                <Text style={styles.continueHeroKicker}>Continuar de onde parou</Text>
+                <Text style={styles.continueHeroTitle} numberOfLines={1}>
+                  {currentBook.title}
+                </Text>
+                <Text style={styles.continueHeroSub} numberOfLines={1}>
+                  Pág. {currentBook.currentPage}/{currentBook.totalPages}
+                </Text>
+              </View>
+              <View style={styles.continueHeroPlay}>
+                <Ionicons name="play" size={26} color="#FFFFFF" />
+              </View>
+            </TouchableOpacity>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="book-outline" size={48} color={colors.mutedForeground} />
@@ -535,6 +557,38 @@ const styles = StyleSheet.create({
   },
   addNewTitle: { fontSize: 15, fontWeight: "800" },
   addNewSub: { fontSize: 12, marginTop: 2 },
+  continueHero: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
+  },
+  continueHeroText: { flex: 1 },
+  continueHeroKicker: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: "rgba(255,255,255,0.75)",
+  },
+  continueHeroTitle: {
+    fontSize: 19,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    letterSpacing: -0.5,
+    marginTop: 4,
+  },
+  continueHeroSub: { fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 3 },
+  continueHeroPlay: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   empty: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyText: { fontSize: 14, textAlign: "center" },
   backBtn: { marginBottom: 16 },
