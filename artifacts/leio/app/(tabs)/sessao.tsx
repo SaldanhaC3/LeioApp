@@ -434,7 +434,7 @@ Estante meio órfã.{"\n"}Torto Arado não leu a si mesmo — adiciona um livro 
                 ]}
                 onPress={() => {
                   Haptics.selectionAsync();
-                  router.push("/adicionar-livro");
+                  router.push("/buscar-livro");
                 }}
                 activeOpacity={0.8}
               >
