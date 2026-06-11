@@ -171,11 +171,34 @@ const spikeStyles = StyleSheet.create({
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { books, sessions, missions, badges, folego, folegoGuardado, xp, getCurrentBook, getAbandoned, settings } = useApp();
+  const { books, sessions, missions, badges, folego, folegoGuardado, xp, getCurrentBook, getAbandoned, settings, updateSettings } = useApp();
 
   const greeting = useMemo(() => getGreeting(), []);
   const [folegoInfoVisible, setFolegoInfoVisible] = useState(false);
+  const [goalEditing, setGoalEditing] = useState(false);
   const currentBook = getCurrentBook();
+
+  const currentYear = new Date().getFullYear();
+  const goal =
+    settings.readingGoal && settings.readingGoal.year === currentYear
+      ? settings.readingGoal
+      : null;
+  const booksReadThisYear = useMemo(
+    () =>
+      books.filter(
+        (b) =>
+          b.status === "read" &&
+          b.finishedAt &&
+          new Date(b.finishedAt).getFullYear() === currentYear
+      ).length,
+    [books, currentYear]
+  );
+
+  function setGoal(target: number) {
+    Haptics.selectionAsync();
+    updateSettings({ readingGoal: { year: currentYear, target } });
+    setGoalEditing(false);
+  }
   const abandoned = getAbandoned();
   const unlockedBadges = badges.filter((b) => b.unlocked);
   const { current: levelInfo } = getLevel(xp);
@@ -469,6 +492,74 @@ export default function HomeScreen() {
           </View>
         </View>
       )}
+
+      {/* Meta anual */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            Meta de {currentYear}
+          </Text>
+          {goal && !goalEditing && (
+            <TouchableOpacity onPress={() => setGoalEditing(true)} hitSlop={8}>
+              <Text style={[styles.seeAll, { color: colors.accentText }]}>Editar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {goal && !goalEditing ? (
+          <View style={[styles.goalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.goalTopRow}>
+              <Text style={[styles.goalCount, { color: colors.foreground }]}>
+                {booksReadThisYear}
+                <Text style={[styles.goalTarget, { color: colors.mutedForeground }]}>
+                  {" "}/ {goal.target} livros
+                </Text>
+              </Text>
+              {booksReadThisYear >= goal.target ? (
+                <View style={[styles.goalBadge, { backgroundColor: `${colors.volt}22` }]}>
+                  <Ionicons name="trophy" size={14} color={colors.accentText} />
+                  <Text style={[styles.goalBadgeText, { color: colors.accentText }]}>Meta batida!</Text>
+                </View>
+              ) : (
+                <Text style={[styles.goalRemaining, { color: colors.mutedForeground }]}>
+                  faltam {goal.target - booksReadThisYear}
+                </Text>
+              )}
+            </View>
+            <View style={[styles.goalBar, { backgroundColor: colors.secondary }]}>
+              <View
+                style={[
+                  styles.goalFill,
+                  {
+                    backgroundColor: colors.volt,
+                    width: `${Math.min(100, (booksReadThisYear / goal.target) * 100)}%`,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={[styles.goalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.goalPrompt, { color: colors.mutedForeground }]}>
+              Quantos livros você quer ler em {currentYear}? Uma meta dá norte pra estante.
+            </Text>
+            <View style={styles.goalPresets}>
+              {[12, 24, 52].map((n) => (
+                <TouchableOpacity
+                  key={n}
+                  style={[styles.goalPreset, { borderColor: colors.accentBorder, backgroundColor: `${colors.volt}11` }]}
+                  onPress={() => setGoal(n)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.goalPresetNum, { color: colors.foreground }]}>{n}</Text>
+                  <Text style={[styles.goalPresetLabel, { color: colors.mutedForeground }]}>
+                    {n === 12 ? "1 por mês" : n === 24 ? "2 por mês" : "1 por semana"}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+      </View>
 
       {/* Daily Missions */}
       <View style={styles.section}>
@@ -808,6 +899,38 @@ const styles = StyleSheet.create({
   },
   sectionSub: { fontSize: 13, fontWeight: "600" },
   seeAll: { fontSize: 13, fontWeight: "700" },
+  goalCard: { borderRadius: 16, borderWidth: 1, padding: 16, gap: 12 },
+  goalTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  goalCount: { fontSize: 24, fontWeight: "900", letterSpacing: -1 },
+  goalTarget: { fontSize: 15, fontWeight: "700" },
+  goalRemaining: { fontSize: 13, fontWeight: "600" },
+  goalBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  goalBadgeText: { fontSize: 12, fontWeight: "800" },
+  goalBar: { height: 8, borderRadius: 4, overflow: "hidden" },
+  goalFill: { height: "100%", borderRadius: 4 },
+  goalPrompt: { fontSize: 14, lineHeight: 20 },
+  goalPresets: { flexDirection: "row", gap: 10 },
+  goalPreset: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    gap: 2,
+  },
+  goalPresetNum: { fontSize: 22, fontWeight: "900", letterSpacing: -0.5 },
+  goalPresetLabel: { fontSize: 11, fontWeight: "600" },
   currentBookCard: {
     borderRadius: 16,
     padding: 20,

@@ -168,6 +168,8 @@ export interface AppSettings {
   hasCompletedCalibration: boolean;
   calibrationPace: number;
   profilePhoto?: string;
+  /** Meta anual de livros (opcional). Campo novo: ausente em estados antigos. */
+  readingGoal?: { year: number; target: number };
 }
 
 const GENRE_LABELS: Record<string, string> = {
