@@ -67,7 +67,7 @@ export default function ConclusaoScreen() {
     focusMode: string;
     focusExitSeconds: string;
   }>();
-  const { getBookById, badges, freeBooks } = useApp();
+  const { getBookById, badges, freeBooks, missions } = useApp();
   const { groups, myUsername } = useBookGroup();
   const myGroups = groups.filter((g) => g.memberUsernames.includes(myUsername));
 
@@ -84,6 +84,11 @@ export default function ConclusaoScreen() {
   const newlyUnlocked = badges.filter(
     (b) => b.unlocked && b.unlockedAt &&
     Date.now() - new Date(b.unlockedAt).getTime() < 60000
+  );
+
+  const newlyCompletedMissions = missions.filter(
+    (m) => m.completed && m.completedAt &&
+    Date.now() - new Date(m.completedAt).getTime() < 60000
   );
 
   const pagesAnim = useRef(new Animated.Value(0)).current;
@@ -255,6 +260,26 @@ export default function ConclusaoScreen() {
         </View>
       )}
 
+      {/* Missions completed this session */}
+      {newlyCompletedMissions.length > 0 && (
+        <View style={[styles.missionSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.missionHeader, { color: colors.foreground }]}>
+            Tarefa do dia concluída!
+          </Text>
+          {newlyCompletedMissions.map((m) => (
+            <View key={m.id} style={styles.badgeRow}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.accentText} />
+              <Text style={[styles.badgeName, { color: colors.foreground }]} numberOfLines={1}>
+                {m.text}
+              </Text>
+              <Text style={[styles.badgeXP, { color: colors.accentText }]}>
+                +{m.xpReward}XP
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       {/* Spacer */}
       <View style={{ flex: 1 }} />
 
@@ -374,6 +399,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   badgeHeader: { fontSize: 14, fontWeight: "800" },
+  missionSection: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+    marginBottom: 16,
+  },
+  missionHeader: { fontSize: 14, fontWeight: "800" },
   badgeRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   badgeName: { flex: 1, fontSize: 14, fontWeight: "600" },
   badgeXP: { fontSize: 12, fontWeight: "700" },

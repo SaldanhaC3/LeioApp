@@ -6,9 +6,11 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,6 +19,7 @@ import {
 } from "react-native";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { startQuickSession } from "@/utils/startSession";
 
 const CAPI_PROFILE_IMAGES: Record<string, ReturnType<typeof require>> = {
   "capi://default": require("@/assets/images/capi-default.png"),
@@ -168,10 +171,34 @@ const spikeStyles = StyleSheet.create({
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { books, sessions, missions, badges, folego, folegoGuardado, xp, getCurrentBook, getAbandoned, settings } = useApp();
+  const { books, sessions, missions, badges, folego, folegoGuardado, xp, getCurrentBook, getAbandoned, settings, updateSettings } = useApp();
 
   const greeting = useMemo(() => getGreeting(), []);
+  const [folegoInfoVisible, setFolegoInfoVisible] = useState(false);
+  const [goalEditing, setGoalEditing] = useState(false);
   const currentBook = getCurrentBook();
+
+  const currentYear = new Date().getFullYear();
+  const goal =
+    settings.readingGoal && settings.readingGoal.year === currentYear
+      ? settings.readingGoal
+      : null;
+  const booksReadThisYear = useMemo(
+    () =>
+      books.filter(
+        (b) =>
+          b.status === "read" &&
+          b.finishedAt &&
+          new Date(b.finishedAt).getFullYear() === currentYear
+      ).length,
+    [books, currentYear]
+  );
+
+  function setGoal(target: number) {
+    Haptics.selectionAsync();
+    updateSettings({ readingGoal: { year: currentYear, target } });
+    setGoalEditing(false);
+  }
   const abandoned = getAbandoned();
   const unlockedBadges = badges.filter((b) => b.unlocked);
   const { current: levelInfo } = getLevel(xp);
@@ -340,9 +367,22 @@ export default function HomeScreen() {
           </View>
         </View>
         <SpikesChart sessions={sessions} colors={colors} />
-        <Text style={[styles.spikesHint, { color: colors.mutedForeground }]}>
-          Últimos 14 dias · hoje destacado
-        </Text>
+        <View style={styles.folegoFooter}>
+          <Text style={[styles.spikesHint, { color: colors.mutedForeground }]}>
+            Últimos 14 dias · hoje destacado
+          </Text>
+          <Pressable
+            onPress={() => setFolegoInfoVisible(true)}
+            hitSlop={8}
+            style={styles.folegoInfoBtn}
+            accessibilityLabel="Como funciona o fôlego"
+          >
+            <Ionicons name="help-circle-outline" size={14} color={colors.accentText} />
+            <Text style={[styles.folegoInfoText, { color: colors.accentText }]}>
+              Como funciona?
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Current Book */}
@@ -389,19 +429,29 @@ export default function HomeScreen() {
               <CapiMascot state="reading" size={80} />
             )}
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.startSessionBtn, { backgroundColor: colors.volt }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push("/(tabs)/sessao");
-            }}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="play" size={18} color={colors.accentForeground} />
-            <Text style={[styles.startSessionText, { color: colors.accentForeground }]}>
-              Iniciar sessão
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.startRow}>
+            <TouchableOpacity
+              style={[styles.startSessionBtn, { backgroundColor: colors.volt }]}
+              onPress={() => startQuickSession(currentBook, settings.ambientDefault)}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="play" size={18} color={colors.accentForeground} />
+              <Text style={[styles.startSessionText, { color: colors.accentForeground }]}>
+                Continuar lendo
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.adjustBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push("/(tabs)/sessao");
+              }}
+              activeOpacity={0.85}
+              accessibilityLabel="Ajustar sessão"
+            >
+              <Ionicons name="options-outline" size={18} color={colors.accentText} />
+            </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <View style={styles.section}>
@@ -442,6 +492,74 @@ export default function HomeScreen() {
           </View>
         </View>
       )}
+
+      {/* Meta anual */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            Meta de {currentYear}
+          </Text>
+          {goal && !goalEditing && (
+            <TouchableOpacity onPress={() => setGoalEditing(true)} hitSlop={8}>
+              <Text style={[styles.seeAll, { color: colors.accentText }]}>Editar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {goal && !goalEditing ? (
+          <View style={[styles.goalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.goalTopRow}>
+              <Text style={[styles.goalCount, { color: colors.foreground }]}>
+                {booksReadThisYear}
+                <Text style={[styles.goalTarget, { color: colors.mutedForeground }]}>
+                  {" "}/ {goal.target} livros
+                </Text>
+              </Text>
+              {booksReadThisYear >= goal.target ? (
+                <View style={[styles.goalBadge, { backgroundColor: `${colors.volt}22` }]}>
+                  <Ionicons name="trophy" size={14} color={colors.accentText} />
+                  <Text style={[styles.goalBadgeText, { color: colors.accentText }]}>Meta batida!</Text>
+                </View>
+              ) : (
+                <Text style={[styles.goalRemaining, { color: colors.mutedForeground }]}>
+                  faltam {goal.target - booksReadThisYear}
+                </Text>
+              )}
+            </View>
+            <View style={[styles.goalBar, { backgroundColor: colors.secondary }]}>
+              <View
+                style={[
+                  styles.goalFill,
+                  {
+                    backgroundColor: colors.volt,
+                    width: `${Math.min(100, (booksReadThisYear / goal.target) * 100)}%`,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={[styles.goalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.goalPrompt, { color: colors.mutedForeground }]}>
+              Quantos livros você quer ler em {currentYear}? Uma meta dá norte pra estante.
+            </Text>
+            <View style={styles.goalPresets}>
+              {[12, 24, 52].map((n) => (
+                <TouchableOpacity
+                  key={n}
+                  style={[styles.goalPreset, { borderColor: colors.accentBorder, backgroundColor: `${colors.volt}11` }]}
+                  onPress={() => setGoal(n)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.goalPresetNum, { color: colors.foreground }]}>{n}</Text>
+                  <Text style={[styles.goalPresetLabel, { color: colors.mutedForeground }]}>
+                    {n === 12 ? "1 por mês" : n === 24 ? "2 por mês" : "1 por semana"}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+      </View>
 
       {/* Daily Missions */}
       <View style={styles.section}>
@@ -626,6 +744,57 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
       </View>
+
+      {/* Explicador do Fôlego */}
+      <Modal
+        visible={folegoInfoVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFolegoInfoVisible(false)}
+      >
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setFolegoInfoVisible(false)}
+        >
+          <Pressable
+            style={[styles.modalSheet, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={[styles.folegoIconWrap, { backgroundColor: `${colors.volt}22`, alignSelf: "center" }]}>
+              <Ionicons name="flame" size={24} color={colors.accentText} />
+            </View>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>
+              O que é o fôlego?
+            </Text>
+            <Text style={[styles.modalBody, { color: colors.mutedForeground }]}>
+              Fôlego é a sua sequência de dias lendo. Cada dia com pelo menos uma sessão soma +1. É o ritmo que te mantém na travessia.
+            </Text>
+            <View style={[styles.modalDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.modalRow}>
+              <View style={styles.tokens}>
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={[styles.token, { backgroundColor: colors.volt }]} />
+                ))}
+              </View>
+              <Text style={[styles.modalRowText, { color: colors.foreground }]}>
+                Fôlego guardado
+              </Text>
+            </View>
+            <Text style={[styles.modalBody, { color: colors.mutedForeground }]}>
+              Você acumula até 3 dias guardados. Se um dia passar sem leitura, um deles é gasto automaticamente e a sua sequência continua de pé. Sem culpa — a vida acontece.
+            </Text>
+            <TouchableOpacity
+              style={[styles.modalCloseBtn, { backgroundColor: colors.volt }]}
+              onPress={() => setFolegoInfoVisible(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.modalCloseText, { color: colors.accentForeground }]}>
+                Entendi
+              </Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }
@@ -677,7 +846,44 @@ const styles = StyleSheet.create({
   guardadoLabel: { fontSize: 11 },
   tokens: { flexDirection: "row", gap: 4 },
   token: { width: 10, height: 10, borderRadius: 5 },
-  spikesHint: { fontSize: 10, textAlign: "center", marginTop: -4 },
+  spikesHint: { fontSize: 10, marginTop: -4 },
+  folegoFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: -2,
+  },
+  folegoInfoBtn: { flexDirection: "row", alignItems: "center", gap: 3 },
+  folegoInfoText: { fontSize: 11, fontWeight: "700" },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
+  modalSheet: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    gap: 12,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+    textAlign: "center",
+  },
+  modalBody: { fontSize: 14, lineHeight: 20 },
+  modalDivider: { height: 1, marginVertical: 4 },
+  modalRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  modalRowText: { fontSize: 15, fontWeight: "800" },
+  modalCloseBtn: {
+    borderRadius: 999,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  modalCloseText: { fontSize: 15, fontWeight: "800" },
   section: { marginBottom: 24 },
   sectionHeader: {
     flexDirection: "row",
@@ -693,6 +899,38 @@ const styles = StyleSheet.create({
   },
   sectionSub: { fontSize: 13, fontWeight: "600" },
   seeAll: { fontSize: 13, fontWeight: "700" },
+  goalCard: { borderRadius: 16, borderWidth: 1, padding: 16, gap: 12 },
+  goalTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  goalCount: { fontSize: 24, fontWeight: "900", letterSpacing: -1 },
+  goalTarget: { fontSize: 15, fontWeight: "700" },
+  goalRemaining: { fontSize: 13, fontWeight: "600" },
+  goalBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  goalBadgeText: { fontSize: 12, fontWeight: "800" },
+  goalBar: { height: 8, borderRadius: 4, overflow: "hidden" },
+  goalFill: { height: "100%", borderRadius: 4 },
+  goalPrompt: { fontSize: 14, lineHeight: 20 },
+  goalPresets: { flexDirection: "row", gap: 10 },
+  goalPreset: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    gap: 2,
+  },
+  goalPresetNum: { fontSize: 22, fontWeight: "900", letterSpacing: -0.5 },
+  goalPresetLabel: { fontSize: 11, fontWeight: "600" },
   currentBookCard: {
     borderRadius: 16,
     padding: 20,
@@ -734,7 +972,9 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     lineHeight: 32,
   },
+  startRow: { flexDirection: "row", gap: 10, alignItems: "stretch" },
   startSessionBtn: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -743,6 +983,13 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   startSessionText: { fontSize: 15, fontWeight: "800" },
+  adjustBtn: {
+    width: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   addBookPrompt: {
     borderRadius: 16,
     borderWidth: 1,

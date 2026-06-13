@@ -208,7 +208,17 @@ export default function BuscarLivroScreen() {
         <Text style={[styles.title, { color: colors.foreground }]}>
 Procurar livro
         </Text>
-        <View style={styles.closeBtn} />
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push("/escanear-livro");
+          }}
+          style={styles.closeBtn}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Escanear código de barras"
+        >
+          <Ionicons name="barcode-outline" size={24} color={colors.accentText} />
+        </TouchableOpacity>
       </View>
 
       <View
