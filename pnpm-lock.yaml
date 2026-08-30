@@ -240,7 +240,7 @@ importers:
         specifier: ^15.0.9
         version: 15.0.9(expo@54.0.34)
       expo-document-picker:
-        specifier: latest
+        specifier: ~56.0.4
         version: 56.0.4(expo@54.0.34)
       expo-file-system:
         specifier: ~19.0.22
