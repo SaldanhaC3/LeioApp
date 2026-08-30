@@ -1,3 +1,4 @@
+import { CapiMascot } from "@/components/CapiMascot";
 import { ReadingGroup, useBookGroup } from "@/contexts/BookGroupContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
@@ -153,9 +154,9 @@ export default function GruposScreen() {
         ]}
       >
         <View style={styles.centerContent}>
-          <Text style={styles.welcomeEmoji}>📚</Text>
+          <CapiMascot state="waving" size={96} />
           <Text style={[styles.welcomeTitle, { color: colors.foreground }]}>
-            Bem-vindo ao Book Addictive
+            Bem-vindo ao Leio
           </Text>
           <Text style={[styles.welcomeSubtitle, { color: colors.mutedForeground }]}>
             Antes de começar, escolha um nome de usuário para aparecer nos grupos.
@@ -281,7 +282,7 @@ export default function GruposScreen() {
       {/* Header */}
       <View style={styles.headerRow}>
         <View>
-          <Text style={[styles.pageTitle, { color: colors.foreground }]}>Book Addictive</Text>
+          <Text style={[styles.pageTitle, { color: colors.foreground }]}>Leio</Text>
           <Text style={[styles.pageSub, { color: colors.mutedForeground }]}>Olá, {myUsername} 👋</Text>
         </View>
         <TouchableOpacity
@@ -357,7 +358,6 @@ export default function GruposScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centerContent: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16 },
-  welcomeEmoji: { fontSize: 60 },
   welcomeTitle: { fontSize: 24, fontWeight: "900", textAlign: "center", letterSpacing: -0.5 },
   welcomeSubtitle: { fontSize: 15, textAlign: "center", lineHeight: 22 },
   usernameInputWrap: {

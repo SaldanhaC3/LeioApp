@@ -1,3 +1,4 @@
+import { CapiMascot } from "@/components/CapiMascot";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/contexts/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,6 +37,7 @@ export default function LoginScreen() {
       style={[styles.container, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}
     >
       <View style={styles.header}>
+        <CapiMascot state="waving" size={120} />
         <Text style={[styles.logo, { color: colors.foreground }]}>leio</Text>
         <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
           sua biblioteca pessoal
@@ -79,6 +81,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    gap: 4,
   },
   logo: {
     fontSize: 64,
