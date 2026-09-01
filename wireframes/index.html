@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leio — Wireframes para comentário</title>
+<style>
+  :root{
+    --bg:#f2f0eb; --panel:#fff; --ink:#2b2a26; --muted:#8a877e;
+    --wire:#d9d5cc; --wire2:#eae7e0; --accent:#c8f04a; --line:#e4e1d8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex}
+  /* sidebar */
+  nav{width:230px;position:sticky;top:0;height:100vh;overflow:auto;padding:20px 14px;background:var(--panel);border-right:1px solid var(--line);flex-shrink:0}
+  nav h1{font-size:17px;margin:0 0 4px}
+  nav p{font-size:11px;color:var(--muted);margin:0 0 14px}
+  nav a{display:block;padding:6px 10px;border-radius:8px;font-size:13px;color:var(--ink);text-decoration:none;margin-bottom:2px}
+  nav a:hover{background:var(--wire2)}
+  nav .grp{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:14px 4px 6px}
+  /* main */
+  main{flex:1;padding:28px 40px;max-width:1100px}
+  .intro{background:var(--accent);border-radius:14px;padding:16px 20px;font-size:14px;line-height:1.5;margin-bottom:30px}
+  section.screen{margin-bottom:56px;scroll-margin-top:20px}
+  .screen-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+  .screen-head h2{font-size:19px;margin:0}
+  .screen-head code{font-size:11px;color:var(--muted)}
+  .screen-sub{font-size:12px;color:var(--muted);margin:0 0 14px}
+  .flow{display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start}
+  /* phone */
+  .phone{width:300px;background:#fff;border:2px solid #b9b5aa;border-radius:30px;padding:10px 12px 12px;box-shadow:0 4px 14px rgba(0,0,0,.06)}
+  .phone .notch{width:90px;height:6px;background:#d5d2c9;border-radius:3px;margin:2px auto 8px}
+  .frame{background:#fafaf8;border:1px solid var(--wire);border-radius:16px;padding:10px;min-height:430px;display:flex;flex-direction:column;gap:7px;font-size:10px;position:relative}
+  .frame .tabsbar{margin-top:auto;display:flex;justify-content:space-around;border-top:1px solid var(--wire);padding-top:6px}
+  .tabsbar span{font-size:8px;color:var(--muted);text-align:center;width:44px}
+  .tabsbar span.on{color:var(--ink);font-weight:700}
+  /* wire primitives */
+  .bl{background:var(--wire2);border:1px solid var(--wire);border-radius:8px;padding:6px 8px;color:#6b6860}
+  .card{background:#fff;border:1px solid var(--wire);border-radius:10px;padding:8px}
+  .btn{background:var(--ink);color:#fff;border-radius:9px;padding:7px;text-align:center;font-weight:600;font-size:10px}
+  .btn.alt{background:#fff;border:1px solid var(--wire);color:var(--ink)}
+  .btn.accent{background:var(--accent);color:#2b2a26}
+  .btn.round{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;margin:0 auto}
+  .row{display:flex;gap:6px;align-items:center}
+  .grow{flex:1}
+  .cov{width:34px;height:48px;border-radius:4px;background:var(--wire);flex-shrink:0}
+  .chart{display:flex;align-items:flex-end;gap:3px;height:36px;padding:0 4px}
+  .chart i{flex:1;background:var(--wire);border-radius:2px;display:block}
+  .chart i.hi{background:var(--accent);border:1px solid #a8c93a}
+  .chip{border:1px solid var(--wire);border-radius:999px;padding:3px 9px;font-size:9px;color:#6b6860;white-space:nowrap}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .h{font-weight:800;font-size:11px}
+  .s{font-size:9px;color:var(--muted)}
+  .dots{display:flex;gap:8px;justify-content:center;padding:4px 0}
+  .dots i{width:7px;height:7px;border-radius:50%;background:var(--wire)}
+  .dots i.on{background:var(--ink);width:18px;border-radius:4px}
+  .stat{flex:1;text-align:center;border:1px solid var(--wire);border-radius:8px;padding:6px 2px}
+  .stat b{display:block;font-size:13px}
+  .stat span{font-size:8px;color:var(--muted)}
+  .shade{position:absolute;inset:0;background:rgba(43,42,38,.55);border-radius:16px;display:flex;flex-direction:column;justify-content:flex-end;padding:10px}
+  .sheet{background:#fff;border-radius:12px 12px 0 0;padding:10px}
+  .lbl{font-size:8px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+  /* annotations */
+  .annots{width:250px;font-size:12px}
+  .annots li{margin-bottom:6px;line-height:1.4}
+  .annots b{background:var(--ink);color:#fff;border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;margin-right:5px;flex-shrink:0}
+  .annots ul{list-style:none;padding:0;margin:0}
+  .annots li{display:flex}
+  /* comments */
+  .cmt{margin-top:14px;width:100%;max-width:600px}
+  .cmt label{font-size:12px;font-weight:700;display:block;margin-bottom:4px}
+  .cmt textarea{width:100%;min-height:64px;border:1px solid var(--wire);border-radius:10px;padding:10px;font:inherit;font-size:13px;resize:vertical;background:#fff}
+  .cmt textarea:focus{outline:2px solid var(--accent)}
+  .toolbar{position:fixed;bottom:18px;right:18px;display:flex;gap:8px;z-index:9}
+  .toolbar button{border:none;border-radius:12px;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.18)}
+  #copyAll{background:var(--ink);color:#fff}
+  #saved{background:var(--accent);color:var(--ink);opacity:0;transition:opacity .3s;pointer-events:none}
+</style>
+</head>
+<body>
+
+<nav>
+  <h1>Leio · Wireframes</h1>
+  <p>Estado atual das telas — comente abaixo de cada uma os ajustes desejados.</p>
+  <div class="grp">Fluxo inicial</div>
+  <a href="#login">1 · Login</a>
+  <a href="#onboarding">2 · Onboarding</a>
+  <a href="#profile-setup">3 · Criar perfil</a>
+  <div class="grp">Abas</div>
+  <a href="#home">4 · Início</a>
+  <a href="#biblioteca">5 · Biblioteca</a>
+  <a href="#sessao">6 · Nova Sessão (Ler)</a>
+  <a href="#grupos">7 · Grupos</a>
+  <a href="#perfil">8 · Perfil</a>
+  <div class="grp">Leitura</div>
+  <a href="#sessao-ativa">9 · Sessão ativa</a>
+  <a href="#conclusao">10 · Conclusão</a>
+  <a href="#compartilhar">11 · Compartilhar</a>
+  <a href="#meus-cards">12 · Meus Cards</a>
+  <div class="grp">Grupos (detalhe)</div>
+  <a href="#grupo-detalhe">13 · Grupo (detalhe)</a>
+  <a href="#checkin">14 · Check-in</a>
+  <div class="grp">Livros</div>
+  <a href="#adicionar">15 · Novo livro (hub)</a>
+  <a href="#buscar">16 · Buscar livro</a>
+  <a href="#escanear">17 · Escanear ISBN</a>
+  <a href="#manual">18 · Cadastro manual</a>
+  <a href="#livro">19 · Detalhe do livro</a>
+  <div class="grp">Outras</div>
+  <a href="#badges">20 · Conquistas</a>
+  <a href="#settings">21 · Configurações</a>
+</nav>
+
+<main>
+  <div class="intro">📱 <b>Como usar:</b> role até a tela, veja o wireframe do estado atual e escreva no campo <b>"Ajustes desejados"</b> o que quer mudar. Tudo fica salvo no navegador automaticamente. No fim, clique em <b>Copiar todos os comentários</b> e me envie o resultado. Números pretos = pontos comentáveis.</div>
+
+  <!-- 1 LOGIN -->
+  <section class="screen" id="login">
+    <div class="screen-head"><h2>1 · Login</h2><code>app/login.tsx</code></div>
+    <p class="screen-sub">Único método de entrada: Google.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+          <div class="bl" style="width:70px;height:70px;border-radius:50%">🐻 Capi</div>
+          <div class="h" style="font-size:22px">leio</div>
+          <div class="s">sua biblioteca pessoal</div>
+        </div>
+        <div class="btn">G&nbsp; Entrar com Google</div>
+        <div class="s" style="text-align:center">Ao entrar, você concorda com os nossos termos de uso.</div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Logo, tagline e mascote centrais.</li>
+        <li><b>2</b> Botão Google fixo no rodapé.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Login</label><textarea data-k="login" placeholder="Ex: adicionar login com Apple, mudar tagline..."></textarea></div>
+    </div>
+  </section>
+
+  <!-- 2 ONBOARDING -->
+  <section class="screen" id="onboarding">
+    <div class="screen-head"><h2>2 · Onboarding</h2><code>app/onboarding.tsx</code></div>
+    <p class="screen-sub">Carrossel de 4 slides controlado por botão (sem gesto). Botão "Pular" no topo.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row" style="justify-content:flex-end"><span class="chip">Pular</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center">
+          <div class="bl" style="width:64px;height:64px;border-radius:50%">🐻</div>
+          <div class="h">Hoje você lê,<br>ou inventa desculpa?</div>
+          <div class="s">Slide 1 de 4 · depois: "Fôlego de leitor se cultiva", "Tarefas do dia, meta do ano", "Cada sessão vira um card"</div>
+        </div>
+        <div class="dots"><i class="on"></i><i></i><i></i><i></i></div>
+        <div class="btn round accent">→</div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> "Pular" no canto superior direito.</li>
+        <li><b>2</b> Capi + título + subtítulo por slide.</li>
+        <li><b>3</b> Pontinhos + botão circular; vira "Começar" no último.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Onboarding</label><textarea data-k="onboarding" placeholder="Ex: textos, quantidade de slides, permitir gesto..."></textarea></div>
+    </div>
+  </section>
+
+  <!-- 3 PROFILE SETUP -->
+  <section class="screen" id="profile-setup">
+    <div class="screen-head"><h2>3 · Criar perfil</h2><code>app/profile-setup.tsx</code></div>
+    <p class="screen-sub">Foto + nome + @handle, depois vai para o onboarding.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="h">Crie seu perfil</div>
+        <div class="s">Como os outros leitores vão te encontrar</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0">
+          <div class="bl" style="width:74px;height:74px;border-radius:50%">📷</div>
+          <div class="s">Adicionar foto</div>
+          <span class="chip">☐ Prefiro usar a Capi como minha foto</span>
+        </div>
+        <div class="bl">Nome — "Seu nome de leitor"</div>
+        <div class="bl">@handle — "seu_handle"</div>
+        <div class="btn">Começar</div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Avatar circular (câmera) com crop 1:1 da galeria.</li>
+        <li><b>2</b> Opção de usar a Capi no lugar da foto.</li>
+        <li><b>3</b> Nome e @handle obrigatórios (validação por alert).</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Criar perfil</label><textarea data-k="profile-setup" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 4 HOME -->
+  <section class="screen" id="home">
+    <div class="screen-head"><h2>4 · Início</h2><code>app/(tabs)/index.tsx</code></div>
+    <p class="screen-sub">Aba principal: fôlego, livro atual, meta anual, tarefa do dia, números, gêneros, sugestões, conquistas e "mais lidos". Possui tour guiado na 1ª visita.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><div class="bl" style="width:36px;height:36px;border-radius:50%">avatar</div><div class="grow"><div class="s">Bom dia. Café preto e Machado?</div><div class="h">Leitor Iniciante</div></div><span class="chip">⚙</span></div>
+        <div class="card">① 🔥 <b>7 dias</b> de fôlego · Guardado ●●○<div class="chart"><i class="hi"></i><i></i><i style="height:60%"></i><i style="height:80%" class="hi"></i><i style="height:40%"></i><i></i><i style="height:70%"></i><i style="height:50%"></i><i class="hi" style="height:90%"></i><i style="height:30%"></i><i style="height:65%"></i><i style="height:45%"></i><i style="height:75%"></i><i class="hi"></i></div><div class="row" style="justify-content:space-between"><span class="s">Últimos 14 dias · hoje destacado</span><span class="s">❔ Como funciona?</span></div></div>
+        <div class="h">Lendo agora</div>
+        <div class="card" style="background:#5C3A1E;color:#fff">② <b>Torto Arado</b><br>Itamar Vieira Jr.<br><span style="font-size:8px;opacity:.8">FALTAM 3H 20MIN no seu ritmo</span></div>
+        <div class="row"><div class="btn accent grow">▶ Continuar lendo</div><div class="btn alt" style="width:34px">⚙</div></div>
+        <div class="h">Meta de 2026 <span class="chip" style="float:right">Editar</span></div>
+        <div class="card">③ 8 / 24 livros · faltam 16 <div class="chart" style="height:8px"><i class="hi" style="height:8px;flex:4"></i><i style="height:8px;flex:6"></i></div></div>
+        <div class="h">Tarefa do dia</div>
+        <div class="card">④ 📚 Missão: leia 10 páginas hoje · +15 XP</div>
+        <div class="h">Seus números</div>
+        <div class="row"><div class="stat"><b>1.240</b><span>Páginas lidas</span></div><div class="stat"><b>8</b><span>Livros lidos</span></div></div>
+        <div class="row"><div class="stat"><b>0,8</b><span>Pace médio pág./min</span></div><div class="stat"><b>32</b><span>Sessões</span></div></div>
+        <div class="h">Gêneros favoritos</div>
+        <div class="card">⑤ Romance ▬▬▬ 4 · Ficção ▬ 2 · Clássico ▬ 2</div>
+        <div class="h">Para variar a estante</div>
+        <div class="card">⑥ "Que tal uma autora mulher?" — cards horizontais</div>
+        <div class="h">Conquistas <span class="chip">Ver todas</span></div>
+        <div class="row"><span class="chip">🏅 Primeira sessão</span><span class="chip">🏅 7 dias</span></div>
+        <div class="h">Mais lidos esta semana</div>
+        <div class="row">⑦ capas horizontais (Torto Arado, Alquimista, Sapiens...)</div>
+        <div class="tabsbar"><span class="on">🏠 Início</span><span>📚 Biblioteca</span><span>▶ Ler</span><span>👥 Grupos</span><span>👤 Perfil</span></div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Card Fôlego: streak + 3 tokens "guardados" + gráfico 14 dias + modal explicativo.</li>
+        <li><b>2</b> Livro atual com capa, ETA e botão "Continuar lendo". Se estante vazia: prompt com Capi.</li>
+        <li><b>3</b> Meta anual (12/24/52 presets) com barra de progresso.</li>
+        <li><b>4</b> Tarefa do dia (missão com XP).</li>
+        <li><b>5</b> Grid de stats + gêneros favoritos.</li>
+        <li><b>6</b> Sugestões de diversidade (autora mulher, BR, não-binário).</li>
+        <li><b>7</b> "Mais lidos esta semana" — lista estática fixa (hardcoded).</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Início</label><textarea data-k="home" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 5 BIBLIOTECA -->
+  <section class="screen" id="biblioteca">
+    <div class="screen-head"><h2>5 · Biblioteca</h2><code>app/(tabs)/biblioteca.tsx</code></div>
+    <p class="screen-sub">Abas "Lendo" / "Na estante" / "Caderno" (Trechos + Vocabulário).</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><div class="h grow">Biblioteca</div><span class="chip">🔍</span><span class="chip">＋</span></div>
+        <div class="bl">Procurar livro ou autor...</div>
+        <div class="row"><span class="chip on">Lendo (2)</span><span class="chip">Na estante (6)</span><span class="chip">Caderno</span></div>
+        <div class="card">① <div class="row"><div class="cov"></div><div class="grow"><b>Torto Arado</b><br><span class="s">Itamar Vieira Jr. · pág. 120/256</span></div></div></div>
+        <div class="card"><div class="row"><div class="cov"></div><div class="grow"><b>Duna</b><br><span class="s">Frank Herbert · pág. 15/688</span></div></div></div>
+        <div class="s" style="text-align:center;padding:6px">Aba Caderno → pílulas "Trechos" e "Vocabulário":<br>cards de citação (compartilhar/excluir) e palavras (fonética + definição)</div>
+        <div class="s" style="text-align:center">↕ Modal "Editar livro": título, autor, gênero, capa</div>
+        <div class="tabsbar"><span>🏠 Início</span><span class="on">📚 Biblioteca</span><span>▶ Ler</span><span>👥 Grupos</span><span>👤 Perfil</span></div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Cards de livro com capa, progresso; toque abre detalhe, segurar/editar abre modal.</li>
+        <li><b>2</b> Busca expande/recolhe com placeholders contextuais.</li>
+        <li><b>3</b> Caderno: trechos grifados e vocabulário salvos nas sessões.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Biblioteca</label><textarea data-k="biblioteca" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 6 SESSAO (Ler) -->
+  <section class="screen" id="sessao">
+    <div class="screen-head"><h2>6 · Nova Sessão (aba Ler)</h2><code>app/(tabs)/sessao.tsx</code></div>
+    <p class="screen-sub">Passo 1: escolher livro. Passo 2: página inicial, Spotify e Modo Foco.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="h">Nova Sessão</div>
+        <div class="bl">Procurar na estante...</div>
+        <div class="card" style="background:var(--ink);color:#fff">① <span class="s" style="color:#bbb">CONTINUAR DE ONDE PAROU</span><br><b>Torto Arado</b> · Pág. 120/256 <span class="btn round accent" style="display:inline-flex">▶</span></div>
+        <div class="card">② <b>Colocar um livro novo na estante</b><br><span class="s">Por título, autor ou ISBN — vale até Kafka</span></div>
+        <div class="lbl">Lendo</div>
+        <div class="card"><div class="row"><div class="cov"></div><div class="grow">Torto Arado<br><span class="s">pág. 120</span></div><span class="chip">›</span></div></div>
+        <div class="lbl">Quero Ler</div>
+        <div class="card"><div class="row"><div class="cov"></div><div class="grow">Sapiens<br><span class="s">não iniciado</span></div><span class="chip">›</span></div></div>
+        <div class="s" style="text-align:center">— Passo 2 (livro escolhido) —</div>
+        <div class="card">③ Página inicial: <b>120</b> / 256</div>
+        <div class="card">④ Trilha sonora · Sincronize com o Spotify <span class="chip">Abrir no Spotify</span></div>
+        <div class="card">⑤ Modo Foco: [toggle] — Capi cutuca se você der uma escapada<br><span class="chip">15min</span> <span class="chip on">30min</span> <span class="chip">60min</span></div>
+        <div class="btn accent">▶ Abrir o livro</div>
+        <div class="tabsbar"><span>🏠 Início</span><span>📚 Biblioteca</span><span class="on">▶ Ler</span><span>👥 Grupos</span><span>👤 Perfil</span></div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Hero do livro atual com sessão rápida (1 toque).</li>
+        <li><b>2</b> Atalho para adicionar livro.</li>
+        <li><b>3</b> Página inicial editável.</li>
+        <li><b>4</b> Integração Spotify (abre app e sincroniza cor/track).</li>
+        <li><b>5</b> Modo Foco com durações 15/30/60.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Nova Sessão</label><textarea data-k="sessao" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 7 GRUPOS -->
+  <section class="screen" id="grupos">
+    <div class="screen-head"><h2>7 · Grupos</h2><code>app/(tabs)/grupos/index.tsx</code></div>
+    <p class="screen-sub">Meus grupos + entrar com código de 6 letras.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><div class="h grow">Leio</div><span class="chip">＋</span></div>
+        <div class="s">Olá, Maria 👋</div>
+        <div class="lbl">Meus grupos</div>
+        <div class="card">① 📚 Clube do Machado · 5 membros · 🔥 12 dias<br><span class="chip on">Check-in feito</span></div>
+        <div class="card">🌙 Madrugada Literária · 3 membros · 🔥 2 dias<br><span class="chip">Sem check-in</span></div>
+        <div class="card">② <b>Entrar em um grupo</b><br><span class="s">Digite o código de 6 letras compartilhado por alguém do grupo.</span><br><span class="chip">ABC123</span> <span class="chip on">Entrar</span></div>
+        <div class="s" style="text-align:center">↕ Modal "Criar grupo": emoji, nome*, descrição</div>
+        <div class="tabsbar"><span>🏠 Início</span><span>📚 Biblioteca</span><span>▶ Ler</span><span class="on">👥 Grupos</span><span>👤 Perfil</span></div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Card do grupo: emoji, nº de membros, streak e status do check-in do dia.</li>
+        <li><b>2</b> Entrar por código de convite.</li>
+        <li><b>3</b> Criação em modal: emoji do grupo, nome, descrição.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Grupos (lista)</label><textarea data-k="grupos" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 8 PERFIL -->
+  <section class="screen" id="perfil">
+    <div class="screen-head"><h2>8 · Perfil</h2><code>app/(tabs)/perfil.tsx</code> (+ versão modal <code>app/perfil.tsx</code> com foto)</div>
+    <p class="screen-sub">Nível/XP, semana, recordes, calendário, retrospectiva, cards e medalhas.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><div class="bl" style="width:40px;height:40px;border-radius:50%">🐻</div><div class="grow"><b>Leitor Iniciante</b><br><span class="s">340 XP · faltam 160 pro próximo nível</span></div><span class="chip">⚙</span></div>
+        <div class="s" style="background:var(--wire2);border-radius:4px;height:6px"><span style="display:block;width:68%;height:6px;background:var(--accent);border-radius:4px"></span></div>
+        <div class="h">Esta semana</div>
+        <div class="card">① Páginas 84 · Tempo 1h 20 · Sessões 5<br><span class="s">Gráfico de linha — Últimas 12 semanas</span></div>
+        <div class="h">Seus recordes (e a Capi se orgulha)</div>
+        <div class="row"><div class="stat"><b>8</b><span>Livros fechados</span></div><div class="stat"><b>1.240</b><span>Páginas viradas</span></div></div>
+        <div class="row"><div class="stat"><b>1,2</b><span>Maior velocidade</span></div><div class="stat"><b>52min</b><span>Maratona maior</span></div></div>
+        <div class="row"><div class="stat"><b>21</b><span>Fôlego máximo</span></div></div>
+        <div class="h">Agosto 2026 <span class="chip">🔥 7 semanas</span></div>
+        <div class="card">② Sua sequência · Sessões no mês<br>S T Q Q S S D · grid com bolinhas nos dias lidos</div>
+        <div class="h">Retrospectiva</div>
+        <div class="card">③ Julho — mini gráfico de barras</div>
+        <div class="card">④ Meus Cards › Histórico de cards</div>
+        <div class="h">Conquistas <span class="chip">Ver todas (12/40)</span></div>
+        <div class="row"><span class="chip">🏅</span><span class="chip">🏅</span><span class="chip">🏅</span></div>
+        <div class="tabsbar"><span>🏠 Início</span><span>📚 Biblioteca</span><span>▶ Ler</span><span>👥 Grupos</span><span class="on">👤 Perfil</span></div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Métricas da semana + gráfico de 12 semanas.</li>
+        <li><b>2</b> Calendário mensal com dias lidos marcados.</li>
+        <li><b>3</b> Retrospectiva do mês anterior.</li>
+        <li><b>4</b> Atalho para Meus Cards e Conquistas.</li>
+        <li><b>5</b> Versão modal (<code>/perfil</code>, aberta pelo avatar da home) inclui seção "Sua foto" com Capi/galeria/câmera.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Perfil</label><textarea data-k="perfil" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 9 SESSAO ATIVA -->
+  <section class="screen" id="sessao-ativa">
+    <div class="screen-head"><h2>9 · Sessão ativa</h2><code>app/sessao-ativa.tsx</code></div>
+    <p class="screen-sub">Cronômetro sobre vídeo da Capi; Spotify, Modo Foco, citações.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame" style="background:#2b2a26;color:#fff">
+        <div class="card" style="background:rgba(255,255,255,.12);border-color:transparent;color:#fff">① 🖼 capa · Torto Arado — Itamar Vieira Jr. <span class="chip" style="color:#fff">Foco</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
+          <span class="s" style="color:#bbb">começou na pág. 120</span>
+          <div style="font-size:26px;font-weight:900">00:12:34</div>
+          <div class="s" style="background:var(--wire2);border-radius:4px;height:5px;width:80%"><span style="display:block;width:40%;height:5px;background:var(--accent);border-radius:4px"></span></div>
+          <div class="bl" style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.12);border-color:transparent;color:#eee">🐻</div>
+          <div class="s" style="color:#bbb">♪ Now Playing — faixa · artista</div>
+        </div>
+        <div class="row" style="justify-content:center;gap:10px">
+          <div class="btn round alt" style="background:rgba(255,255,255,.15);border-color:transparent;color:#fff">⏸</div>
+          <div class="btn round alt" style="background:rgba(255,255,255,.15);border-color:transparent;color:#fff">🌐</div>
+          <div class="btn" style="background:#e07856;flex:1">Encerrar</div>
+        </div>
+        <div class="chip" style="position:absolute;right:10px;bottom:60px;color:#fff;background:rgba(255,255,255,.15);border-color:transparent">⭐ Incluir citação</div>
+        <div class="shade"><div class="sheet">② <b>Em que página o capítulo te soltou?</b><br><span class="s">Começou na 120 · livro tem 256</span><br><span class="chip">135</span><br><span class="chip on">Salvar e encerrar</span> <span class="chip">Não lembro</span> <span class="chip">Cancelar</span></div></div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Capa + badge "Foco"; UI esmaece após ~30s sem toque.</li>
+        <li><b>2</b> Timer gigante, barra do Modo Foco, Capi lendo, widget Spotify.</li>
+        <li><b>3</b> Controles: pausa, vocabulário, encerrar; ⭐ citação flutuante.</li>
+        <li><b>4</b> Ao encerrar: pede página atual (com "não lembro").</li>
+        <li><b>5</b> Modal do Modo Foco se o usuário sair do app: "Capi ficou esperando...".</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Sessão ativa</label><textarea data-k="sessao-ativa" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 10 CONCLUSAO -->
+  <section class="screen" id="conclusao">
+    <div class="screen-head"><h2>10 · Conclusão da sessão</h2><code>app/conclusao.tsx</code></div>
+    <p class="screen-sub">Stats, medalhas, missão, agendar próxima sessão e compartilhar.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div style="text-align:center;padding:4px"><div class="bl" style="width:56px;height:56px;border-radius:50%;margin:0 auto">🎉</div><div class="h">Capa fechada. Livro vencido.</div></div>
+        <div class="row"><div class="stat"><b>15</b><span>páginas</span></div><div class="stat"><b>12min 30s</b><span>duração</span></div><div class="stat"><b>1,2</b><span>págs/min</span></div></div>
+        <div class="card">① Faltam 121 páginas · ~2h pra terminar</div>
+        <div class="card">② Foco impecável. Nem Bentinho ficou tão atento.</div>
+        <div class="h">Medalhinhas novas na estante!</div>
+        <div class="card">🏅 Meta diária batida · +20XP</div>
+        <div class="card">✅ Tarefa do dia concluída! · +15XP</div>
+        <div class="card">③ Próximo livro da fila? — Sapiens · grátis</div>
+        <div class="card">④ Agendar a próxima sessão? <span class="chip">Hoje à noite</span><span class="chip">Amanhã de manhã</span><span class="chip">Amanhã à noite</span></div>
+        <div class="btn accent">⑤ Mostrar essa sessão pro mundo</div>
+        <div class="btn alt">Registrar no grupo</div>
+        <div class="btn alt">Voltar pro início</div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Quanto falta (quando o livro não acabou).</li>
+        <li><b>2</b> Resumo do Modo Foco (verde/coral).</li>
+        <li><b>3</b> Sugestão do próximo livro da fila.</li>
+        <li><b>4</b> Agendamento de notificação.</li>
+        <li><b>5</b> Vai para Compartilhar; se for de grupo, check-in.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Conclusão</label><textarea data-k="conclusao" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 11 COMPARTILHAR -->
+  <section class="screen" id="compartilhar">
+    <div class="screen-head"><h2>11 · Compartilhar</h2><code>app/compartilhar.tsx</code></div>
+    <p class="screen-sub">Card de stories editável: foto, template, stats e citação.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><span class="chip">‹</span><div class="h grow">Compartilhar</div></div>
+        <div class="row"><span class="chip">📷 Câmera (app)</span><span class="chip">🖼 Galeria</span><span class="chip on">Sem foto</span></div>
+        <div class="card" style="height:170px;display:flex;align-items:center;justify-content:center;background:var(--ink);color:#fff">① Preview do card<br><span class="s" style="color:#bbb">foto de fundo · stats · citação</span></div>
+        <div class="row">② <span class="chip on">Stories</span><span class="chip">Noir</span><span class="chip">Cream</span><span class="chip">Coral</span></div>
+        <div class="row"><span class="chip">⚙ Editar stats</span><span class="chip">“ Adicionar citação</span></div>
+        <div class="row"><div class="btn accent grow">Stories</div><div class="btn alt">Copiar</div><div class="btn alt">Baixar</div><div class="btn alt">Mais</div></div>
+        <div class="s" style="text-align:center">↕ Sheets: "Editar estatísticas" (switches) · "Adicionar citação" (0/240)</div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Card gerado a partir da sessão (ShareCard).</li>
+        <li><b>2</b> Carrossel de templates.</li>
+        <li><b>3</b> Exporta para Stories, copia ou baixa PNG.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Compartilhar</label><textarea data-k="compartilhar" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 12 MEUS CARDS -->
+  <section class="screen" id="meus-cards">
+    <div class="screen-head"><h2>12 · Meus Cards</h2><code>app/meus-cards.tsx</code></div>
+    <p class="screen-sub">Histórico de cards gerados nas sessões.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><span class="chip">‹</span><div class="h grow">Meus Cards</div></div>
+        <div class="row"><div class="card" style="flex:1;height:110px;background:var(--ink);color:#fff;display:flex;align-items:flex-end;font-size:9px">28 ago · Torto Arado</div><div class="card" style="flex:1;height:110px;background:#5C3A1E;color:#fff;display:flex;align-items:flex-end;font-size:9px">26 ago · Duna</div></div>
+        <div class="row"><div class="card" style="flex:1;height:110px;background:var(--wire)"></div><div class="card" style="flex:1;height:110px;background:var(--wire)"></div></div>
+        <div class="s" style="text-align:center">↕ Modal de detalhe: preview + ações (Stories · Copiar · Baixar · Mais)</div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Grade 2 colunas de thumbnails; vazio: "Nenhum card ainda".</li>
+        <li><b>2</b> Detalhe com mesmas ações do Compartilhar.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Meus Cards</label><textarea data-k="meus-cards" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 13 GRUPO DETALHE -->
+  <section class="screen" id="grupo-detalhe">
+    <div class="screen-head"><h2>13 · Grupo (detalhe)</h2><code>app/(tabs)/grupos/[id].tsx</code></div>
+    <p class="screen-sub">A tela mais rica: convite, clube do livro, desafio, check-ins, heatmap e membros.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><span class="chip">‹ Grupos</span></div>
+        <div class="row"><div class="bl" style="width:40px;height:40px;border-radius:10px">📚</div><div class="grow"><b>Clube do Machado</b><br><span class="s">Um parágrafo sobre o grupo...</span></div><span class="chip">↪</span></div>
+        <div class="card">① CÓDIGO DE CONVITE: <b>ABC123</b> <span class="chip">Copiar</span></div>
+        <div class="lbl">Clube do livro</div>
+        <div class="card">② 🖼 Dom Casmurro · badge "Encontro hoje!"<br>PROGRESSO DOS MEMBROS — barras por %<br><span class="chip">Trechos do clube (4) ▾</span> <span class="chip">Encerrar clube</span></div>
+        <div class="lbl">Desafio do grupo</div>
+        <div class="card">③ MAIS PÁGINAS · 2d 5h restantes<br>🥇 Ana · 🥈 Bia · 🥉 (você)</div>
+        <div class="lbl">Check-in de hoje</div>
+        <div class="card">④ ✅ Check-in feito! 🤩 · 20 págs · comentário</div>
+        <div class="lbl">Atividade hoje</div>
+        <div class="card">⑤ avatar · nome · 🤩 · 20 págs · 🖼 · livro · comentário</div>
+        <div class="lbl">Últimas 4 semanas</div>
+        <div class="card">⑥ heatmap D S T Q Q S S D (pontos por membro)</div>
+        <div class="lbl">Membros</div>
+        <div class="card">👤 Ana 👑 · 👤 Bia · 👤 (você) · 🔥 streaks</div>
+        <div class="s" style="text-align:center">↕ Modais: pódio de desafio · novo desafio · iniciar clube · resumo do clube</div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Código de convite copiável.</li>
+        <li><b>2</b> Clube do livro: livro comum, encontro, progresso e trechos.</li>
+        <li><b>3</b> Desafio com countdown e leaderboard.</li>
+        <li><b>4</b> Check-in do dia por membro.</li>
+        <li><b>5</b> Atividade: humor, páginas, foto (lightbox), comentário.</li>
+        <li><b>6</b> Heatmap de 4 semanas + lista de membros com streaks.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Grupo (detalhe)</label><textarea data-k="grupo-detalhe" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 14 CHECKIN -->
+  <section class="screen" id="checkin">
+    <div class="screen-head"><h2>14 · Check-in diário</h2><code>app/(tabs)/grupos/checkin.tsx</code></div>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><span class="chip">Cancelar</span></div>
+        <div class="h">📚 Check-in diário<br><span class="s">Clube do Machado</span></div>
+        <div class="card">① Quantas páginas você leu hoje? *<br><b style="font-size:18px">20</b> págs</div>
+        <div class="card">② Como foi a leitura? *<br><span class="chip on">🤩 Amei!</span> <span class="chip">😊 Bem</span> <span class="chip">😐 OK</span> <span class="chip">😓 Difícil</span></div>
+        <div class="bl">Qual livro? (opcional) — "Título do livro..."</div>
+        <div class="card">③ 📸 Foto da leitura (opcional)<br><span class="s">"Mostra pra gente onde você tá lendo hoje" — mesa do café · cama · transporte · sofá · jardim</span><br><span class="chip">Adicionar foto</span></div>
+        <div class="bl">④ Deixa uma mensagem pro grupo (0/140)</div>
+        <div class="btn accent">✓ Fazer check-in</div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Páginas lidas (obrigatório).</li>
+        <li><b>2</b> Humor em 4 opções.</li>
+        <li><b>3</b> Foto opcional com sugestões de cenário.</li>
+        <li><b>4</b> Mensagem de até 140 caracteres.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Check-in</label><textarea data-k="checkin" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 15 ADICIONAR -->
+  <section class="screen" id="adicionar">
+    <div class="screen-head"><h2>15 · Novo livro (hub)</h2><code>app/adicionar-livro.tsx</code></div>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><span class="chip">‹</span><div class="h grow">Novo livro na estante</div></div>
+        <div class="s">Por qual caminho vamos?</div>
+        <div class="card">① 🔍 <b>Buscar pelo nome</b><br><span class="s">Procura pelo título, autor ou ISBN e adiciona com um toque.</span></div>
+        <div class="card">② 📷 <b>Mirar o código de barras</b><br><span class="s">Aponta a câmera pro ISBN da contracapa e pronto.</span></div>
+        <div class="card">③ ✍ <b>Cadastrar na mão</b><br><span class="s">Tira uma foto da capa e preenche os campos. Trabalho de bibliotecário.</span></div>
+        <div class="s">Nota (web): o escâner funciona direito no app instalado.</div>
+      </div></div>
+      <div class="annots"><ul><li><b>1–3</b> Três caminhos de entrada; ① é o mais usado.</li></ul></div>
+      <div class="cmt"><label>Ajustes desejados — Hub de adição</label><textarea data-k="adicionar" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 16 BUSCAR -->
+  <section class="screen" id="buscar">
+    <div class="screen-head"><h2>16 · Buscar livro</h2><code>app/buscar-livro.tsx</code></div>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><span class="chip">✕</span><div class="h grow">Procurar livro</div><span class="chip">▮▯</span></div>
+        <div class="bl">Título, autor ou ISBN... <span class="chip">✕</span></div>
+        <div class="s">Digite título, autor ou cole o ISBN. A gente vasculha o acervo.</div>
+        <div class="card">① <div class="row"><div class="cov"></div><div class="grow"><b>Torto Arado</b><br><span class="s">Itamar Vieira Jr. · 256 págs · ISBN...</span></div><span class="chip">＋</span></div></div>
+        <div class="card"><div class="row"><div class="cov"></div><div class="grow"><b>Dom Casmurro</b><br><span class="s">Machado de Assis · 224 págs</span></div><span class="chip">＋</span></div></div>
+        <div class="s" style="text-align:center">Estados: Capi lendo (vazio) · spinner · Capi triste (sem internet) · "Não encontrei — adicionar com foto"</div>
+        <div class="s" style="text-align:center">↕ Bottom sheet: capa da galeria · "Vai entrar em qual prateleira?" → Lendo agora / Quero ler / Já li</div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Resultados com capa, páginas e ISBN; ＋ abre a escolha de prateleira.</li>
+        <li><b>2</b> Fallback manual quando a busca falha.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Buscar livro</label><textarea data-k="buscar" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 17 ESCANEAR -->
+  <section class="screen" id="escanear">
+    <div class="screen-head"><h2>17 · Escanear ISBN</h2><code>app/escanear-livro.tsx</code></div>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><span class="chip">‹</span><div class="h grow">Escanear livro</div><span class="chip">⌨</span></div>
+        <div style="flex:1;background:var(--wire2);border-radius:12px;display:flex;align-items:center;justify-content:center;position:relative"><div style="width:120px;height:70px;border:2px dashed var(--ink);border-radius:8px"></div><span class="chip" style="position:absolute;bottom:8px">Mira no código de barras</span></div>
+        <div class="s">Modo teclado: "Digita o ISBN que tá na contracapa." + campo 978... + Buscar</div>
+        <div class="s" style="text-align:center">↕ Sheet: "Caçando o ISBN..." → resultado (capa, título, N páginas) → Tô lendo / Quero ler / Próximo da pilha · não encontrado → "Escanear outro"/"Cadastrar na mão"</div>
+      </div></div>
+      <div class="annots"><ul><li><b>1</b> Câmera com retículo; alterna para teclado; resultado em bottom sheet sobre a câmera.</li></ul></div>
+      <div class="cmt"><label>Ajustes desejados — Escanear</label><textarea data-k="escanear" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 18 MANUAL -->
+  <section class="screen" id="manual">
+    <div class="screen-head"><h2>18 · Cadastro manual</h2><code>app/livro-manual.tsx</code></div>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><span class="chip">‹</span><div class="h grow">Cadastrar na mão</div></div>
+        <div style="display:flex;justify-content:center;padding:8px"><div class="bl" style="width:90px;height:120px;border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center">📷 Bater foto da capa</div></div>
+        <div class="bl">Título * — "Ex: Dom Casmurro"</div>
+        <div class="bl">Autor * — "Ex: Machado de Assis"</div>
+        <div class="bl">Páginas * — "Ex: 256"</div>
+        <div class="bl">Quando ele entrou na sua vida — DD/MM/AAAA</div>
+        <div class="card">Status: <span class="chip on">Lendo</span> <span class="chip">Quero ler</span> <span class="chip">Já li</span></div>
+        <div class="btn">Guardar na estante</div>
+      </div></div>
+      <div class="annots"><ul><li><b>1</b> Capa por câmera/galeria; botão desabilitado até preencher título, autor e páginas.</li></ul></div>
+      <div class="cmt"><label>Ajustes desejados — Cadastro manual</label><textarea data-k="manual" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 19 LIVRO DETALHE -->
+  <section class="screen" id="livro">
+    <div class="screen-head"><h2>19 · Detalhe do livro</h2><code>app/livro/[id].tsx</code></div>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><span class="chip">‹</span></div>
+        <div class="card" style="background:#5C3A1E;color:#fff">① 🖼 capa · <b>Torto Arado</b><br>Itamar Vieira Jr. · <span class="chip" style="color:#fff">Lendo</span></div>
+        <div class="card">② Clássico de domínio público — <span class="chip">Ler trecho aqui mesmo</span></div>
+        <div class="card">③ Pág. 120 de 256 · 47% <span class="chart" style="height:6px"><i class="hi" style="height:6px;flex:5"></i><i style="height:6px;flex:5"></i></span></div>
+        <div class="row"><div class="stat"><b>12</b><span>Sessões</span></div><div class="stat"><b>3h 40</b><span>Tempo total</span></div></div>
+        <div class="row"><div class="stat"><b>0,9</b><span>Pace médio</span></div><div class="stat"><b>—</b><span>Gênero</span></div></div>
+        <div class="btn accent">④ Voltar pro capítulo</div>
+        <div class="card">⑤ Status: <span class="chip on">Lendo</span> <span class="chip">Lido</span> <span class="chip">Quero ler</span> <span class="chip">Abandonado</span></div>
+        <div class="lbl">Histórico de sessões</div>
+        <div class="card">28 ago · Págs 105–120 · 12min · 0,9 pág/min</div>
+        <div class="s">Adicionado em ... · Concluído em ...</div>
+        <div class="btn" style="background:#c0503c">🗑 Tirar da estante</div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Header colorido pela capa com pill de status.</li>
+        <li><b>2</b> Leitor embutido para clássicos gratuitos.</li>
+        <li><b>3</b> Progresso + 4 estatísticas.</li>
+        <li><b>4</b> Retomar leitura.</li>
+        <li><b>5</b> Mudança de status e histórico de sessões.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Detalhe do livro</label><textarea data-k="livro" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 20 BADGES -->
+  <section class="screen" id="badges">
+    <div class="screen-head"><h2>20 · Conquistas</h2><code>app/(tabs)/badges.tsx</code></div>
+    <p class="screen-sub">Fora da barra de tabs — acessível pelo Perfil e pela home.</p>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><div class="h grow">Conquistas<br><span class="s">12/40 desbloqueadas</span></div><div class="bl" style="width:40px;height:40px;border-radius:50%">🐻</div></div>
+        <div class="card">🔥 7 dias seguidos · <span class="chip">Leitor Iniciante</span><br><span class="s">Lê hoje pra não deixar essa sequência cair.</span></div>
+        <div class="row">① <span class="chip on">Todas</span><span class="chip">Início</span><span class="chip">Ritmo</span><span class="chip">Volume</span></div>
+        <div class="row"><span class="chip">Sequência</span><span class="chip">Hábito</span><span class="chip">Modos</span><span class="chip">Vocabulário</span></div>
+        <div class="row"><div class="card" style="flex:1;text-align:center">🏅<br><b>Primeira sessão</b></div><div class="card" style="flex:1;text-align:center">🏅<br><b>7 dias</b></div></div>
+        <div class="row"><div class="card" style="flex:1;text-align:center;opacity:.5">🔒<br>?</div><div class="card" style="flex:1;text-align:center;opacity:.5">🔒<br>?</div></div>
+      </div></div>
+      <div class="annots"><ul>
+        <li><b>1</b> Chips de filtro por categoria (só com itens) + grid 2 colunas, desbloqueadas primeiro.</li>
+      </ul></div>
+      <div class="cmt"><label>Ajustes desejados — Conquistas</label><textarea data-k="badges" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <!-- 21 SETTINGS -->
+  <section class="screen" id="settings">
+    <div class="screen-head"><h2>21 · Configurações</h2><code>app/settings.tsx</code></div>
+    <div class="flow">
+      <div class="phone"><div class="notch"></div><div class="frame">
+        <div class="row"><span class="chip">‹</span><div class="h grow">Configurações</div></div>
+        <div class="lbl">Tema</div>
+        <div class="card">Papel — "Claro feito manhã de Drummond" · Aa ✓</div>
+        <div class="lbl">Audio</div>
+        <div class="card">🔊 Efeitos sonoros [ON] — página virando, conquista batendo...</div>
+        <div class="lbl">Notificações</div>
+        <div class="card">🔔 Lembretes diários [ON]<br>Alterar horário — 20:00</div>
+        <div class="lbl">Trilha sonora</div>
+        <div class="card">🎵 Spotify conectado <span class="chip">Desconectar</span></div>
+        <div class="lbl">Seus dados</div>
+        <div class="card">Exportar meus dados (em breve)</div>
+        <div class="btn" style="background:#c0503c">Excluir minha conta</div>
+        <div class="s" style="text-align:center">Leio v1.0.0 · Feito com café preto e marcador de página</div>
+      </div></div>
+      <div class="annots"><ul><li><b>1</b> Tema fixo em "Papel" (claro); som, notificações, Spotify, dados e exclusão de conta.</li></ul></div>
+      <div class="cmt"><label>Ajustes desejados — Configurações</label><textarea data-k="settings" placeholder=""></textarea></div>
+    </div>
+  </section>
+
+  <p class="s" style="text-align:center;margin:30px 0">Também existem: leitor de trechos (app/leitor/[id].tsx) e leitor ePub/PDF (app/leitor-arquivo/[bookId].tsx) — comente se quiser vê-los em detalhe.</p>
+</main>
+
+<div class="toolbar">
+  <button id="saved">Salvo ✓</button>
+  <button id="copyAll">Copiar todos os comentários</button>
+</div>
+
+<script>
+  const KEY = "leio.wireframe.comments.v1";
+  const saved = JSON.parse(localStorage.getItem(KEY) || "{}");
+  document.querySelectorAll("textarea[data-k]").forEach(t => {
+    t.value = saved[t.dataset.k] || "";
+    t.addEventListener("input", () => {
+      saved[t.dataset.k] = t.value;
+      localStorage.setItem(KEY, JSON.stringify(saved));
+      const b = document.getElementById("saved");
+      b.style.opacity = 1; clearTimeout(b._t); b._t = setTimeout(() => b.style.opacity = 0, 1200);
+    });
+  });
+  document.getElementById("copyAll").addEventListener("click", () => {
+    const lines = ["Ajustes desejados — Wireframes Leio", ""];
+    document.querySelectorAll("section.screen").forEach(s => {
+      const t = s.querySelector("textarea");
+      if (t && t.value.trim()) { lines.push("## " + s.querySelector("h2").textContent); lines.push(t.value.trim()); lines.push(""); }
+    });
+    if (lines.length === 2) lines.push("(nenhum comentário preenchido)");
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      const b = document.getElementById("copyAll");
+      b.textContent = "Copiado! ✓";
+      setTimeout(() => b.textContent = "Copiar todos os comentários", 1600);
+    });
+  });
+</script>
+</body>
+</html>

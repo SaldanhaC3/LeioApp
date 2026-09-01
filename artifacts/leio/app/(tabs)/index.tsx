@@ -1,12 +1,14 @@
 import { CapiMascot } from "@/components/CapiMascot";
+import { HomeTour, type TourStep } from "@/components/HomeTour";
 import { MissionCard } from "@/components/MissionCard";
 import { useApp, getLevel, GENRE_LABELS, type Session } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Modal,
   Platform,
@@ -20,6 +22,8 @@ import {
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { startQuickSession } from "@/utils/startSession";
+
+const HOME_TOUR_SEEN_KEY = "leio.homeTourSeen";
 
 const CAPI_PROFILE_IMAGES: Record<string, ReturnType<typeof require>> = {
   "capi://default": require("@/assets/images/capi-default.png"),
@@ -178,6 +182,52 @@ export default function HomeScreen() {
   const [goalEditing, setGoalEditing] = useState(false);
   const currentBook = getCurrentBook();
 
+  // App-tour na primeira visita à home (post-it note-5) — ilumina header, fôlego,
+  // tarefa do dia e seus números, um de cada vez, com texto curto e didático.
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollYRef = useRef(0);
+  const headerRef = useRef<View>(null);
+  const folegoRef = useRef<View>(null);
+  const missionRef = useRef<View>(null);
+  const statsRef = useRef<View>(null);
+  const [tourVisible, setTourVisible] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(HOME_TOUR_SEEN_KEY)
+      .then((seen) => {
+        if (seen !== "true") setTourVisible(true);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  function finishTour() {
+    setTourVisible(false);
+    AsyncStorage.setItem(HOME_TOUR_SEEN_KEY, "true").catch(() => undefined);
+  }
+
+  const tourSteps: TourStep[] = [
+    {
+      ref: headerRef,
+      title: "Você por aqui",
+      text: "Seu avatar, saudação e nível de leitor. Toca no avatar pra ver seu perfil completo, ou na engrenagem pra ajustar o app.",
+    },
+    {
+      ref: folegoRef,
+      title: "Seu fôlego",
+      text: "Dias seguidos lendo. Perder um dia custa um dia guardado — os tokens ali do lado — antes de zerar a sequência de vez.",
+    },
+    {
+      ref: missionRef,
+      title: "Tarefa do dia",
+      text: "Uma missão pequena e específica pra hoje. Cumprir ela é o jeito mais rápido de manter o hábito sem se cobrar demais.",
+    },
+    {
+      ref: statsRef,
+      title: "Seus números",
+      text: "Páginas, livros, ritmo e sessões — o retrato geral de como sua leitura anda, sempre atualizado.",
+    },
+  ];
+
   const currentYear = new Date().getFullYear();
   const goal =
     settings.readingGoal && settings.readingGoal.year === currentYear
@@ -283,15 +333,20 @@ export default function HomeScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={[
         styles.content,
         { paddingTop: topInset + 16, paddingBottom: 100 + bottomInset },
       ]}
       showsVerticalScrollIndicator={false}
+      onScroll={(e) => {
+        scrollYRef.current = e.nativeEvent.contentOffset.y;
+      }}
+      scrollEventThrottle={16}
     >
       {/* Header */}
-      <View style={styles.header}>
+      <View style={styles.header} ref={headerRef} collapsable={false}>
         <TouchableOpacity
           onPress={() => router.push("/perfil")}
           activeOpacity={0.8}
@@ -334,7 +389,11 @@ export default function HomeScreen() {
       </View>
 
       {/* Folego Widget — spike chart */}
-      <View style={[styles.folegoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View
+        ref={folegoRef}
+        collapsable={false}
+        style={[styles.folegoCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+      >
         <View style={styles.folegoTopRow}>
           <View style={styles.folegoLeft}>
             <View style={[styles.folegoIconWrap, { backgroundColor: `${colors.volt}22` }]}>
@@ -561,15 +620,17 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {/* Daily Missions */}
-      <View style={styles.section}>
+      {/* Daily Mission */}
+      <View style={styles.section} ref={missionRef} collapsable={false}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Tarefas do dia
+            Tarefa do dia
           </Text>
-          <Text style={[styles.sectionSub, { color: colors.mutedForeground }]}>
-            {missions.filter((m) => m.completed).length}/{missions.length}
-          </Text>
+          {missions[0]?.completed ? (
+            <Text style={[styles.sectionSub, { color: colors.accentText }]}>
+              Concluída
+            </Text>
+          ) : null}
         </View>
         {missions.map((m) => (
           <MissionCard key={m.id} mission={m} />
@@ -577,7 +638,7 @@ export default function HomeScreen() {
       </View>
 
       {/* Stats Grid */}
-      <View style={styles.section}>
+      <View style={styles.section} ref={statsRef} collapsable={false}>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
           Seus números
         </Text>
@@ -795,6 +856,15 @@ export default function HomeScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <HomeTour
+        visible={tourVisible}
+        steps={tourSteps}
+        scrollRef={scrollRef}
+        scrollYRef={scrollYRef}
+        colors={colors}
+        onFinish={finishTour}
+      />
     </ScrollView>
   );
 }

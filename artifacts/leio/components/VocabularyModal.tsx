@@ -183,7 +183,7 @@ export function VocabularyModal({
     >
       <KeyboardAvoidingView
         style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : Platform.OS === "android" ? "height" : undefined}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}

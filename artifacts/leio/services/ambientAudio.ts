@@ -13,7 +13,12 @@ const AMBIENT_ASSETS: Record<string, number> = {
 let currentSound: Audio.Sound | null = null;
 let currentAmbientId: string | null = null;
 
-export async function startAmbient(ambientId: AmbientId): Promise<void> {
+export const DEFAULT_AMBIENT_VOLUME = 0.28;
+
+export async function startAmbient(
+  ambientId: AmbientId,
+  volume: number = DEFAULT_AMBIENT_VOLUME
+): Promise<void> {
   if (ambientId === "none") {
     await stopAmbient();
     return;
@@ -37,7 +42,7 @@ export async function startAmbient(ambientId: AmbientId): Promise<void> {
 
     const { sound } = await Audio.Sound.createAsync(asset, {
       isLooping: true,
-      volume: 0.45,
+      volume: Math.max(0, Math.min(1, volume)),
     });
     currentSound = sound;
     currentAmbientId = ambientId;

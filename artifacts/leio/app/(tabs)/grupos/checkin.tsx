@@ -235,7 +235,7 @@ export default function CheckInScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      behavior={Platform.OS === "ios" ? "padding" : Platform.OS === "android" ? "height" : undefined}
     >
       <ScrollView
         style={[styles.container, { backgroundColor: colors.background }]}

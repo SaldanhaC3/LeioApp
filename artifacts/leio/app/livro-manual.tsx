@@ -21,12 +21,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const COVER_COLORS = ["#1A1A2E", "#16213E", "#0F3460", "#533483", "#2C3E50", "#27AE60", "#8E44AD"];
-function pickCoverColor(seed: string): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
-  return COVER_COLORS[Math.abs(h) % COVER_COLORS.length];
-}
+import { pickCoverColor } from "@/utils/coverColor";
 
 const STATUS_OPTIONS: { label: string; value: BookStatus; icon: keyof typeof Ionicons.glyphMap }[] = [
   { label: "Lendo", value: "reading", icon: "book-outline" },

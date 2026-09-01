@@ -55,7 +55,7 @@ export function Button({
   const dims = SIZES[size];
 
   const palette: Record<Variant, { bg: string; fg: string; border: string }> = {
-    primary: { bg: colors.volt, fg: "#2A2118", border: colors.volt },
+    primary: { bg: colors.volt, fg: colors.foreground, border: colors.volt },
     secondary: { bg: colors.secondary, fg: colors.foreground, border: colors.border },
     ghost: { bg: "transparent", fg: colors.accentText, border: "transparent" },
     destructive: { bg: "transparent", fg: colors.coral, border: colors.coral },

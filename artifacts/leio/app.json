@@ -11,14 +11,18 @@
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#14110D"
+      "backgroundColor": "#F2D492"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.leio.app",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"],
-        "LSApplicationQueriesSchemes": ["spotify"]
+        "UIBackgroundModes": [
+          "audio"
+        ],
+        "LSApplicationQueriesSchemes": [
+          "spotify"
+        ]
       }
     },
     "android": {
@@ -63,7 +67,8 @@
           "photosPermission": "A Capi precisa acessar suas fotos pra usar como capa do livro ou fundo do card de leitura.",
           "cameraPermission": "A Capi precisa da câmera pra fotografar a capa do livro ou tirar a foto do card de leitura."
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,

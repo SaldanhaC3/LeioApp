@@ -1,4 +1,4 @@
-export type StatKey = "pages" | "duration" | "pace" | "streak" | "percent";
+export type StatKey = "pages" | "duration" | "pace" | "streak" | "percent" | "xp";
 
 export interface StatDef {
   key: StatKey;
@@ -43,6 +43,13 @@ export const ALL_STATS: StatDef[] = [
     cardLabel: "do livro",
     description: "Porcentagem do livro concluída",
     icon: "pie-chart-outline",
+  },
+  {
+    key: "xp",
+    label: "XP",
+    cardLabel: "XP ganho",
+    description: "XP ganho nessa sessão",
+    icon: "flash-outline",
   },
 ];
 

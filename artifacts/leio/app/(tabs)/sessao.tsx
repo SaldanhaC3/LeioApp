@@ -1,10 +1,9 @@
 import { useApp } from "@/contexts/AppContext";
 import { useColors } from "@/hooks/useColors";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Alert,
   FlatList,
@@ -19,16 +18,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Book } from "@/contexts/AppContext";
-import { AMBIENT_STORAGE_KEY, startQuickSession } from "@/utils/startSession";
+import { startQuickSession } from "@/utils/startSession";
 
-const AMBIENT_OPTIONS = [
-  { id: "cafe", label: "Café", icon: "cafe-outline" },
-  { id: "rain", label: "Chuva", icon: "rainy-outline" },
-  { id: "library", label: "Biblioteca", icon: "library-outline" },
-  { id: "forest", label: "Floresta", icon: "leaf-outline" },
-  { id: "fireplace", label: "Lareira", icon: "flame-outline" },
-  { id: "none", label: "Silêncio", icon: "volume-mute-outline" },
-];
+// Sons ambiente foram removidos desta tela (v.2 ainda não roda no lado do
+// cliente). O parâmetro `ambient` continua sendo repassado para
+// `/sessao-ativa` com um valor fixo até essa feature voltar.
+const DEFAULT_AMBIENT = "none";
 
 export default function SessaoScreen() {
   const colors = useColors();
@@ -39,30 +34,15 @@ export default function SessaoScreen() {
   const [step, setStep] = useState<"book" | "config">("book");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [startPage, setStartPage] = useState("");
-  const [ambient, setAmbient] = useState(settings.ambientDefault);
   const [focusMode, setFocusMode] = useState(false);
   const [focusDuration, setFocusDuration] = useState(30);
+  const [customDuration, setCustomDuration] = useState(false);
+  const [customMinutes, setCustomMinutes] = useState("45");
   const [search, setSearch] = useState("");
   const [spotifyOpened, setSpotifyOpened] = useState(false);
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = Platform.OS === "web" ? 34 : 0;
-
-  useEffect(() => {
-    AsyncStorage.getItem(AMBIENT_STORAGE_KEY)
-      .then((saved) => {
-        if (saved && AMBIENT_OPTIONS.some((o) => o.id === saved)) {
-          setAmbient(saved);
-        }
-      })
-      .catch(() => undefined);
-  }, []);
-
-  function handleAmbientSelect(id: string) {
-    Haptics.selectionAsync();
-    setAmbient(id);
-    AsyncStorage.setItem(AMBIENT_STORAGE_KEY, id).catch(() => undefined);
-  }
 
   async function handleOpenSpotify() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
@@ -74,17 +54,17 @@ export default function SessaoScreen() {
       } else {
         Alert.alert(
           "Spotify não encontrado",
-          "Parece que o Spotify não está instalado. Você pode usar um dos sons ambiente enquanto lê — eles foram feitos pra isso!",
+          "Parece que o Spotify não está instalado. Você pode continuar a sessão em silêncio por enquanto.",
           [
             { text: "Abrir na web", onPress: () => Linking.openURL("https://open.spotify.com").catch(() => undefined) },
-            { text: "Usar sons ambiente", style: "cancel" },
+            { text: "Ok", style: "cancel" },
           ]
         );
       }
     } catch {
       Alert.alert(
         "Não foi possível abrir o Spotify",
-        "Escolha um som ambiente ou tente abrir o Spotify manualmente.",
+        "Tente abrir o Spotify manualmente e volte aqui para começar a sessão.",
         [{ text: "Ok" }]
       );
     }
@@ -122,7 +102,7 @@ export default function SessaoScreen() {
       params: {
         bookId: selectedBook.id,
         startPage: startPage || selectedBook.currentPage.toString(),
-        ambient,
+        ambient: DEFAULT_AMBIENT,
         focusMode: focusMode ? "1" : "0",
         focusDuration: focusDuration.toString(),
       },
@@ -183,45 +163,9 @@ export default function SessaoScreen() {
             Trilha sonora
           </Text>
 
-          {/* Ambient Sound */}
-          <Text style={[styles.audioSubLabel, { color: colors.mutedForeground }]}>
-            Sons ambiente
-          </Text>
-          <View style={styles.ambientGrid}>
-            {AMBIENT_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.id}
-                style={[
-                  styles.ambientOption,
-                  {
-                    backgroundColor: ambient === opt.id ? `${colors.volt}22` : colors.card,
-                    borderColor: ambient === opt.id ? colors.accentBorder : colors.border,
-                  },
-                ]}
-                onPress={() => handleAmbientSelect(opt.id)}
-              >
-                <Ionicons
-                  name={opt.icon as never}
-                  size={20}
-                  color={ambient === opt.id ? colors.accentText : colors.mutedForeground}
-                />
-                <Text
-                  style={[
-                    styles.ambientLabel,
-                    {
-                      color: ambient === opt.id ? colors.accentText : colors.mutedForeground,
-                    },
-                  ]}
-                >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
           {/* Spotify Deep Link */}
-          <Text style={[styles.audioSubLabel, { color: colors.mutedForeground, marginTop: 16 }]}>
-            Ou escolha uma música
+          <Text style={[styles.audioSubLabel, { color: colors.mutedForeground }]}>
+            Sincronize com o Spotify
           </Text>
           <TouchableOpacity
             style={[
@@ -247,8 +191,8 @@ export default function SessaoScreen() {
               </Text>
               <Text style={[styles.spotifyBtnSub, { color: colors.mutedForeground }]}>
                 {spotifyOpened
-                  ? "A sessão começa com o que estiver tocando"
-                  : "Escolha a playlist e volte aqui para começar"}
+                  ? "Spotify no comando — volte aqui pra começar a sessão"
+                  : "Escolha sua playlist no Spotify e comece a sessão já ouvindo ela"}
               </Text>
             </View>
             {spotifyOpened ? (
@@ -300,13 +244,18 @@ export default function SessaoScreen() {
                     styles.durationBtn,
                     {
                       backgroundColor:
-                        focusDuration === d ? colors.volt : colors.card,
+                        !customDuration && focusDuration === d
+                          ? colors.volt
+                          : colors.card,
                       borderColor:
-                        focusDuration === d ? colors.volt : colors.border,
+                        !customDuration && focusDuration === d
+                          ? colors.volt
+                          : colors.border,
                     },
                   ]}
                   onPress={() => {
                     Haptics.selectionAsync();
+                    setCustomDuration(false);
                     setFocusDuration(d);
                   }}
                 >
@@ -315,7 +264,7 @@ export default function SessaoScreen() {
                       styles.durationText,
                       {
                         color:
-                          focusDuration === d
+                          !customDuration && focusDuration === d
                             ? colors.accentForeground
                             : colors.foreground,
                       },
@@ -325,6 +274,84 @@ export default function SessaoScreen() {
                   </Text>
                 </TouchableOpacity>
               ))}
+              <TouchableOpacity
+                style={[
+                  styles.durationBtn,
+                  {
+                    backgroundColor: customDuration ? colors.volt : colors.card,
+                    borderColor: customDuration ? colors.volt : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setCustomDuration(true);
+                  const parsed = parseInt(customMinutes, 10);
+                  if (Number.isFinite(parsed) && parsed >= 1) {
+                    setFocusDuration(Math.min(600, parsed));
+                  }
+                }}
+              >
+                <Text
+                  style={[
+                    styles.durationText,
+                    {
+                      color: customDuration
+                        ? colors.accentForeground
+                        : colors.foreground,
+                    },
+                  ]}
+                >
+                  Outro
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {focusMode && customDuration && (
+            <View
+              style={[
+                styles.customDurationRow,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.customDurationLabel, { color: colors.mutedForeground }]}>
+                Duração
+              </Text>
+              <TouchableOpacity
+                style={[styles.stepperBtn, { borderColor: colors.border }]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setFocusDuration((d) => Math.max(1, d - 5));
+                }}
+              >
+                <Ionicons name="remove" size={18} color={colors.foreground} />
+              </TouchableOpacity>
+              <TextInput
+                style={[styles.customDurationInput, { color: colors.foreground, borderColor: colors.border }]}
+                value={String(focusDuration)}
+                keyboardType="number-pad"
+                maxLength={3}
+                onChangeText={(v) => {
+                  const parsed = parseInt(v, 10);
+                  setCustomMinutes(v);
+                  if (Number.isFinite(parsed) && parsed >= 1) {
+                    setFocusDuration(Math.min(600, parsed));
+                  } else if (v === "") {
+                    setFocusDuration(1);
+                  }
+                }}
+              />
+              <Text style={[styles.customDurationLabel, { color: colors.mutedForeground }]}>
+                min
+              </Text>
+              <TouchableOpacity
+                style={[styles.stepperBtn, { borderColor: colors.border }]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setFocusDuration((d) => Math.min(600, d + 5));
+                }}
+              >
+                <Ionicons name="add" size={18} color={colors.foreground} />
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -443,7 +470,7 @@ Estante meio órfã.{"\n"}Torto Arado não leu a si mesmo — adiciona um livro 
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.addNewTitle, { color: colors.foreground }]}>
-                    Plantar livro novo na estante
+                    Colocar um livro novo na estante
                   </Text>
                   <Text style={[styles.addNewSub, { color: colors.mutedForeground }]}>
                     Por título, autor ou ISBN — vale até Kafka
@@ -625,17 +652,6 @@ const styles = StyleSheet.create({
   },
   pageInputText: { flex: 1, fontSize: 20, fontWeight: "700" },
   pageTotal: { fontSize: 16 },
-  ambientGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  ambientOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  ambientLabel: { fontSize: 13, fontWeight: "600" },
   spotifyBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -680,6 +696,33 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   durationText: { fontSize: 14, fontWeight: "700" },
+  customDurationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  customDurationLabel: { fontSize: 13, fontWeight: "600" },
+  customDurationInput: {
+    width: 56,
+    textAlign: "center",
+    fontSize: 20,
+    fontWeight: "800",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 6,
+  },
+  stepperBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   startBtn: {
     flexDirection: "row",
     alignItems: "center",

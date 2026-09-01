@@ -24,13 +24,13 @@ export function Pill({ label, icon, active = false, onPress }: PillProps) {
         <Ionicons
           name={icon}
           size={14}
-          color={active ? "#2A2118" : colors.mutedForeground}
+          color={active ? colors.foreground : colors.mutedForeground}
         />
       ) : null}
       <Text
         style={[
           typeScale.caption,
-          { color: active ? "#2A2118" : colors.mutedForeground, fontWeight: "700" },
+          { color: active ? colors.foreground : colors.mutedForeground, fontWeight: "700" },
         ]}
       >
         {label}

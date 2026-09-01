@@ -43,10 +43,23 @@ export function useAuth() {
   return ctx;
 }
 
+const PREVIEW_MODE = process.env.EXPO_PUBLIC_PREVIEW_MODE === "true";
+const PREVIEW_SESSION = { user: { id: "preview-user", email: "preview@leio.app" } } as unknown as Session;
+const PREVIEW_PROFILE: Profile = {
+  id: "preview-user",
+  username: "Leitor Preview",
+  handle: "leitor_preview",
+  avatar_url: null,
+  xp: 1240,
+  folego: 5,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(PREVIEW_MODE ? PREVIEW_SESSION : null);
+  const [profile, setProfile] = useState<Profile | null>(PREVIEW_MODE ? PREVIEW_PROFILE : null);
+  const [isLoading, setIsLoading] = useState(!PREVIEW_MODE ? true : false);
 
   const fetchProfile = useCallback(async (userId: string) => {
     setIsLoading(true);
@@ -60,6 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (PREVIEW_MODE) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) fetchProfile(session.user.id);

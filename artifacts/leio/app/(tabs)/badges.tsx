@@ -36,13 +36,10 @@ const CATEGORIES: { id: string; label: string; icon: IoniconName }[] = [
 export default function BadgesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { badges, xp } = useApp();
+  const { badges, xp, folego } = useApp();
   const [activeCategory, setActiveCategory] = useState("all");
 
-  const { current: levelInfo, next: nextLevelInfo } = getLevel(xp);
-  const nextXp = nextLevelInfo.minXP;
-  const prevXp = levelInfo.minXP;
-  const progress = nextXp > prevXp ? (xp - prevXp) / (nextXp - prevXp) : 1;
+  const { current: levelInfo } = getLevel(xp);
 
   const topInset = insets.top + (Platform.OS === "web" ? 67 : 0);
   const bottomInset = Platform.OS === "web" ? 34 : 0;
@@ -105,7 +102,8 @@ export default function BadgesScreen() {
         />
       </View>
 
-      {/* Level + XP */}
+      {/* Constância — dias seguidos lendo é o que destrava conquistas, não pontos
+          (post-it note-15: "repensar XP, focar em constância") */}
       <View
         style={[
           styles.xpCard,
@@ -117,24 +115,20 @@ export default function BadgesScreen() {
         ]}
       >
         <View style={styles.xpHeader}>
-          <Text style={[styles.levelName, { color: colors.foreground }]}>
+          <View style={styles.streakHeaderLeft}>
+            <Ionicons name="flame" size={20} color={colors.accentText} />
+            <Text style={[styles.levelName, { color: colors.foreground }]}>
+              {folego} {folego === 1 ? "dia seguido" : "dias seguidos"}
+            </Text>
+          </View>
+          <Text style={[styles.levelBadge, { color: colors.mutedForeground }]}>
             {levelInfo.name}
           </Text>
-          <Text style={[styles.xpVal, { color: colors.accentText }]}>{xp} XP</Text>
-        </View>
-        <View style={[styles.xpBar, { backgroundColor: colors.border }]}>
-          <View
-            style={[
-              styles.xpFill,
-              {
-                backgroundColor: colors.volt,
-                width: `${Math.round(progress * 100)}%`,
-              },
-            ]}
-          />
         </View>
         <Text style={[styles.xpNext, { color: colors.mutedForeground }]}>
-          {nextXp - xp} XP para {nextLevelInfo.name}
+          {folego > 0
+            ? "Lê hoje pra não deixar essa sequência cair."
+            : "Comece hoje sua sequência de leitura."}
         </Text>
       </View>
 
@@ -252,10 +246,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+  streakHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
   levelName: { fontSize: 16, fontWeight: "800" },
-  xpVal: { fontSize: 18, fontWeight: "900" },
-  xpBar: { height: 6, borderRadius: 3, overflow: "hidden" },
-  xpFill: { height: "100%", borderRadius: 3 },
+  levelBadge: { fontSize: 12, fontWeight: "700" },
   xpNext: { fontSize: 12 },
   categoriesWrap: {
     marginBottom: 8,
